@@ -9,7 +9,7 @@ This module provides input parsing functions for:
 """
 
 import re
-from typing import Optional
+from typing import Dict, Optional
 
 
 def detect_user_intent(user_input: str) -> Optional[str]:
@@ -91,12 +91,22 @@ def detect_user_intent(user_input: str) -> Optional[str]:
     return None  # Default: no explicit intent
 
 
+# Common words that look like tickers in a query; "$NOW" still means the ticker
+_NOT_TICKERS = frozenset(
+    "A ALL AM AN AND ANY ARE AT BIG BOTH BY CAN DO EVERY FOR FROM GET HOW I ID IN IS IT LEVEL LIST ME "
+    "MY NOW OF ON ONE OPEN ORDER OUT S SET SHOW SMALL SOME STOP THAT THE THESE THIS THOSE TO TODAY "
+    "WE WHAT WITH YOUR".split()
+)
+
+
 def extract_ticker_from_query(user_input: str) -> Optional[str]:
     """
     Extract ticker symbol from natural language query.
 
     Issue #348: Parse user queries like 'show orders for AAPL'
     Issue #436: Extracted from cli_session.py for modularity.
+    Issue #633: "my orders for aapl" is AAPL, not MY: in order, a $ prefix, the word after
+    for/on/of/in, a word written in capitals, then any other word that isn't a common one.
 
     Args:
         user_input: User's natural language input
@@ -109,42 +119,61 @@ def extract_ticker_from_query(user_input: str) -> Optional[str]:
         'AAPL'
         >>> extract_ticker_from_query("what's the stop on $TSLA?")
         'TSLA'
+        >>> extract_ticker_from_query("cancel my orders for aapl")
+        'AAPL'
         >>> extract_ticker_from_query("show me the orders")
         None
     """
-    # Common ticker patterns
-    # Match: $AAPL, AAPL, "AAPL", 'AAPL'
-    ticker_patterns = [
-        r"\$([A-Z]{1,5})\b",  # $AAPL format
-        r"\b([A-Z]{1,5})\b",  # Plain AAPL (must be uppercase)
-    ]
+    explicit = re.search(r"\$([A-Za-z]{1,5})\b", user_input)
+    if explicit:
+        return explicit.group(1).upper()
 
-    input_upper = user_input.upper()
-
-    # Try each pattern
-    for pattern in ticker_patterns:
-        matches = re.findall(pattern, input_upper)
-        if matches:
-            # Filter out common words that look like tickers
-            exclude = {
-                "FOR",
-                "THE",
-                "AND",
-                "ALL",
-                "GET",
-                "SET",
-                "SHOW",
-                "ORDER",
-                "ORDERS",
-                "STOP",
-                "ON",
-                "LEVEL",
-            }
-            for match in matches:
-                if match not in exclude and len(match) >= 1:
-                    return match
-
+    candidates = (
+        re.findall(r"\b(?:for|on|of|in)\s+([A-Za-z]{1,5})\b", user_input, re.IGNORECASE)
+        + re.findall(r"\b([A-Z]{1,5})\b", user_input)
+        + re.findall(r"\b([A-Za-z]{1,5})\b", user_input)
+    )
+    for candidate in candidates:
+        if candidate.upper() not in _NOT_TICKERS:
+            return candidate.upper()
     return None
+
+
+_CANCEL_VERB = re.compile(r"\b(cancel|delete|remove)\b", re.IGNORECASE)
+_ORDER_WORD = re.compile(r"\borders?\b", re.IGNORECASE)
+_ALL_WORD = re.compile(r"\ball\b", re.IGNORECASE)
+# The start of an order ID (a UUID) or all of it, with a digit so "deadbeef" isn't one; a
+# date like 2026-10-30 doesn't fit
+_ORDER_ID = re.compile(r"\b(?=[a-f-]*[0-9])[0-9a-f]{8}(?:-[0-9a-f-]+)?\b", re.IGNORECASE)
+
+
+def is_cancel_request(user_input: str) -> bool:
+    """
+    Whether the input asks to cancel orders. Whole words only (#633): "delete all my alerts"
+    and "remove the small one" are not cancel requests.
+    """
+    if user_input.strip().lower() == "cancel all":
+        return True
+    return bool(_CANCEL_VERB.search(user_input) and _ORDER_WORD.search(user_input))
+
+
+def parse_cancel_request(user_input: str) -> Dict[str, str]:
+    """
+    What a cancel request applies to. A named order or symbol wins over the word "all", so
+    "cancel all AAPL orders" is AAPL's orders.
+
+    Returns:
+        {"order_id": ...}, {"symbol": ...}, {"all": "all"}, or {} if it names no target
+    """
+    order_id = _ORDER_ID.search(user_input)
+    if order_id:
+        return {"order_id": order_id.group(0).lower()}
+    ticker = extract_ticker_from_query(user_input)
+    if ticker:
+        return {"symbol": ticker}
+    if _ALL_WORD.search(user_input):
+        return {"all": "all"}
+    return {}
 
 
 # Buy/sell indicators exported for use by other modules
@@ -184,6 +213,8 @@ SELL_INDICATORS = [
 __all__ = [
     "detect_user_intent",
     "extract_ticker_from_query",
+    "is_cancel_request",
+    "parse_cancel_request",
     "BUY_INDICATORS",
     "SELL_INDICATORS",
 ]

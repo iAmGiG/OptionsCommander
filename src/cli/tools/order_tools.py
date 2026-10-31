@@ -62,18 +62,24 @@ def _get_account_monitor():
         return None
 
 
-def _get_orchestrator():
-    """
-    Get TradingOrchestrator instance for order execution.
+_STOP_ORDER_TYPES = ("stop", "stop_limit", "trailing_stop")
+# Alpaca's most per request, so "cancel all" sees every open order
+_MAX_ORDERS = 500
 
-    Returns singleton or creates new instance.
+
+def _get_order_manager():
+    """
+    Get the paper AlpacaOrderManager, the class the scheduled routines cancel through.
+
+    Returns:
+        AlpacaOrderManager, or None if it can't be created
     """
     try:
-        from src.autogen_agents import TradingOrchestrator
+        from src.trading.broker.alpaca_trading_client import AlpacaOrderManager
 
-        return TradingOrchestrator()
+        return AlpacaOrderManager(mode="paper")
     except Exception as e:
-        logger.error(f"Failed to get orchestrator: {e}")
+        logger.error(f"Failed to get order manager: {e}")
         return None
 
 
@@ -263,6 +269,101 @@ def get_position_orders(ticker: str) -> Dict[str, Any]:
         return {"status": "error", "ticker": ticker, "error": str(e)}
 
 
+def find_orders_to_cancel(
+    symbol: Optional[str] = None, order_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Find the open orders a cancel would apply to, without cancelling anything.
+
+    Args:
+        symbol: Only this symbol's orders
+        order_id: Only the order whose ID starts with this; must match exactly one
+
+    Returns:
+        Dict with:
+        - status: "success", "not_found", "ambiguous" or "error"
+        - orders: The normalized orders, each with its stop_legs count (when "success")
+    """
+    try:
+        manager = _get_order_manager()
+        if not manager:
+            return {"status": "error", "error": "Order manager not available"}
+
+        orders = [
+            {
+                **_normalize_order(order),
+                # Bracket legs sit under their parent, and go when it's cancelled
+                "stop_legs": sum(
+                    _normalize_order(leg)["type"] in _STOP_ORDER_TYPES
+                    for leg in order.get("legs") or []
+                ),
+            }
+            for order in manager.get_orders(status="open", limit=_MAX_ORDERS)
+        ]
+        if symbol:
+            orders = [o for o in orders if o["symbol"] == symbol.upper()]
+        if order_id:
+            orders = [o for o in orders if o["id"].startswith(order_id)]
+            if not orders:
+                return {
+                    "status": "not_found",
+                    "order_id": order_id,
+                    "message": f"No open order found matching '{order_id}'",
+                }
+            if len(orders) > 1:
+                return {
+                    "status": "ambiguous",
+                    "order_id": order_id,
+                    "matches": [o["id"] for o in orders],
+                    "message": f"Multiple orders match '{order_id}', please be more specific",
+                }
+        return {"status": "success", "orders": orders}
+    except Exception as e:
+        logger.error(f"Error finding orders to cancel: {e}", exc_info=True)
+        return {"status": "error", "error": str(e)}
+
+
+def cancel_orders_by_id(order_ids: List[str]) -> Dict[str, Any]:
+    """
+    Cancel exactly these orders at the broker.
+
+    Args:
+        order_ids: Full order IDs
+
+    Returns:
+        Dict with:
+        - status: "success" (all cancelled), "partial" (some) or "error" (none)
+        - cancelled_count, failed_count, total_orders
+        - results: One entry per order, with its error if it failed
+        - error: The first failure's message, if any failed
+    """
+    manager = _get_order_manager()
+    if not manager:
+        return {"status": "error", "error": "Order manager not available"}
+
+    results = []
+    for order_id in order_ids:
+        result = manager.cancel_order(order_id)
+        if result.get("status") == "cancelled":
+            results.append({"order_id": order_id, "status": "cancelled"})
+        else:
+            error = result.get("message", "Unknown error")
+            results.append({"order_id": order_id, "status": "failed", "error": error})
+
+    failures = [r for r in results if r["status"] == "failed"]
+    cancelled = len(results) - len(failures)
+    summary = {
+        "status": "success" if not failures else "partial" if cancelled else "error",
+        "cancelled_count": cancelled,
+        "failed_count": len(failures),
+        "total_orders": len(results),
+        "results": results,
+    }
+    if failures:
+        summary["error"] = failures[0]["error"]
+    return summary
+
+
 def cancel_order(order_id: str) -> Dict[str, Any]:
     """
     Cancel a specific order by ID.
@@ -272,61 +373,26 @@ def cancel_order(order_id: str) -> Dict[str, Any]:
 
     Returns:
         Dict with:
-        - status: "success", "not_found", or "error"
+        - status: "success", "not_found", "ambiguous" or "error"
         - order_id: The matched order ID
         - cancelled: True if successfully cancelled
     """
-    try:
-        orchestrator = _get_orchestrator()
-        if not orchestrator or not hasattr(orchestrator, "executor"):
-            return {"status": "error", "error": "Orchestrator/executor not available"}
+    found = find_orders_to_cancel(order_id=order_id)
+    if found["status"] != "success":
+        return {"order_id": order_id, "cancelled": False, **found}
 
-        account_monitor = _get_account_monitor()
-        if not account_monitor:
-            return {"status": "error", "error": "Account monitor not available"}
-
-        # Find matching order
-        open_orders = account_monitor.get_orders(status="open")
-        matching = [o for o in open_orders if str(o.get("id", "")).startswith(order_id)]
-
-        if not matching:
-            return {
-                "status": "not_found",
-                "order_id": order_id,
-                "message": f"No open order found matching '{order_id}'",
-            }
-
-        if len(matching) > 1:
-            return {
-                "status": "ambiguous",
-                "order_id": order_id,
-                "matches": [str(o.get("id")) for o in matching],
-                "message": f"Multiple orders match '{order_id}', please be more specific",
-            }
-
-        # Cancel the order
-        order = matching[0]
-        full_id = str(order.get("id"))
-        result = orchestrator.executor.cancel_order(full_id)
-
-        if result.get("status") == "success":
-            return {
-                "status": "success",
-                "order_id": full_id,
-                "cancelled": True,
-                "symbol": order.get("symbol"),
-            }
-        else:
-            return {
-                "status": "error",
-                "order_id": full_id,
-                "cancelled": False,
-                "error": result.get("error", "Unknown error"),
-            }
-
-    except Exception as e:
-        logger.error(f"Error cancelling order {order_id}: {e}", exc_info=True)
-        return {"status": "error", "order_id": order_id, "error": str(e)}
+    order = found["orders"][0]
+    result = cancel_orders_by_id([order["id"]])
+    cancelled = result["status"] == "success"
+    reply = {
+        "status": result["status"],
+        "order_id": order["id"],
+        "cancelled": cancelled,
+        "symbol": order["symbol"],
+    }
+    if not cancelled:
+        reply["error"] = result.get("error", "Unknown error")
+    return reply
 
 
 def cancel_all_orders() -> Dict[str, Any]:
@@ -335,60 +401,22 @@ def cancel_all_orders() -> Dict[str, Any]:
 
     Returns:
         Dict with:
-        - status: "success" or "error"
+        - status: "success" (all cancelled, or none open), "partial" (some) or "error" (none)
         - cancelled_count: Number of orders cancelled
         - failed_count: Number of cancellations that failed
         - results: List of individual cancellation results
     """
-    try:
-        orchestrator = _get_orchestrator()
-        if not orchestrator or not hasattr(orchestrator, "executor"):
-            return {"status": "error", "error": "Orchestrator/executor not available"}
-
-        account_monitor = _get_account_monitor()
-        if not account_monitor:
-            return {"status": "error", "error": "Account monitor not available"}
-
-        open_orders = account_monitor.get_orders(status="open")
-        if not open_orders:
-            return {
-                "status": "success",
-                "cancelled_count": 0,
-                "failed_count": 0,
-                "message": "No open orders to cancel",
-            }
-
-        results = []
-        cancelled = 0
-        failed = 0
-
-        for order in open_orders:
-            order_id = str(order.get("id"))
-            try:
-                result = orchestrator.executor.cancel_order(order_id)
-                if result.get("status") == "success":
-                    cancelled += 1
-                    results.append({"order_id": order_id, "status": "cancelled"})
-                else:
-                    failed += 1
-                    results.append(
-                        {"order_id": order_id, "status": "failed", "error": result.get("error")}
-                    )
-            except Exception as e:
-                failed += 1
-                results.append({"order_id": order_id, "status": "failed", "error": str(e)})
-
+    found = find_orders_to_cancel()
+    if found["status"] != "success":
+        return found
+    if not found["orders"]:
         return {
             "status": "success",
-            "cancelled_count": cancelled,
-            "failed_count": failed,
-            "total_orders": len(open_orders),
-            "results": results,
+            "cancelled_count": 0,
+            "failed_count": 0,
+            "message": "No open orders to cancel",
         }
-
-    except Exception as e:
-        logger.error(f"Error cancelling all orders: {e}", exc_info=True)
-        return {"status": "error", "error": str(e)}
+    return cancel_orders_by_id([o["id"] for o in found["orders"]])
 
 
 def cancel_symbol_orders(symbol: str) -> Dict[str, Any]:
@@ -400,62 +428,64 @@ def cancel_symbol_orders(symbol: str) -> Dict[str, Any]:
 
     Returns:
         Dict with:
-        - status: "success" or "error"
+        - status: "success" (all cancelled, or none open), "partial" (some) or "error" (none)
         - symbol: The symbol
         - cancelled_count: Number of orders cancelled
         - failed_count: Number of cancellations that failed
     """
-    try:
-        orchestrator = _get_orchestrator()
-        if not orchestrator or not hasattr(orchestrator, "executor"):
-            return {"status": "error", "error": "Orchestrator/executor not available"}
-
-        account_monitor = _get_account_monitor()
-        if not account_monitor:
-            return {"status": "error", "error": "Account monitor not available"}
-
-        symbol_upper = symbol.upper()
-        open_orders = account_monitor.get_orders(status="open")
-        symbol_orders = [o for o in open_orders if o.get("symbol") == symbol_upper]
-
-        if not symbol_orders:
-            return {
-                "status": "success",
-                "symbol": symbol_upper,
-                "cancelled_count": 0,
-                "message": f"No open orders for {symbol_upper}",
-            }
-
-        cancelled = 0
-        failed = 0
-
-        for order in symbol_orders:
-            order_id = str(order.get("id"))
-            try:
-                result = orchestrator.executor.cancel_order(order_id)
-                if result.get("status") == "success":
-                    cancelled += 1
-                else:
-                    failed += 1
-            except Exception:
-                failed += 1
-
+    symbol_upper = symbol.upper()
+    found = find_orders_to_cancel(symbol=symbol_upper)
+    if found["status"] != "success":
+        return {"symbol": symbol_upper, **found}
+    if not found["orders"]:
         return {
             "status": "success",
             "symbol": symbol_upper,
-            "cancelled_count": cancelled,
-            "failed_count": failed,
-            "total_orders": len(symbol_orders),
+            "cancelled_count": 0,
+            "failed_count": 0,
+            "message": f"No open orders for {symbol_upper}",
         }
-
-    except Exception as e:
-        logger.error(f"Error cancelling orders for {symbol}: {e}", exc_info=True)
-        return {"status": "error", "symbol": symbol, "error": str(e)}
+    return {"symbol": symbol_upper, **cancel_orders_by_id([o["id"] for o in found["orders"]])}
 
 
 # =============================================================================
 # Display Functions (Issue #459 - formatted output for CLI)
 # =============================================================================
+
+
+def format_cancel_preview(orders: List[Dict[str, Any]]) -> str:
+    """List the orders a cancel would apply to, marking stops, which protect positions."""
+    lines = [f"{get_symbol('WARNING')} This would cancel {len(orders)} open order(s):"]
+    stops = 0
+    for order in orders:
+        is_stop = order["type"] in _STOP_ORDER_TYPES
+        stops += is_stop + order["stop_legs"]
+        mark = "  <- STOP" if is_stop else "  <- has a STOP leg" if order["stop_legs"] else ""
+        lines.append(
+            f"   {order['symbol']} {order['side']} {order['qty']:g} {order['type']} "
+            f"@ ${order['price']:.2f} ({order['id'][:8]}){mark}"
+        )
+    if stops:
+        lines.append(
+            f"{get_symbol('WARNING')} Stops in this list: {stops}. A position can be left "
+            "unprotected until the next routine re-places its stop."
+        )
+    return "\n".join(lines)
+
+
+def format_cancel_result(result: Dict[str, Any]) -> str:
+    """Say what a cancel actually did."""
+    cancelled = result.get("cancelled_count", 0)
+    failed = result.get("failed_count", 0)
+    lines = []
+    if cancelled:
+        lines.append(f"{get_symbol('SUCCESS')} Cancelled {cancelled} order(s)")
+    if failed:
+        error = result.get("error", "Unknown error")
+        lines.append(f"{get_symbol('ERROR')} Failed to cancel {failed} order(s): {error}")
+    if not lines:
+        lines.append(f"{get_symbol('ERROR')} Error: {result.get('error', 'Unknown error')}")
+    return "\n".join(lines)
 
 
 def show_orders() -> str:
@@ -643,6 +673,10 @@ __all__ = [
     "cancel_order",
     "cancel_all_orders",
     "cancel_symbol_orders",
+    "find_orders_to_cancel",
+    "cancel_orders_by_id",
+    "format_cancel_preview",
+    "format_cancel_result",
     # FunctionTools
     "CLI_ORDER_TOOLS",
     "show_orders_tool",

@@ -38,9 +38,10 @@ from src.cli.tools.execution_mode_tools import (
 )
 from src.cli.tools.mode_tools import set_mode, show_current_mode, show_mode_comparison
 from src.cli.tools.order_tools import (
-    cancel_all_orders,
-    cancel_order,
-    cancel_symbol_orders,
+    cancel_orders_by_id,
+    find_orders_to_cancel,
+    format_cancel_preview,
+    format_cancel_result,
     show_orders,
     show_position_orders,
 )
@@ -48,7 +49,11 @@ from src.cli.tools.portfolio_tools import show_portfolio
 from src.cli.tools.scheduler_tools import show_scheduler
 from src.cli.utils.error_utils import sanitize_error_message
 from src.cli.utils.help_system import HelpSystem
-from src.cli.utils.input_parser import extract_ticker_from_query
+from src.cli.utils.input_parser import (
+    extract_ticker_from_query,
+    is_cancel_request,
+    parse_cancel_request,
+)
 from src.cli.utils.intent_classifier import IntentClassifier
 
 # Issue #436: Ticker completer moved to separate module
@@ -390,9 +395,7 @@ class CLISession:
             # Alert queries
             await self._handle_alerts_request(user_input)
 
-        elif any(word in input_lower for word in ["cancel", "delete", "remove"]) and any(
-            word in input_lower for word in ["order", "all"]
-        ):
+        elif is_cancel_request(user_input):
             # Order cancellation (Issue #360)
             await self._handle_cancel_request(user_input)
 
@@ -698,81 +701,43 @@ class CLISession:
         output = show_position_orders(ticker)
         print(output)
 
-    async def _handle_cancel_request(self, user_input: str):  # noqa: C901
+    async def _handle_cancel_request(self, user_input: str):
         """
         Handle order cancellation requests.
 
         Issue #360: Order cancellation functionality.
-        Issue #436: Restored and refactored to use order_tools functions.
+        Issue #633: Lists the orders and asks every time, in AUTO too, then cancels exactly
+        the orders it listed.
 
         Supports:
         - cancel all orders
         - cancel order <ID>
         - cancel orders for <SYMBOL>
         """
-        input_lower = user_input.lower()
-
-        # Cancel all orders
-        if "all" in input_lower:
-            print("⚠️  Cancelling ALL open orders...")
-            result = cancel_all_orders()
-
-            if result["status"] == "error":
-                print(f"❌ Error: {result.get('error', 'Unknown')}")
-                return
-
-            cancelled = result.get("cancelled_count", 0)
-            failed = result.get("failed_count", 0)
-
-            if cancelled == 0 and failed == 0:
-                print("ℹ️  No open orders to cancel")
-            else:
-                print(f"✅ Cancelled {cancelled} order(s)")
-                if failed > 0:
-                    print(f"⚠️  Failed to cancel {failed} order(s)")
+        target = parse_cancel_request(user_input)
+        if not target:
+            print("❌ Could not determine what to cancel")
+            print("ℹ️  Usage:")
+            print("   • cancel all orders")
+            print("   • cancel orders for AAPL")
+            print("   • cancel order <order-id>")
             return
 
-        # Cancel by symbol
-        ticker = extract_ticker_from_query(user_input)
-        if ticker:
-            print(f"⚠️  Cancelling orders for {ticker}...")
-            result = cancel_symbol_orders(ticker)
-
-            if result["status"] == "error":
-                print(f"❌ Error: {result.get('error', 'Unknown')}")
-                return
-
-            cancelled = result.get("cancelled_count", 0)
-            if cancelled == 0:
-                print(f"ℹ️  No open orders for {ticker}")
-            else:
-                print(f"✅ Cancelled {cancelled} order(s) for {ticker}")
+        found = find_orders_to_cancel(symbol=target.get("symbol"), order_id=target.get("order_id"))
+        if found["status"] != "success":
+            print(f"❌ {found.get('message') or found.get('error', 'Unknown error')}")
+            return
+        orders = found["orders"]
+        if not orders:
+            suffix = f" for {target['symbol']}" if "symbol" in target else ""
+            print(f"ℹ️  No open orders{suffix}")
             return
 
-        # Cancel by order ID (extract from input)
-        id_match = re.search(r"([a-f0-9-]{8,})", input_lower)
-        if id_match:
-            order_id = id_match.group(1)
-            print(f"⚠️  Cancelling order {order_id[:8]}...")
-            result = cancel_order(order_id)
-
-            if result["status"] == "success":
-                print(f"✅ Cancelled order {result.get('order_id', order_id)[:8]}...")
-            elif result["status"] == "not_found":
-                print(f"❌ Order not found: {order_id[:8]}...")
-            elif result["status"] == "ambiguous":
-                print(f"❌ Multiple orders match '{order_id[:8]}...'")
-                print("   Please provide more of the order ID")
-            else:
-                print(f"❌ Error: {result.get('error', 'Unknown')}")
+        print(format_cancel_preview(orders))
+        if input("Type 'yes' to cancel them (anything else keeps them): ").strip().lower() != "yes":
+            print("ℹ️  Nothing cancelled")
             return
-
-        # No valid target found
-        print("❌ Could not determine what to cancel")
-        print("ℹ️  Usage:")
-        print("   • cancel all orders")
-        print("   • cancel orders for AAPL")
-        print("   • cancel order <order-id>")
+        print(format_cancel_result(cancel_orders_by_id([o["id"] for o in orders])))
 
     async def _handle_execution_mode_request(self, user_input: str):
         """

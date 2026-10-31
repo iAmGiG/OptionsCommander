@@ -14,7 +14,7 @@ import os
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from agent_framework import FunctionTool, Message
 from agent_framework.openai import RawOpenAIChatCompletionClient
@@ -107,6 +107,32 @@ def _parse_trade_request(
         "asset_type": asset_type,
         "timing": timing,
     }
+
+
+# Nothing makes the model keep to the schema (#632): the tool is offered, never run, so its
+# arguments are checked here. Anything but an explicit "buy" or "sell" is a review.
+_TIMINGS = ("now", "pullback", "dip", "breakout", "limit")
+
+
+def _action_from(value: Any) -> str:
+    return value if value in (ActionType.BUY.value, ActionType.SELL.value) else "review"
+
+
+def _request_type_from(value: Any) -> str:
+    return RequestType.STATUS_QUERY.value if value == "status_query" else RequestType.TRADE.value
+
+
+def _positive_number(value: Any) -> Optional[float]:
+    """The value if it's a finite number above zero, else None."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if 0 < value < float("inf") else None
+
+
+def _positive_int(value: Any) -> Optional[int]:
+    """The value if it's a whole number above zero, else None: 50.0 is 50, 1.5 is not."""
+    number = _positive_number(value)
+    return int(number) if number is not None and number == int(number) else None
 
 
 # The parse tool - schema auto-generated from type hints
@@ -202,16 +228,18 @@ class LLMParser(InputParser):
             args = tool_call.arguments
             if isinstance(args, str):
                 args = json.loads(args)
+            if not isinstance(args, dict):
+                raise ValueError(f"Tool call arguments aren't an object for: {user_input}")
 
             # Create TradeRequest
             request = TradeRequest(
-                ticker=args.get("ticker", "").upper(),
-                action=args.get("action", "review"),
-                request_type=args.get("request_type", "trade"),
-                quantity=args.get("quantity"),
-                price=args.get("price"),
-                asset_type=AssetType(args.get("asset_type", "stock")),
-                timing=args.get("timing"),  # Issue #475: Entry timing
+                ticker=str(args.get("ticker") or "").upper(),
+                action=_action_from(args.get("action")),
+                request_type=_request_type_from(args.get("request_type")),
+                quantity=_positive_int(args.get("quantity")),
+                price=_positive_number(args.get("price")),
+                asset_type=AssetType(args.get("asset_type") or "stock"),
+                timing=args.get("timing") if args.get("timing") in _TIMINGS else None,  # #475
                 raw_input=user_input,
             )
 

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Optional
 from config_defaults.message_loader import CLIMessages as MSG  # noqa: N814
 
 from src.cli.utils.error_utils import sanitize_error_message
-from src.cli.utils.input_parser import BUY_INDICATORS, SELL_INDICATORS, detect_user_intent
+from src.cli.utils.input_parser import detect_user_intent
 from src.cli.utils.suggestion_display import (
     calc_pct,
     display_position_context,
@@ -64,47 +64,51 @@ class TradeHandler:
         """Update autonomy mode."""
         self.autonomy_mode = mode
 
-    async def handle_trade_request(self, user_input: str) -> None:
+    async def handle_trade_request(self, user_input: str, request=None) -> None:
         """
         Process user trade request via orchestrator.
 
         Issue #347: Respects user intent - when user says "buy", we show "BUY (as requested)"
         and treat signals as context, not override.
+        Issue #632: The order follows the signal, so a request for the other side places
+        nothing, and the input is parsed once, which alone decides whether this is a review.
 
         Args:
             user_input: User's natural language input
+            request: The input already parsed; parsed here if not given
         """
         print(MSG.ANALYZING_TRADE)
 
         try:
-            original_input = user_input.lower().strip()
-            user_intent = detect_user_intent(original_input)
+            if request is None:
+                request = await self.orchestrator.parser.parse(user_input, self.user_id)
+            is_review_only = request.action not in ("buy", "sell")
 
             # Process request via orchestrator
-            decision = await self.orchestrator.process_request(user_input, self.user_id)
+            decision = await self.orchestrator.process_request(
+                user_input, self.user_id, request=request
+            )
 
             # Check position context
             position = self._check_position_for_ticker(decision.suggestion.ticker)
             display_position_context(decision.suggestion.ticker, position)
 
-            # Handle signal conflicts
-            decision = await self._handle_signal_conflicts(
-                decision, position, original_input, user_intent
-            )
-            if decision is None:
-                return  # User cancelled or request handled
+            # A review only shows the analysis; a trade settles any conflict with the signal
+            requested = None
+            if not is_review_only:
+                requested = detect_user_intent(user_input) or request.action
+                decision = await self._handle_signal_conflicts(decision, position, requested)
+                if decision is None:
+                    return  # User cancelled or request handled
 
-            # Display suggestion
+            # Display suggestion; "as requested" only when that's the order on offer
+            signal = decision.suggestion.signal.value.upper()
             override_mode = None
-            if user_intent == "buy":
+            if requested == "buy" and signal == "BUY":
                 override_mode = "USER_OVERRIDE_LONG"
-            elif user_intent == "sell":
+            elif requested == "sell" and signal == "SELL":
                 override_mode = "USER_OVERRIDE_SHORT"
             display_suggestion(decision.suggestion, position, override_mode)
-
-            # Check if review-only
-            parsed_request = await self.orchestrator.parser.parse(user_input, self.user_id)
-            is_review_only = parsed_request.action == "review"
 
             # Get confirmation
             decision.approved = self._get_approval(decision, is_review_only)
@@ -121,11 +125,14 @@ class TradeHandler:
             print(f"\n{error_prefix} {sanitized_msg}")
             logger.debug(f"Request processing error: {e}", exc_info=True)
 
-    async def _handle_signal_conflicts(
-        self, decision, position, original_input: str, user_intent: str
-    ):
+    async def _handle_signal_conflicts(self, decision, position, requested: str):
         """
-        Handle conflicts between user intent and technical signals.
+        Handle conflicts between what the user asked for and the technical signal.
+
+        Args:
+            decision: The trade decision
+            position: The open position, if any
+            requested: "buy" or "sell"
 
         Returns:
             Updated decision or None if cancelled
@@ -133,34 +140,37 @@ class TradeHandler:
         suggestion = decision.suggestion
         signal = suggestion.signal.value.upper()
 
+        # The order would be the opposite of the request
+        if (signal == "BUY" and requested == "sell") or (
+            signal == "SELL" and position and requested == "buy"
+        ):
+            self._show_opposite_refusal(suggestion, requested)
+            return None
+
         # SELL signal with no position
         if signal == "SELL" and not position:
-            user_wants_buy = any(ind in original_input for ind in BUY_INDICATORS)
-            user_wants_sell = any(ind in original_input for ind in SELL_INDICATORS)
-
-            if user_wants_buy:
+            if requested == "buy":
                 return await self._handle_buy_override(decision)
-            elif not user_wants_sell:
-                return await self._handle_ambiguous_sell(decision)
-            else:
-                self._show_cannot_sell_message(suggestion.ticker)
-                return None
+            self._show_cannot_sell_message(suggestion.ticker)
+            return None
 
         # SELL signal with position - show warning
-        elif signal == "SELL" and position:
+        if signal == "SELL":
             print(f"\n{MSG.EMOJI['warning']} SELL will close your position in {suggestion.ticker}")
 
         # HOLD signal with explicit user intent
         elif signal == "HOLD":
-            user_wants_buy = any(ind in original_input for ind in BUY_INDICATORS)
-            user_wants_sell = any(ind in original_input for ind in SELL_INDICATORS)
-
-            if user_wants_buy or user_wants_sell:
-                decision = self._handle_hold_with_intent(decision, user_wants_buy)
-                if decision is None:
-                    return None
+            return self._handle_hold_with_intent(decision, requested == "buy")
 
         return decision
+
+    def _show_opposite_refusal(self, suggestion, requested: str) -> None:
+        """Say why nothing is placed when the order would oppose the request."""
+        signal = suggestion.signal.value.upper()
+        print(f"\n{MSG.EMOJI['warning']} NO ORDER PLACED")
+        print(f"   → You asked to {requested.upper()} {suggestion.ticker}")
+        print(f"   → Technical analysis suggests: {signal}")
+        print(f"   → Orders follow the signal, so this one would have been a {signal}")
 
     async def _handle_buy_override(self, decision):
         """Handle user wanting to BUY despite SELL signal."""
@@ -200,54 +210,6 @@ class TradeHandler:
             print(f"   • Type 'short {suggestion.ticker}' to follow the SELL signal")
             return None
 
-    async def _handle_ambiguous_sell(self, decision):
-        """Handle ambiguous request when SELL signal but no position."""
-        suggestion = decision.suggestion
-
-        print(
-            f"\n{MSG.EMOJI.get('question', '❓')} The analysis suggests {suggestion.ticker} might go DOWN, but you don't own any shares yet."
-        )
-        print("\n   What would you like to do?")
-        print("   1. BUY shares (bet the stock will go UP)")
-        print("   2. SHORT shares (bet the stock will go DOWN - advanced strategy)")
-        print("   3. Just see the analysis (don't trade)")
-
-        clarification = input("\n   Your choice [1/2/3 or buy/short/review]: ").strip().lower()
-
-        if clarification in ["1", "buy", "b", "long", "l", "up", "bullish"]:
-            print(f"\n{MSG.EMOJI['info']} Got it! Preparing BUY order for {suggestion.ticker}...")
-
-            decision.suggestion.signal = Signal.BUY
-            self._invert_stop_target_for_buy(decision.suggestion)
-            self._print_adjusted_trade_plan(decision.suggestion, "BUY")
-            return decision
-
-        elif clarification in ["2", "short", "s", "down", "bearish", "sell"]:
-            print(
-                f"\n{MSG.EMOJI['warning']} SHORT SELLING is not currently supported by this system."
-            )
-            print("   ℹ️  Short selling = betting a stock will go down (advanced/risky)")
-            print("   → This system only supports buying stocks (betting they'll go up)")
-            print("   → Suggestion cancelled")
-            return None
-
-        elif clarification in ["3", "review", "r", "analysis", "just show", "view", "look"]:
-            print(
-                f"\n{MSG.EMOJI['info']} Showing analysis for {suggestion.ticker} (information only, no trade)"
-            )
-            display_suggestion(suggestion, None)
-            print(
-                f"\n   💡 Tip: If you want to trade on this analysis, type 'buy {suggestion.ticker}' or 'short {suggestion.ticker}'"
-            )
-            return None
-
-        else:
-            print(f"\n{MSG.EMOJI['info']} No problem! Cancelled.")
-            print(
-                f"   💡 Tip: You can be specific next time, e.g., 'buy {suggestion.ticker}' or 'analyze {suggestion.ticker}'"
-            )
-            return None
-
     def _get_approval(self, decision, is_review_only: bool) -> bool:
         """
         Whether to execute the trade.
@@ -263,9 +225,15 @@ class TradeHandler:
         if is_review_only or refused:
             return False
 
+        suggestion = decision.suggestion
+        order = (
+            f"{suggestion.signal.value.upper()} {suggestion.recommended_quantity} "
+            f"{suggestion.ticker}"
+        )
         if self.autonomy_mode != "confirm":
-            print(MSG.AUTO_EXECUTING)
+            print(f"{MSG.AUTO_EXECUTING} {order}")
             return True
+        print(f"\nOrder: {order}")
         if self._get_confirmation():
             return True
         print(MSG.TRADE_CANCELLED)
@@ -292,6 +260,13 @@ class TradeHandler:
         print(f"\n{MSG.EMOJI.get('info', 'ℹ️')} SIGNALS INCONCLUSIVE")
         print("   → Technical indicators suggest: HOLD (no clear direction)")
         print(f"   → You requested: {'BUY' if user_wants_buy else 'SELL'}")
+
+        # Asked in AUTO too: this trade comes from the words typed, not from the signal
+        side = "BUY" if user_wants_buy else "SELL"
+        answer = input(f"\n   Prepare a {side} order anyway? [yes/no]: ").strip().lower()
+        if answer not in ("yes", "y"):
+            print(f"\n{MSG.EMOJI['info']} No order placed.")
+            return None
 
         current_price = getattr(suggestion, "current_price", None)
         if current_price is None or current_price <= 0:
@@ -448,7 +423,24 @@ class TradeHandler:
             symbol = suggestion.ticker
             quantity = result.quantity or suggestion.recommended_quantity
 
-            self.trading_cycle.local_state["positions"][symbol] = {
+            # A routine may have saved since this session loaded the state: start from the
+            # file, or its stops and alert history would be overwritten (#632)
+            self.trading_cycle.load_local_state()
+            positions = self.trading_cycle.local_state.setdefault("positions", {})
+
+            if suggestion.signal.value.upper() == "SELL":
+                position = positions.get(symbol)
+                if position:
+                    remaining = position.get("quantity", 0) - quantity
+                    if remaining > 0:
+                        position["quantity"] = remaining
+                    else:
+                        del positions[symbol]
+                self.trading_cycle.save_local_state()
+                logger.info(f"Updated local state for {symbol} after selling {quantity}")
+                return
+
+            positions[symbol] = {
                 "entry_price": suggestion.entry_price,
                 "quantity": quantity,
                 "entry_time": now_iso(),
@@ -465,5 +457,5 @@ class TradeHandler:
                 f"stop=${suggestion.stop_loss:.2f}, target=${suggestion.take_profit:.2f}"
             )
 
-        except (AttributeError, ValueError, KeyError) as e:
+        except (AttributeError, TypeError, ValueError, KeyError) as e:
             logger.warning(f"Failed to update local state after trade: {e}")

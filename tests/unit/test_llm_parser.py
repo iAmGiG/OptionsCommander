@@ -100,3 +100,59 @@ def test_an_authentication_failure_is_a_configuration_error():
 
 def test_the_old_name_still_works():
     assert AutoGenLLMParser is LLMParser
+
+
+# Nothing makes the model keep to the schema (#632)
+
+
+@pytest.mark.parametrize("action", ["analyze", "BUY", "hold", None, 1, ["buy"]])
+def test_an_action_outside_the_schema_is_a_review(action):
+    args = {"request_type": "trade", "ticker": "AAPL", "action": action}
+    parser, _ = _parser(lambda r: _parse_call(args))
+
+    assert asyncio.run(parser.parse("AAPL")).action == "review"
+
+
+def test_a_missing_action_is_a_review():
+    parser, _ = _parser(lambda r: _parse_call({"ticker": "AAPL"}))
+
+    request = asyncio.run(parser.parse("AAPL"))
+
+    assert (request.action, request.request_type) == ("review", "trade")
+
+
+@pytest.mark.parametrize(
+    ("quantity", "expected"),
+    [(50, 50), (50.0, 50), (1.5, None), (-5, None), (0, None), ("50", None), (True, None)],
+)
+def test_only_a_positive_whole_quantity_is_kept(quantity, expected):
+    args = {"ticker": "AAPL", "action": "buy", "quantity": quantity}
+    parser, _ = _parser(lambda r: _parse_call(args))
+
+    assert asyncio.run(parser.parse("buy AAPL")).quantity == expected
+
+
+@pytest.mark.parametrize(
+    ("price", "expected"), [(600.5, 600.5), (0, None), (-1, None), ("600", None)]
+)
+def test_only_a_positive_price_is_kept(price, expected):
+    args = {"ticker": "SPY", "action": "review", "price": price}
+    parser, _ = _parser(lambda r: _parse_call(args))
+
+    assert asyncio.run(parser.parse("is SPY good?")).price == expected
+
+
+def test_an_unknown_request_type_or_timing_is_dropped():
+    args = {"ticker": "SPY", "action": "buy", "request_type": "chat", "timing": "soon"}
+    parser, _ = _parser(lambda r: _parse_call(args))
+
+    request = asyncio.run(parser.parse("buy SPY"))
+
+    assert (request.request_type, request.timing) == ("trade", None)
+
+
+def test_arguments_that_are_not_an_object_cannot_be_parsed():
+    parser, _ = _parser(lambda r: _parse_call(["buy", "AAPL"]))
+
+    with pytest.raises(ValueError, match="Could not parse input"):
+        asyncio.run(parser.parse("buy AAPL"))

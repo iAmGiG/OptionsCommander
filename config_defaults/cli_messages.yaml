@@ -196,7 +196,7 @@ suggestion:
 
 # Confirmation messages
 confirmation:
-  prompt: "\nContinue? [yes/no]: "
+  prompt: "\nPlace this order? [yes/no]: "
   invalid: "Please enter 'yes' or 'no'"
 
 # Order result messages

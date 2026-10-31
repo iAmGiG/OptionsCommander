@@ -153,13 +153,11 @@ def display_suggestion(  # noqa: C901
         print("👤 ACTION: ⬆️ BUY (as requested)")
         if suggestion.signal.value.upper() != "BUY":
             print(f"   📊 Signals suggest: {signal_emoji} {suggestion.signal.value.upper()}")
-            print("   ℹ️  Proceeding with your requested action")
     elif override_mode == "USER_OVERRIDE_SHORT":
         # User wants SELL but signals say something else
         print("👤 ACTION: ⬇️ SELL (as requested)")
         if suggestion.signal.value.upper() != "SELL":
             print(f"   📊 Signals suggest: {signal_emoji} {suggestion.signal.value.upper()}")
-            print("   ℹ️  Proceeding with your requested action")
     else:
         # No explicit user intent - show signal recommendation
         print(MSG.SIGNAL_DISPLAY.format(emoji=signal_emoji, signal=suggestion.signal.value.upper()))

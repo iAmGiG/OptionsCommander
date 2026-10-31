@@ -74,7 +74,12 @@ class TradingOrchestrator:
             f"parser={type(input_parser).__name__}"
         )
 
-    async def process_request(self, user_input: str, user_id: str = "default") -> TradeDecision:
+    async def process_request(
+        self,
+        user_input: str,
+        user_id: str = "default",
+        request: Optional[TradeRequest] = None,
+    ) -> TradeDecision:
         """
         Main workflow: Process user request and generate trade suggestion.
 
@@ -83,6 +88,7 @@ class TradingOrchestrator:
         Args:
             user_input: Raw user input (e.g., "is SPY at 600 good?")
             user_id: User ID for portfolio lookups
+            request: The input already parsed; parsed here if not given
 
         Returns:
             TradeDecision with suggestion (awaiting user confirmation)
@@ -94,7 +100,8 @@ class TradingOrchestrator:
 
         try:
             # Step 1: Parse input
-            request = await self.parser.parse(user_input, user_id)
+            if request is None:
+                request = await self.parser.parse(user_input, user_id)
             logger.debug(f"Parsed request: {request}")
 
             # Step 2: Validate request

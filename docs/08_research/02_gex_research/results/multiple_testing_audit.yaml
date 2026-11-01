@@ -1,4 +1,4 @@
-run_timestamp: '2026-11-01T18:49:59.990009'
+run_timestamp: '2026-11-01T20:46:05.199186'
 issue: '#576'
 description: Multiple-testing audit of lag-1 GEX hypothesis tests
 methodology:
@@ -6450,6 +6450,2764 @@ morning_raise:
     holm_p: 1.0
     bh_reject: false
     bh_q: 1.0
+    raw_reject: false
+    t_above_3: false
+partial_exits:
+  issue: '#584'
+  description: Partial exits against the live trailing exit, three designs (live-rules simulator)
+  family: the 8 planned configurations of partial_exits.json (designs 1 hold / 1 exit, 2 and 3, at first
+    targets +4% and +5%) each against the evening-only trailing exit (Newey-West test of the mean daily
+    return difference); design-against-design, against-bracket and sensitivity comparisons are not in
+    the family
+  dependence_note: the comparisons share signals and overlap in periods, costs, sizings and plans; Holm
+    valid, BH approximate
+  summary:
+    n_tests: 216
+    raw_p_below_0.05: 29
+    expected_by_chance_at_0.05: 10.8
+    holm_rejections: 0
+    bh_rejections: 0
+    abs_t_above_3: 0
+    pooled_with_gex_539_and_623_families:
+      n_tests: 723
+      partial_tests_holm_rejections: 0
+      partial_tests_bh_rejections: 0
+  by_study:
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 1
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T4 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T4 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T5 - trailing (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T5 - trailing (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T4 - trailing (conservative)'
+    n: 9
+    raw: 2
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T4 - trailing (moderate)'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T5 - trailing (conservative)'
+    n: 9
+    raw: 2
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T5 - trailing (moderate)'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 0
+  tests:
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -2.54e-05
+    t_statistic: -2.805
+    p_value: 0.005
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -2.54e-05
+    t_statistic: -2.798
+    p_value: 0.0051
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -2.29e-05
+    t_statistic: -2.758
+    p_value: 0.0058
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -2.43e-05
+    t_statistic: -2.702
+    p_value: 0.0069
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -2.24e-05
+    t_statistic: -2.69
+    p_value: 0.0071
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -2.08e-05
+    t_statistic: -2.541
+    p_value: 0.0111
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -3.81e-05
+    t_statistic: -2.401
+    p_value: 0.0164
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -4.02e-05
+    t_statistic: -2.321
+    p_value: 0.0203
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.92e-05
+    t_statistic: -2.299
+    p_value: 0.0215
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.84e-05
+    t_statistic: -2.286
+    p_value: 0.0223
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -3.88e-05
+    t_statistic: -2.267
+    p_value: 0.0234
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.86e-05
+    t_statistic: -2.257
+    p_value: 0.024
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.46e-05
+    t_statistic: -2.254
+    p_value: 0.0242
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.83e-05
+    t_statistic: -2.216
+    p_value: 0.0267
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -3.39e-05
+    t_statistic: -2.194
+    p_value: 0.0283
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.66e-05
+    t_statistic: -2.186
+    p_value: 0.0288
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.61e-05
+    t_statistic: -2.145
+    p_value: 0.032
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -8.3e-06
+    t_statistic: -2.14
+    p_value: 0.0324
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -3.37e-05
+    t_statistic: -2.136
+    p_value: 0.0327
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -3.06e-05
+    t_statistic: -2.131
+    p_value: 0.0331
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -3.41e-05
+    t_statistic: -2.111
+    p_value: 0.0348
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -4.73e-05
+    t_statistic: -2.107
+    p_value: 0.0352
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.57e-05
+    t_statistic: -2.104
+    p_value: 0.0354
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -3.08e-05
+    t_statistic: -2.095
+    p_value: 0.0361
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -8.1e-06
+    t_statistic: -2.095
+    p_value: 0.0362
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -2.026
+    p_value: 0.0427
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3472
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.17e-05
+    t_statistic: -2.02
+    p_value: 0.0434
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3472
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -2.81e-05
+    t_statistic: -1.993
+    p_value: 0.0462
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3538
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -7.0e-06
+    t_statistic: -1.981
+    p_value: 0.0475
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3538
+    raw_reject: true
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -1.826
+    p_value: 0.0679
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.23e-05
+    t_statistic: -1.814
+    p_value: 0.0697
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -4.07e-05
+    t_statistic: -1.804
+    p_value: 0.0712
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -6.2e-06
+    t_statistic: -1.801
+    p_value: 0.0717
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -9.4e-06
+    t_statistic: -1.761
+    p_value: 0.0782
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.31e-05
+    t_statistic: -1.759
+    p_value: 0.0786
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -1.17e-05
+    t_statistic: -1.756
+    p_value: 0.0791
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.46e-05
+    t_statistic: -1.752
+    p_value: 0.0797
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -1.28e-05
+    t_statistic: -1.732
+    p_value: 0.0832
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -2.02e-05
+    t_statistic: -1.731
+    p_value: 0.0835
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.3e-05
+    t_statistic: -1.684
+    p_value: 0.0923
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -7.6e-05
+    t_statistic: -1.683
+    p_value: 0.0924
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.97e-05
+    t_statistic: -1.681
+    p_value: 0.0928
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.71e-05
+    t_statistic: -1.657
+    p_value: 0.0975
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -2.16e-05
+    t_statistic: -1.642
+    p_value: 0.1006
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.34e-05
+    t_statistic: -1.618
+    p_value: 0.1057
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -2.09e-05
+    t_statistic: -1.618
+    p_value: 0.1058
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.35e-05
+    t_statistic: -1.614
+    p_value: 0.1066
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -2.08e-05
+    t_statistic: -1.611
+    p_value: 0.1072
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.87e-05
+    t_statistic: -1.59
+    p_value: 0.1118
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.05e-05
+    t_statistic: -1.583
+    p_value: 0.1134
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.59e-05
+    t_statistic: -1.579
+    p_value: 0.1142
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -3.54e-05
+    t_statistic: -1.576
+    p_value: 0.1149
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -8.4e-06
+    t_statistic: -1.567
+    p_value: 0.1172
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -2.26e-05
+    t_statistic: -1.566
+    p_value: 0.1173
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.75e-05
+    t_statistic: -1.563
+    p_value: 0.1181
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -2.43e-05
+    t_statistic: -1.557
+    p_value: 0.1195
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -7.6e-06
+    t_statistic: -1.539
+    p_value: 0.1238
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.46e-05
+    t_statistic: -1.536
+    p_value: 0.1244
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.2e-05
+    t_statistic: -1.532
+    p_value: 0.1254
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.13e-05
+    t_statistic: -1.521
+    p_value: 0.1284
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.15e-05
+    t_statistic: -1.514
+    p_value: 0.1299
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.51e-05
+    t_statistic: -1.511
+    p_value: 0.1309
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.456
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -6.8e-05
+    t_statistic: -1.499
+    p_value: 0.1339
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4591
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.64e-05
+    t_statistic: -1.455
+    p_value: 0.1457
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.484
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -2.05e-05
+    t_statistic: -1.447
+    p_value: 0.1479
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.484
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.33e-05
+    t_statistic: -1.447
+    p_value: 0.1479
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.484
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -2.22e-05
+    t_statistic: -1.438
+    p_value: 0.1505
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4852
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.57e-05
+    t_statistic: -1.387
+    p_value: 0.1653
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5251
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.26e-05
+    t_statistic: -1.374
+    p_value: 0.1696
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5264
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -7.2e-06
+    t_statistic: -1.37
+    p_value: 0.1706
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5264
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -6.04e-05
+    t_statistic: -1.335
+    p_value: 0.182
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5537
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -1.321
+    p_value: 0.1866
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5598
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.81e-05
+    t_statistic: -1.269
+    p_value: 0.2044
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.77e-05
+    t_statistic: -1.259
+    p_value: 0.2081
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -5.4e-06
+    t_statistic: -1.258
+    p_value: 0.2083
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -2.9e-05
+    t_statistic: -1.258
+    p_value: 0.2085
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.29e-05
+    t_statistic: -1.257
+    p_value: 0.2088
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.9e-05
+    t_statistic: -1.247
+    p_value: 0.2123
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -2.82e-05
+    t_statistic: -1.246
+    p_value: 0.2129
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -1.76e-05
+    t_statistic: -1.241
+    p_value: 0.2147
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.54e-05
+    t_statistic: -1.236
+    p_value: 0.2163
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.53e-05
+    t_statistic: -1.227
+    p_value: 0.2199
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.54e-05
+    t_statistic: -1.215
+    p_value: 0.2243
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -6.5e-06
+    t_statistic: -1.215
+    p_value: 0.2245
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -9.0e-06
+    t_statistic: -1.204
+    p_value: 0.2285
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -9.0e-06
+    t_statistic: -1.203
+    p_value: 0.229
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -9.0e-06
+    t_statistic: -1.2
+    p_value: 0.2301
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.67e-05
+    t_statistic: -1.194
+    p_value: 0.2325
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5707
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.28e-05
+    t_statistic: -1.181
+    p_value: 0.2377
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5741
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.35e-05
+    t_statistic: -1.177
+    p_value: 0.2392
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5741
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -5.0e-06
+    t_statistic: -1.163
+    p_value: 0.2449
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5813
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.33e-05
+    t_statistic: -1.155
+    p_value: 0.2481
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5825
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -5.18e-05
+    t_statistic: -1.139
+    p_value: 0.2545
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5905
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.16e-05
+    t_statistic: -1.131
+    p_value: 0.258
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5905
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -7.6e-06
+    t_statistic: -1.127
+    p_value: 0.2597
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5905
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -5.5e-06
+    t_statistic: -1.116
+    p_value: 0.2643
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5947
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -3.9e-06
+    t_statistic: -1.1
+    p_value: 0.2712
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6039
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -4.2e-06
+    t_statistic: -1.079
+    p_value: 0.2808
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6178
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -9.8e-06
+    t_statistic: -1.071
+    p_value: 0.2841
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6178
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -9.8e-06
+    t_statistic: -1.067
+    p_value: 0.286
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6178
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -7.0e-06
+    t_statistic: -1.046
+    p_value: 0.2957
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6277
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -7.0e-06
+    t_statistic: -1.044
+    p_value: 0.2964
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6277
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -5.5e-06
+    t_statistic: -1.029
+    p_value: 0.3035
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6316
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -4.4e-06
+    t_statistic: -1.028
+    p_value: 0.3041
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6316
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -2.36e-05
+    t_statistic: -1.021
+    p_value: 0.3072
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.632
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -9.9e-06
+    t_statistic: -1.012
+    p_value: 0.3115
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6348
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -9.1e-06
+    t_statistic: -1.005
+    p_value: 0.3149
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6357
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -3.4e-06
+    t_statistic: -0.976
+    p_value: 0.3292
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -1.26e-05
+    t_statistic: -0.957
+    p_value: 0.3387
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -3.7e-06
+    t_statistic: -0.954
+    p_value: 0.3401
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.24e-05
+    t_statistic: -0.953
+    p_value: 0.3408
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -9.7e-06
+    t_statistic: -0.95
+    p_value: 0.3423
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.23e-05
+    t_statistic: -0.949
+    p_value: 0.3428
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -7.9e-06
+    t_statistic: -0.948
+    p_value: 0.3429
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.03e-05
+    t_statistic: -0.946
+    p_value: 0.3441
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -2.12e-05
+    t_statistic: -0.936
+    p_value: 0.3492
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -7.8e-06
+    t_statistic: -0.935
+    p_value: 0.3496
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -3.6e-06
+    t_statistic: -0.932
+    p_value: 0.3515
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.0e-05
+    t_statistic: -0.921
+    p_value: 0.3573
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -6.0e-06
+    t_statistic: -0.921
+    p_value: 0.3573
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -4.7e-06
+    t_statistic: -0.919
+    p_value: 0.358
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6391
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 9.6e-06
+    t_statistic: 0.892
+    p_value: 0.3722
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6557
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -8.4e-06
+    t_statistic: -0.885
+    p_value: 0.3762
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6557
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -8.0e-06
+    t_statistic: -0.884
+    p_value: 0.3764
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6557
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 9.4e-06
+    t_statistic: 0.864
+    p_value: 0.3877
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D3_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -0.86
+    p_value: 0.3899
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -9.9e-06
+    t_statistic: -0.859
+    p_value: 0.3905
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.85e-05
+    t_statistic: -0.849
+    p_value: 0.3961
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.01e-05
+    t_statistic: -0.847
+    p_value: 0.3968
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.95e-05
+    t_statistic: -0.841
+    p_value: 0.4002
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -2.9e-06
+    t_statistic: -0.831
+    p_value: 0.4057
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.87e-05
+    t_statistic: -0.828
+    p_value: 0.4077
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.13e-05
+    t_statistic: -0.825
+    p_value: 0.4092
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -7.7e-06
+    t_statistic: -0.822
+    p_value: 0.411
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6625
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.803
+    p_value: 0.4217
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6747
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -9.5e-06
+    t_statistic: -0.797
+    p_value: 0.4257
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6761
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -6.9e-06
+    t_statistic: -0.788
+    p_value: 0.4307
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6763
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -5.1e-06
+    t_statistic: -0.786
+    p_value: 0.4321
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6763
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -1.71e-05
+    t_statistic: -0.76
+    p_value: 0.4473
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6941
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -3.7e-06
+    t_statistic: -0.755
+    p_value: 0.45
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6941
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -7.7e-06
+    t_statistic: -0.75
+    p_value: 0.4531
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6941
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -9.9e-06
+    t_statistic: -0.728
+    p_value: 0.4667
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7099
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.25e-05
+    t_statistic: -0.708
+    p_value: 0.4786
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7135
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -4.1e-06
+    t_statistic: -0.708
+    p_value: 0.4787
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7135
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.708
+    p_value: 0.479
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7135
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -4.9e-06
+    t_statistic: -0.701
+    p_value: 0.4835
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.715
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.695
+    p_value: 0.487
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.715
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.691
+    p_value: 0.4899
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.715
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -4.6e-06
+    t_statistic: -0.683
+    p_value: 0.4946
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.717
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -0.674
+    p_value: 0.5003
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7201
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -3.9e-06
+    t_statistic: -0.669
+    p_value: 0.5034
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7201
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -3.3e-06
+    t_statistic: -0.635
+    p_value: 0.5252
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.743
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -2.0e-06
+    t_statistic: -0.634
+    p_value: 0.5263
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.743
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.42e-05
+    t_statistic: -0.622
+    p_value: 0.5336
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7484
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -3.7e-06
+    t_statistic: -0.606
+    p_value: 0.5447
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7549
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -3.6e-06
+    t_statistic: -0.603
+    p_value: 0.5468
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7549
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -1.34e-05
+    t_statistic: -0.6
+    p_value: 0.5487
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7549
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.34e-05
+    t_statistic: -0.575
+    p_value: 0.5656
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7732
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -7.3e-06
+    t_statistic: -0.53
+    p_value: 0.5962
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8099
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 0 bps daily return (NW)
+    effect: -1.7e-06
+    t_statistic: -0.513
+    p_value: 0.6083
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8212
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.5e-06
+    t_statistic: -0.48
+    p_value: 0.6313
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8467
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -4.0e-06
+    t_statistic: -0.475
+    p_value: 0.635
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8467
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 4.9e-06
+    t_statistic: 0.46
+    p_value: 0.6453
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -4.7e-06
+    t_statistic: -0.449
+    p_value: 0.6533
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -4.4e-06
+    t_statistic: -0.448
+    p_value: 0.6543
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -1.0e-05
+    t_statistic: -0.445
+    p_value: 0.6563
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -9.7e-06
+    t_statistic: -0.431
+    p_value: 0.6666
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -1.7e-06
+    t_statistic: -0.43
+    p_value: 0.6673
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.0e-05
+    t_statistic: -0.425
+    p_value: 0.6705
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: 2.4e-06
+    t_statistic: 0.42
+    p_value: 0.6748
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -3.5e-06
+    t_statistic: -0.416
+    p_value: 0.6771
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -4.9e-06
+    t_statistic: -0.405
+    p_value: 0.6851
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -3.4e-06
+    t_statistic: -0.404
+    p_value: 0.686
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -5.5e-06
+    t_statistic: -0.402
+    p_value: 0.6876
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -2.7e-06
+    t_statistic: -0.397
+    p_value: 0.6911
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.6e-06
+    t_statistic: -0.394
+    p_value: 0.6933
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8509
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -4.0e-06
+    t_statistic: -0.385
+    p_value: 0.7004
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8543
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: 4.1e-06
+    t_statistic: 0.38
+    p_value: 0.704
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8543
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -8.3e-06
+    t_statistic: -0.374
+    p_value: 0.7087
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8552
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.4e-06
+    t_statistic: -0.361
+    p_value: 0.7182
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8618
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -7.7e-06
+    t_statistic: -0.347
+    p_value: 0.7288
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8697
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: 1.9e-06
+    t_statistic: 0.335
+    p_value: 0.7376
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8754
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -3.7e-06
+    t_statistic: -0.311
+    p_value: 0.7559
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8888
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 7.0e-06
+    t_statistic: 0.309
+    p_value: 0.7571
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8888
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -1.6e-06
+    t_statistic: -0.304
+    p_value: 0.7613
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8889
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 6.1e-06
+    t_statistic: 0.295
+    p_value: 0.7681
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8903
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: 3.2e-06
+    t_statistic: 0.291
+    p_value: 0.7708
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8903
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.7e-06
+    t_statistic: -0.282
+    p_value: 0.7783
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8942
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -3.8e-06
+    t_statistic: -0.275
+    p_value: 0.7833
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8952
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.8e-06
+    t_statistic: -0.267
+    p_value: 0.7891
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8971
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: full 5 bps daily return (NW)
+    effect: -1.5e-06
+    t_statistic: -0.255
+    p_value: 0.7985
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.903
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.24
+    p_value: 0.8106
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9119
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: 4.8e-06
+    t_statistic: 0.23
+    p_value: 0.818
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9122
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 5.1e-06
+    t_statistic: 0.228
+    p_value: 0.8193
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9122
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 2.0e-06
+    t_statistic: 0.207
+    p_value: 0.8358
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9258
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: 1.9e-06
+    t_statistic: 0.178
+    p_value: 0.859
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9467
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -3.4e-06
+    t_statistic: -0.171
+    p_value: 0.864
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9473
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: 1.4e-06
+    t_statistic: 0.131
+    p_value: 0.8959
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.974
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -1.7e-06
+    t_statistic: -0.125
+    p_value: 0.9004
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.974
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -2.8e-06
+    t_statistic: -0.118
+    p_value: 0.9063
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.974
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: 1.4e-06
+    t_statistic: 0.115
+    p_value: 0.9084
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.974
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: -4.0e-07
+    t_statistic: -0.112
+    p_value: 0.9109
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.974
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -3.0e-07
+    t_statistic: -0.085
+    p_value: 0.9325
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9922
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: 7.0e-07
+    t_statistic: 0.063
+    p_value: 0.9499
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: -2.0e-07
+    t_statistic: -0.059
+    p_value: 0.9533
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -6.0e-07
+    t_statistic: -0.058
+    p_value: 0.9541
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: full 10 bps daily return (NW)
+    effect: -6.0e-07
+    t_statistic: -0.047
+    p_value: 0.9626
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (conservative)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: -5.0e-07
+    t_statistic: -0.044
+    p_value: 0.9649
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 0 bps daily return (NW)
+    effect: 7.0e-07
+    t_statistic: 0.034
+    p_value: 0.9729
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T5 - trailing (moderate_no_signal_exit)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: -6.0e-07
+    t_statistic: -0.027
+    p_value: 0.9787
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -5.0e-07
+    t_statistic: -0.023
+    p_value: 0.9818
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1x_T4 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 10 bps daily return (NW)
+    effect: 4.0e-07
+    t_statistic: 0.019
+    p_value: 0.9852
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D1h_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: out_of_sample_2020_on 5 bps daily return (NW)
+    effect: -4.0e-07
+    t_statistic: -0.016
+    p_value: 0.9874
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 5 bps daily return (NW)
+    effect: -1.0e-07
+    t_statistic: -0.009
+    p_value: 0.9931
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 10 bps daily return (NW)
+    effect: 0.0
+    t_statistic: -0.006
+    p_value: 0.9949
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
+    raw_reject: false
+    t_above_3: false
+  - study: '#584 D2_T5 - trailing (moderate)'
+    source: partial_exits.json
+    test: in_sample_2009_2019 0 bps daily return (NW)
+    effect: 0.0
+    t_statistic: -0.006
+    p_value: 0.9953
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9953
     raw_reject: false
     t_above_3: false
 entry_signals:

@@ -1,7 +1,7 @@
 # Weekly KAMA MA Crossover Research
 
 **Issue**: #467
-**Status**: Complete
+**Status**: Complete. 🛑 STOP (Nov 2026): superseded by [raf_kama_live_rules.md](raf_kama_live_rules.md), which finds no edge on the live rules.
 **Date**: 2025-12-22
 
 > **✅ VALIDATED - LOOK-AHEAD BIAS**

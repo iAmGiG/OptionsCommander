@@ -88,12 +88,12 @@ Findings that show **promise**. Some integrated into production, others warrant 
 | --------- | ------- | -------- | -------- |
 | MACD+RSI voting more robust than TSMOM | #519 | ✅ DONE | Integrated in VoterAgent. The 0.856 Sharpe is superseded: no edge over buy-and-hold at live timing (#574) |
 | VoterAgent validated | Exp 293 | 🛑 STOP | In-sample, same-close fills, no costs; superseded by the [live-rules baseline](03_strategy_research/live_rules_baseline.md) |
-| Ready-Aim-Fire (RAF) outperforms VoterAgent | #460, #532 | 🔄 CONTINUE | 0.553 Sharpe, 80% win rate - integration planned |
-| Weekly KAMA outperforms weekly MACD | #467 | 🔄 CONTINUE | Consider TrendFilterAgent implementation |
+| Ready-Aim-Fire (RAF) outperforms VoterAgent | #460, #532 | 🛑 STOP | Re-tested Nov 2026 on the live rules: Sharpe 0.80 vs 0.69 for the baseline, paired difference +0.11 [-0.20, +0.46], alpha +0.32%/yr (t = 0.59). No detectable edge; see [raf_kama_live_rules.md](03_strategy_research/raf_kama_live_rules.md) |
+| Weekly KAMA outperforms weekly MACD | #467, #529 | 🛑 STOP | Re-tested Nov 2026 on the live rules: alone or as a trend filter, no detectable edge over the baseline or buy-and-hold (one parameter set makes the filter significantly worse). See [raf_kama_live_rules.md](03_strategy_research/raf_kama_live_rules.md) |
 | Path-dependent simulation reveals wick risk | #528 | 🔄 CONTINUE | Apply framework to all strategies |
 | MACD+RSI in positive gamma (short-term) | #531 | 🛑 STOP | Re-validated Oct 2026: look-ahead artifact (see Oct 2026 summary) |
 
-**Conclusion**: VoterAgent is integrated, but its live rules have no backtested edge over buy-and-hold (#574). RAF is the best practitioner strategy tested - consider integration as 3rd voter.
+**Conclusion**: VoterAgent is integrated, but its live rules have no backtested edge over buy-and-hold (#574). RAF and weekly KAMA, re-tested on the live rules in Nov 2026, show no detectable edge either (no result survives Holm or BH correction).
 
 ---
 
@@ -151,8 +151,6 @@ All research scripts now follow these standards:
 
 ### Continue Working On
 
-- **Ready-Aim-Fire (RAF) integration** (#532) - best practitioner strategy, 0.553 Sharpe
-- Weekly KAMA TrendFilterAgent (#529, research in #467)
 - Path-dependent wick simulation (#528)
 - Portfolio-level correlation analysis
 

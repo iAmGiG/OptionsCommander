@@ -1,7 +1,7 @@
 # Ready-Aim-Fire Multi-Stochastic Research
 
 **Issue**: #460
-**Status**: 🔄 CONTINUE - Best practitioner strategy, consider VoterAgent integration
+**Status**: 🛑 STOP (Nov 2026). Superseded by [raf_kama_live_rules.md](raf_kama_live_rules.md): on the live rules RAF shows no detectable edge. The numbers below were same-close fills with synthetic high/low and no costs.
 **Date**: 2025-12-22
 
 ## Executive Summary

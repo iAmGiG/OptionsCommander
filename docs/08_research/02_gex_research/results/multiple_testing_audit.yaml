@@ -1,4 +1,4 @@
-run_timestamp: '2026-11-01T18:25:26.891289'
+run_timestamp: '2026-11-01T18:49:59.990009'
 issue: '#576'
 description: Multiple-testing audit of lag-1 GEX hypothesis tests
 methodology:
@@ -6450,5 +6450,1545 @@ morning_raise:
     holm_p: 1.0
     bh_reject: false
     bh_q: 1.0
+    raw_reject: false
+    t_above_3: false
+entry_signals:
+  issues: '#532, #529'
+  description: 'RAF and weekly KAMA candidates against the #574 baseline (live-rules simulator)'
+  family: 'for each of six candidates: Newey-West test of the daily return difference against the baseline
+    and of the alpha against equal weight, by period (full, 2009-2019, 2020 on) and cost (0, 5, 10 bps)'
+  dependence_note: the candidates share the universe, days and the baseline; periods and costs overlap;
+    Holm valid, BH approximate
+  summary:
+    n_tests: 108
+    raw_p_below_0.05: 6
+    expected_by_chance_at_0.05: 5.4
+    holm_rejections: 0
+    bh_rejections: 0
+    abs_t_above_3: 1
+    headline_5bps_full_period:
+      n_tests: 12
+      raw_p_below_0.05: 1
+      expected_by_chance_at_0.05: 0.6
+      holm_rejections: 0
+      bh_rejections: 0
+      abs_t_above_3: 0
+    pooled_with_gex_family:
+      n_tests: 345
+      entry_tests_holm_rejections: 0
+      entry_tests_bh_rejections: 2
+  by_study:
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 1. RAF alone vs baseline'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 1
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  tests:
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: -7.59e-05
+    t_statistic: -3.174
+    p_value: 0.0015
+    holm_reject: false
+    holm_p: 0.162
+    bh_reject: false
+    bh_q: 0.162
+    raw_reject: true
+    t_above_3: true
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -6.46e-05
+    t_statistic: -2.696
+    p_value: 0.007
+    holm_reject: false
+    holm_p: 0.749
+    bh_reject: false
+    bh_q: 0.378
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: -6.36e-05
+    t_statistic: -2.544
+    p_value: 0.011
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.396
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: -5.23e-05
+    t_statistic: -2.172
+    p_value: 0.0298
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.689
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: -5.37e-05
+    t_statistic: -2.145
+    p_value: 0.0319
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.689
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: -9.63e-05
+    t_statistic: -2.044
+    p_value: 0.041
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.738
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: -4.41e-05
+    t_statistic: -1.752
+    p_value: 0.0797
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: -8.26e-05
+    t_statistic: -1.75
+    p_value: 0.0801
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: 0.752
+    t_statistic: 1.66
+    p_value: 0.098
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: -6.58e-05
+    t_statistic: -1.389
+    p_value: 0.1649
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: 4.58e-05
+    t_statistic: 1.306
+    p_value: 0.1917
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: 4.59e-05
+    t_statistic: 1.305
+    p_value: 0.1919
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: -0.828
+    t_statistic: -1.3
+    p_value: 0.194
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: 4.57e-05
+    t_statistic: 1.289
+    p_value: 0.1973
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: -0.385
+    t_statistic: -1.23
+    p_value: 0.22
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: 3.69e-05
+    t_statistic: 1.188
+    p_value: 0.2348
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: 0.59
+    t_statistic: 1.17
+    p_value: 0.243
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: 3.45e-05
+    t_statistic: 1.123
+    p_value: 0.2614
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: 0.934
+    t_statistic: 1.1
+    p_value: 0.273
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: 0.569
+    t_statistic: 1.09
+    p_value: 0.276
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 3.33e-05
+    t_statistic: 1.081
+    p_value: 0.2795
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: 0.568
+    t_statistic: 1.07
+    p_value: 0.286
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: -0.328
+    t_statistic: -1.06
+    p_value: 0.287
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: -5.81e-05
+    t_statistic: -1.065
+    p_value: 0.287
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: -1.78e-05
+    t_statistic: -1.006
+    p_value: 0.3144
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.439
+    t_statistic: 0.96
+    p_value: 0.336
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: 0.861
+    t_statistic: 0.91
+    p_value: 0.364
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: 0.826
+    t_statistic: 0.9
+    p_value: 0.37
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: 1.77e-05
+    t_statistic: 0.883
+    p_value: 0.3773
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: -4.69e-05
+    t_statistic: -0.86
+    p_value: 0.3897
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: 1.86e-05
+    t_statistic: 0.852
+    p_value: 0.3941
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: -0.501
+    t_statistic: -0.84
+    p_value: 0.399
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: -3.04e-05
+    t_statistic: -0.834
+    p_value: 0.4041
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: 2.68e-05
+    t_statistic: 0.83
+    p_value: 0.4063
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: -0.529
+    t_statistic: -0.82
+    p_value: 0.413
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -1.26e-05
+    t_statistic: -0.71
+    p_value: 0.4774
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: -0.682
+    t_statistic: -0.69
+    p_value: 0.487
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: -0.439
+    t_statistic: -0.69
+    p_value: 0.488
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: -0.215
+    t_statistic: -0.69
+    p_value: 0.492
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: 1.38e-05
+    t_statistic: 0.685
+    p_value: 0.4936
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: -2.5e-05
+    t_statistic: -0.684
+    p_value: 0.494
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: 0.635
+    t_statistic: 0.67
+    p_value: 0.502
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: 0.339
+    t_statistic: 0.67
+    p_value: 0.502
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: 1.47e-05
+    t_statistic: 0.671
+    p_value: 0.5021
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: 0.724
+    t_statistic: 0.65
+    p_value: 0.513
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: 1.19e-05
+    t_statistic: 0.64
+    p_value: 0.5219
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: 2.07e-05
+    t_statistic: 0.639
+    p_value: 0.5226
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: -0.195
+    t_statistic: -0.63
+    p_value: 0.526
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: 0.371
+    t_statistic: 0.63
+    p_value: 0.53
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: 0.518
+    t_statistic: 0.61
+    p_value: 0.545
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: -3.28e-05
+    t_statistic: -0.6
+    p_value: 0.5483
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.316
+    t_statistic: 0.59
+    p_value: 0.552
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: -1.01e-05
+    t_statistic: -0.58
+    p_value: 0.5618
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.291
+    t_statistic: 0.56
+    p_value: 0.577
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: 0.337
+    t_statistic: 0.55
+    p_value: 0.582
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: 0.501
+    t_statistic: 0.55
+    p_value: 0.585
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 1.06e-05
+    t_statistic: 0.532
+    p_value: 0.5949
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: 0.276
+    t_statistic: 0.47
+    p_value: 0.636
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: 1.02e-05
+    t_statistic: 0.471
+    p_value: 0.6378
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: -0.299
+    t_statistic: -0.46
+    p_value: 0.642
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: -1.34e-05
+    t_statistic: -0.465
+    p_value: 0.6422
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: 0.283
+    t_statistic: 0.46
+    p_value: 0.645
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: -0.24
+    t_statistic: -0.45
+    p_value: 0.654
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: 0.236
+    t_statistic: 0.44
+    p_value: 0.659
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: -0.263
+    t_statistic: -0.43
+    p_value: 0.67
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: 1.36e-05
+    t_statistic: 0.421
+    p_value: 0.6734
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: 8.4e-06
+    t_statistic: 0.416
+    p_value: 0.6771
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: 1.57e-05
+    t_statistic: 0.408
+    p_value: 0.683
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: -0.382
+    t_statistic: -0.39
+    p_value: 0.696
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: 0.174
+    t_statistic: 0.38
+    p_value: 0.703
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: 2.21e-05
+    t_statistic: 0.378
+    p_value: 0.7057
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: -1.32e-05
+    t_statistic: -0.373
+    p_value: 0.7095
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: -1.18e-05
+    t_statistic: -0.322
+    p_value: 0.7475
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: 0.296
+    t_statistic: 0.31
+    p_value: 0.753
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5 bps daily return difference (NW)
+    effect: -5.1e-06
+    t_statistic: -0.291
+    p_value: 0.7707
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: -0.319
+    t_statistic: -0.29
+    p_value: 0.773
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: 1.55e-05
+    t_statistic: 0.267
+    p_value: 0.7891
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: -0.154
+    t_statistic: -0.25
+    p_value: 0.803
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: -0.142
+    t_statistic: -0.24
+    p_value: 0.807
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0 bps daily return difference (NW)
+    effect: -9.3e-06
+    t_statistic: -0.243
+    p_value: 0.808
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: 0.202
+    t_statistic: 0.24
+    p_value: 0.813
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: -4.1e-06
+    t_statistic: -0.23
+    p_value: 0.8183
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10 bps daily return difference (NW)
+    effect: 8.2e-06
+    t_statistic: 0.229
+    p_value: 0.8191
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: -0.066
+    t_statistic: -0.22
+    p_value: 0.829
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: 1.21e-05
+    t_statistic: 0.208
+    p_value: 0.8349
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10bps alpha (NW)
+    effect: 0.104
+    t_statistic: 0.21
+    p_value: 0.837
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 3.7e-06
+    t_statistic: 0.201
+    p_value: 0.8409
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 10bps alpha (NW)
+    effect: 0.17
+    t_statistic: 0.19
+    p_value: 0.853
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 0bps alpha (NW)
+    effect: -0.058
+    t_statistic: -0.19
+    p_value: 0.853
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: -0.1
+    t_statistic: -0.17
+    p_value: 0.865
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -4.8e-06
+    t_statistic: -0.167
+    p_value: 0.8671
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0 bps daily return difference (NW)
+    effect: 3.2e-06
+    t_statistic: 0.158
+    p_value: 0.8748
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: -2.8e-06
+    t_statistic: -0.153
+    p_value: 0.8785
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: -0.097
+    t_statistic: -0.15
+    p_value: 0.88
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 0 bps daily return difference (NW)
+    effect: 3.0e-06
+    t_statistic: 0.15
+    p_value: 0.8804
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 10 bps daily return difference (NW)
+    effect: 4.3e-06
+    t_statistic: 0.149
+    p_value: 0.8818
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: 0.087
+    t_statistic: 0.14
+    p_value: 0.887
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: 0.077
+    t_statistic: 0.13
+    p_value: 0.896
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: -4.5e-06
+    t_statistic: -0.127
+    p_value: 0.8989
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 0bps alpha (NW)
+    effect: -0.116
+    t_statistic: -0.12
+    p_value: 0.905
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 0bps alpha (NW)
+    effect: -0.063
+    t_statistic: -0.1
+    p_value: 0.92
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5 bps daily return difference (NW)
+    effect: 3.5e-06
+    t_statistic: 0.092
+    p_value: 0.9264
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: out_of_sample_2020_on 5bps alpha (NW)
+    effect: 0.094
+    t_statistic: 0.09
+    p_value: 0.932
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9772
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: 0.017
+    t_statistic: 0.03
+    p_value: 0.975
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 10bps alpha (NW)
+    effect: 0.016
+    t_statistic: 0.03
+    p_value: 0.975
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 10 bps daily return difference (NW)
+    effect: 5.0e-07
+    t_statistic: 0.03
+    p_value: 0.9764
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: in_sample_2009_2019 5bps alpha (NW)
+    effect: 0.015
+    t_statistic: 0.02
+    p_value: 0.981
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.01
+    t_statistic: 0.02
+    p_value: 0.985
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
+    raw_reject: false
+    t_above_3: false
+  headline_tests:
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -6.46e-05
+    t_statistic: -2.696
+    p_value: 0.007
+    holm_reject: false
+    holm_p: 0.084
+    bh_reject: false
+    bh_q: 0.084
+    raw_reject: true
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 3.33e-05
+    t_statistic: 1.081
+    p_value: 0.2795
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.439
+    t_statistic: 0.96
+    p_value: 0.336
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4b. Voter + weekly KAMA filter (6/6/7) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -1.26e-05
+    t_statistic: -0.71
+    p_value: 0.4774
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 4a. Voter + weekly KAMA filter (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: -0.215
+    t_statistic: -0.69
+    p_value: 0.492
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.316
+    t_statistic: 0.59
+    p_value: 0.552
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.291
+    t_statistic: 0.56
+    p_value: 0.577
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 1. RAF alone vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 1.06e-05
+    t_statistic: 0.532
+    p_value: 0.5949
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8924
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 2. MACD + RSI + RAF, 2 of 3 vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: 3.7e-06
+    t_statistic: 0.201
+    p_value: 0.8409
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9459
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3b. Weekly KAMA alone (6/6/7) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: -0.1
+    t_statistic: -0.17
+    p_value: 0.865
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9459
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) vs baseline'
+    source: raf_kama_live_rules.json
+    test: full 5 bps daily return difference (NW)
+    effect: -4.8e-06
+    t_statistic: -0.167
+    p_value: 0.8671
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9459
+    raw_reject: false
+    t_above_3: false
+  - study: '#532/#529 3a. Weekly KAMA alone (10/2/30 + Fold MA) alpha vs equal weight'
+    source: raf_kama_live_rules.json
+    test: full 5bps alpha (NW)
+    effect: 0.01
+    t_statistic: 0.02
+    p_value: 0.985
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.985
     raw_reject: false
     t_above_3: false

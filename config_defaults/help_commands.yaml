@@ -790,6 +790,22 @@ exit:
     Backups are stored in state/backups/. Configuration YAML files are not included."
 
 # Slash Commands (Issue #506, #507, #508)
+/records:
+  category: Configuration
+  description: Daily equity, fills and realized P&L (Issue #602)
+  usage: /records [days|all]
+  examples:
+  - /records
+  - /records 30
+  - /records all
+  aliases:
+  - records
+  tags:
+  - information
+  details: "Show what the routines recorded: equity by day with day P&L, the fills in\
+    \ that period, and their realized P&L at average cost. Read-only, and makes no\
+    \ broker calls, so it shows the state as of the last routine."
+
 /gtt:
   category: Configuration
   description: GTT order management (Issue #506)

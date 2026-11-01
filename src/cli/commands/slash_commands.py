@@ -439,6 +439,21 @@ def _gtt_handle_subcommand(subcommand: str, subarg: str | None) -> str:
     return f"Unknown subcommand: {subcommand}\nUse /gtt for help"
 
 
+@command("/records", help_text="Daily equity, fills and realized P&L", has_args=True)
+def cmd_records(session, args: str = None):
+    """
+    Show the daily records (read-only, no broker calls).
+
+    Usage:
+        /records         # The last 10 recorded days
+        /records 30      # The last 30 recorded days
+        /records all     # Everything recorded
+    """
+    from src.cli.commands.records_commands import records_command
+
+    safe_print(records_command(args))
+
+
 @command("/gtt", help_text="GTT order management", has_args=True)
 def cmd_gtt(session, args: str = None):
     """

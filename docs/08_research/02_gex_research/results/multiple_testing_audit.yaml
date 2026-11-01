@@ -1,4 +1,4 @@
-run_timestamp: '2026-10-27T19:57:45.233549'
+run_timestamp: '2026-11-01T18:25:26.891289'
 issue: '#576'
 description: Multiple-testing audit of lag-1 GEX hypothesis tests
 methodology:
@@ -3692,5 +3692,2763 @@ exit_rules:
     holm_p: 1.0
     bh_reject: false
     bh_q: 0.9986
+    raw_reject: false
+    t_above_3: false
+morning_raise:
+  issue: '#623'
+  description: The 09:20 morning raise from real pre-market prices (live-rules simulator)
+  family: 'the ''main'' comparisons of morning_raise_real_prices.json: morning raise from the real 09:20
+    price, and three variants (half gap, liquid pre-market only, gap within 2% only), each against the
+    evening-only run (Newey-West test of the mean daily return difference); the open-proxy and variant-against-raise
+    comparisons repeat these under another assumption and are not in the family'
+  dependence_note: the comparisons share signals and overlap in periods, costs, sizings and variants;
+    Holm valid, BH approximate
+  summary:
+    n_tests: 216
+    raw_p_below_0.05: 32
+    expected_by_chance_at_0.05: 10.8
+    holm_rejections: 0
+    bh_rejections: 0
+    abs_t_above_3: 3
+    pooled_with_gex_and_539_families:
+      n_tests: 507
+      morning_tests_holm_rejections: 0
+      morning_tests_bh_rejections: 4
+  by_study:
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    n: 9
+    raw: 3
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    n: 9
+    raw: 2
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 1
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    n: 9
+    raw: 3
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    n: 9
+    raw: 3
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 6
+    holm: 0
+    bh: 0
+    t3: 3
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    n: 9
+    raw: 3
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    n: 9
+    raw: 1
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 5
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    n: 9
+    raw: 0
+    holm: 0
+    bh: 0
+    t3: 0
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    n: 9
+    raw: 5
+    holm: 0
+    bh: 0
+    t3: 0
+  tests:
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -3.91e-05
+    t_statistic: -3.312
+    p_value: 0.0009
+    holm_reject: false
+    holm_p: 0.1944
+    bh_reject: false
+    bh_q: 0.144
+    raw_reject: true
+    t_above_3: true
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -3.61e-05
+    t_statistic: -3.12
+    p_value: 0.0018
+    holm_reject: false
+    holm_p: 0.387
+    bh_reject: false
+    bh_q: 0.144
+    raw_reject: true
+    t_above_3: true
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -3.55e-05
+    t_statistic: -3.083
+    p_value: 0.002
+    holm_reject: false
+    holm_p: 0.428
+    bh_reject: false
+    bh_q: 0.144
+    raw_reject: true
+    t_above_3: true
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -2.35e-05
+    t_statistic: -2.845
+    p_value: 0.0044
+    holm_reject: false
+    holm_p: 0.9372
+    bh_reject: false
+    bh_q: 0.2376
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -2.09e-05
+    t_statistic: -2.586
+    p_value: 0.0097
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -6.8e-06
+    t_statistic: -2.501
+    p_value: 0.0124
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -2.0e-05
+    t_statistic: -2.488
+    p_value: 0.0128
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -6.5e-06
+    t_statistic: -2.457
+    p_value: 0.014
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -3.82e-05
+    t_statistic: -2.424
+    p_value: 0.0153
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -3.79e-05
+    t_statistic: -2.404
+    p_value: 0.0162
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -9.7e-06
+    t_statistic: -2.307
+    p_value: 0.021
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -2.47e-05
+    t_statistic: -2.303
+    p_value: 0.0213
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -2.45e-05
+    t_statistic: -2.265
+    p_value: 0.0235
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -3.46e-05
+    t_statistic: -2.237
+    p_value: 0.0253
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -9.3e-06
+    t_statistic: -2.221
+    p_value: 0.0263
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -3.43e-05
+    t_statistic: -2.211
+    p_value: 0.0271
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.18e-05
+    t_statistic: -2.196
+    p_value: 0.0281
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -5.6e-06
+    t_statistic: -2.151
+    p_value: 0.0315
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.13e-05
+    t_statistic: -2.139
+    p_value: 0.0324
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -3.28e-05
+    t_statistic: -2.132
+    p_value: 0.033
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -5.6e-06
+    t_statistic: -2.13
+    p_value: 0.0331
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -5.5e-06
+    t_statistic: -2.113
+    p_value: 0.0346
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -8.7e-06
+    t_statistic: -2.101
+    p_value: 0.0356
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -5.6e-06
+    t_statistic: -2.095
+    p_value: 0.0362
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -3.23e-05
+    t_statistic: -2.093
+    p_value: 0.0364
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -2.2e-05
+    t_statistic: -2.083
+    p_value: 0.0372
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -2.17e-05
+    t_statistic: -2.048
+    p_value: 0.0406
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.34e-05
+    t_statistic: -2.011
+    p_value: 0.0443
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.69e-05
+    t_statistic: -2.002
+    p_value: 0.0453
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.5e-05
+    t_statistic: -1.986
+    p_value: 0.047
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.04e-05
+    t_statistic: -1.968
+    p_value: 0.0491
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.47e-05
+    t_statistic: -1.962
+    p_value: 0.0497
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: true
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.01e-05
+    t_statistic: -1.927
+    p_value: 0.054
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -2.02e-05
+    t_statistic: -1.919
+    p_value: 0.055
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.24e-05
+    t_statistic: -1.915
+    p_value: 0.0554
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -2.02e-05
+    t_statistic: -1.909
+    p_value: 0.0562
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.8e-05
+    t_statistic: -1.903
+    p_value: 0.0571
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -1.24e-05
+    t_statistic: -1.883
+    p_value: 0.0597
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.57e-05
+    t_statistic: -1.854
+    p_value: 0.0638
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.01e-05
+    t_statistic: -1.852
+    p_value: 0.064
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.69e-05
+    t_statistic: -1.821
+    p_value: 0.0686
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -6.6e-06
+    t_statistic: -1.815
+    p_value: 0.0695
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -9.8e-06
+    t_statistic: -1.812
+    p_value: 0.07
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -6.8e-06
+    t_statistic: -1.808
+    p_value: 0.0706
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -6.7e-06
+    t_statistic: -1.805
+    p_value: 0.0711
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.66e-05
+    t_statistic: -1.78
+    p_value: 0.075
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -9.6e-06
+    t_statistic: -1.768
+    p_value: 0.0771
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.66e-05
+    t_statistic: -1.766
+    p_value: 0.0774
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.5e-05
+    t_statistic: -1.765
+    p_value: 0.0775
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.69e-05
+    t_statistic: -1.765
+    p_value: 0.0776
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -9.4e-06
+    t_statistic: -1.764
+    p_value: 0.0777
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.3e-05
+    t_statistic: -1.761
+    p_value: 0.0783
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -7.8e-06
+    t_statistic: -1.751
+    p_value: 0.08
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -4.5e-06
+    t_statistic: -1.749
+    p_value: 0.0803
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -6.1e-06
+    t_statistic: -1.748
+    p_value: 0.0804
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.15e-05
+    t_statistic: -1.743
+    p_value: 0.0814
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.28e-05
+    t_statistic: -1.743
+    p_value: 0.0814
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -9.6e-06
+    t_statistic: -1.722
+    p_value: 0.085
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -6.2e-06
+    t_statistic: -1.71
+    p_value: 0.0873
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.18e-05
+    t_statistic: -1.701
+    p_value: 0.0889
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -9.2e-06
+    t_statistic: -1.7
+    p_value: 0.0892
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.35e-05
+    t_statistic: -1.685
+    p_value: 0.0921
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -1.68
+    p_value: 0.093
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.57e-05
+    t_statistic: -1.679
+    p_value: 0.0931
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -7.5e-06
+    t_statistic: -1.677
+    p_value: 0.0936
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -9.2e-06
+    t_statistic: -1.662
+    p_value: 0.0964
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.26e-05
+    t_statistic: -1.658
+    p_value: 0.0972
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.34e-05
+    t_statistic: -1.658
+    p_value: 0.0974
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -1.13e-05
+    t_statistic: -1.65
+    p_value: 0.099
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -4.2e-06
+    t_statistic: -1.648
+    p_value: 0.0994
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3067
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.25e-05
+    t_statistic: -1.634
+    p_value: 0.1024
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3081
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.5e-05
+    t_statistic: -1.632
+    p_value: 0.1027
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3081
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.49e-05
+    t_statistic: -1.618
+    p_value: 0.1057
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3128
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.13e-05
+    t_statistic: -1.604
+    p_value: 0.1088
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3168
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -1.598
+    p_value: 0.11
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3168
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -1.583
+    p_value: 0.1135
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3194
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -7.1e-06
+    t_statistic: -1.58
+    p_value: 0.1141
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3194
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -9.0e-06
+    t_statistic: -1.572
+    p_value: 0.116
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3194
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -5.4e-06
+    t_statistic: -1.568
+    p_value: 0.1168
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3194
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -8.6e-06
+    t_statistic: -1.557
+    p_value: 0.1195
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3226
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -5.6e-06
+    t_statistic: -1.543
+    p_value: 0.1229
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3277
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -6.9e-06
+    t_statistic: -1.526
+    p_value: 0.1271
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -7.5e-06
+    t_statistic: -1.51
+    p_value: 0.1309
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -6.8e-06
+    t_statistic: -1.507
+    p_value: 0.1318
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -9.5e-06
+    t_statistic: -1.506
+    p_value: 0.132
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -8.4e-06
+    t_statistic: -1.497
+    p_value: 0.1343
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -7.4e-06
+    t_statistic: -1.494
+    p_value: 0.1351
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -5.4e-06
+    t_statistic: -1.493
+    p_value: 0.1354
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -8.7e-06
+    t_statistic: -1.486
+    p_value: 0.1372
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -4.6e-06
+    t_statistic: -1.485
+    p_value: 0.1375
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.33
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.48e-05
+    t_statistic: -1.464
+    p_value: 0.1432
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3399
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -5.3e-06
+    t_statistic: -1.444
+    p_value: 0.1487
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -3.7e-06
+    t_statistic: -1.435
+    p_value: 0.1514
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -4.4e-06
+    t_statistic: -1.43
+    p_value: 0.1527
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -6.1e-06
+    t_statistic: -1.425
+    p_value: 0.1541
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.19e-05
+    t_statistic: -1.417
+    p_value: 0.1564
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.89e-05
+    t_statistic: -1.416
+    p_value: 0.1568
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -4.5e-06
+    t_statistic: -1.415
+    p_value: 0.1572
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3465
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -6.9e-06
+    t_statistic: -1.406
+    p_value: 0.1599
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3489
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -5.2e-06
+    t_statistic: -1.396
+    p_value: 0.1628
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3516
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.82e-05
+    t_statistic: -1.363
+    p_value: 0.1729
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3645
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.12e-05
+    t_statistic: -1.359
+    p_value: 0.1741
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3645
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.33e-05
+    t_statistic: -1.356
+    p_value: 0.175
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3645
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -4.2e-06
+    t_statistic: -1.355
+    p_value: 0.1755
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3645
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -7.3e-06
+    t_statistic: -1.34
+    p_value: 0.1804
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3711
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -1.22e-05
+    t_statistic: -1.331
+    p_value: 0.1831
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3724
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -4.1e-06
+    t_statistic: -1.325
+    p_value: 0.1851
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3724
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -5.7e-06
+    t_statistic: -1.322
+    p_value: 0.1862
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3724
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.3e-05
+    t_statistic: -1.307
+    p_value: 0.1914
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3764
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.31e-05
+    t_statistic: -1.306
+    p_value: 0.1917
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3764
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -1.18e-05
+    t_statistic: -1.283
+    p_value: 0.1993
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3878
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -2.7e-06
+    t_statistic: -1.267
+    p_value: 0.2052
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3957
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -9.0e-06
+    t_statistic: -1.257
+    p_value: 0.2087
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.3989
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.65e-05
+    t_statistic: -1.248
+    p_value: 0.2119
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4015
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.18e-05
+    t_statistic: -1.211
+    p_value: 0.2257
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4208
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.6e-05
+    t_statistic: -1.211
+    p_value: 0.226
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4208
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.03e-05
+    t_statistic: -1.186
+    p_value: 0.2358
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4322
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.31e-05
+    t_statistic: -1.185
+    p_value: 0.2361
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4322
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -5.1e-06
+    t_statistic: -1.169
+    p_value: 0.2423
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4398
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -6.6e-06
+    t_statistic: -1.143
+    p_value: 0.2528
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.455
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -1.135
+    p_value: 0.2565
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4579
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -1.116
+    p_value: 0.2644
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4623
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -2.3e-06
+    t_statistic: -1.112
+    p_value: 0.2662
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4623
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -3.5e-06
+    t_statistic: -1.107
+    p_value: 0.2682
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4623
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.23e-05
+    t_statistic: -1.106
+    p_value: 0.2687
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4623
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.1e-05
+    t_statistic: -1.104
+    p_value: 0.2697
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4623
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -7.5e-06
+    t_statistic: -1.097
+    p_value: 0.2726
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4627
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -6.5e-06
+    t_statistic: -1.093
+    p_value: 0.2742
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4627
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -6.4e-06
+    t_statistic: -1.075
+    p_value: 0.2822
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4706
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.21e-05
+    t_statistic: -1.072
+    p_value: 0.2837
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4706
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -6.3e-06
+    t_statistic: -1.068
+    p_value: 0.2854
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4706
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -2.9e-06
+    t_statistic: -1.045
+    p_value: 0.2961
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4836
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -4.6e-06
+    t_statistic: -1.041
+    p_value: 0.2978
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.4836
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.12e-05
+    t_statistic: -1.013
+    p_value: 0.3113
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5018
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -6.4e-06
+    t_statistic: -1.004
+    p_value: 0.3156
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.505
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.12e-05
+    t_statistic: -0.984
+    p_value: 0.325
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5122
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -8.0e-06
+    t_statistic: -0.976
+    p_value: 0.3291
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5122
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -6.2e-06
+    t_statistic: -0.975
+    p_value: 0.3296
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5122
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.27e-05
+    t_statistic: -0.972
+    p_value: 0.3309
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5122
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -2.7e-06
+    t_statistic: -0.97
+    p_value: 0.332
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5122
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.25e-05
+    t_statistic: -0.959
+    p_value: 0.3376
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5172
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -2.0e-06
+    t_statistic: -0.939
+    p_value: 0.3477
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5289
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -0.898
+    p_value: 0.3692
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5558
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -0.896
+    p_value: 0.3705
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5558
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -3.8e-06
+    t_statistic: -0.883
+    p_value: 0.3773
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5562
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -8.6e-06
+    t_statistic: -0.882
+    p_value: 0.3778
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5562
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -6.2e-06
+    t_statistic: -0.877
+    p_value: 0.3805
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5562
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -9.9e-06
+    t_statistic: -0.876
+    p_value: 0.3811
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5562
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -2.4e-06
+    t_statistic: -0.868
+    p_value: 0.3855
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5588
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.855
+    p_value: 0.3924
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5632
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -5.7e-06
+    t_statistic: -0.851
+    p_value: 0.3949
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5632
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -5.5e-06
+    t_statistic: -0.848
+    p_value: 0.3963
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5632
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -2.5e-06
+    t_statistic: -0.833
+    p_value: 0.4047
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.57
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -5.4e-06
+    t_statistic: -0.83
+    p_value: 0.4068
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.57
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -5.0e-06
+    t_statistic: -0.82
+    p_value: 0.4123
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.57
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 7.4e-06
+    t_statistic: 0.82
+    p_value: 0.4125
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.57
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -5.8e-06
+    t_statistic: -0.816
+    p_value: 0.4143
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.57
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -5.3e-06
+    t_statistic: -0.792
+    p_value: 0.4286
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.5859
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -5.1e-06
+    t_statistic: -0.756
+    p_value: 0.4498
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.611
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -4.5e-06
+    t_statistic: -0.749
+    p_value: 0.4538
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6126
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -2.9e-06
+    t_statistic: -0.737
+    p_value: 0.4609
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.615
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: 6.1e-06
+    t_statistic: 0.726
+    p_value: 0.4678
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.615
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -1.1e-06
+    t_statistic: -0.724
+    p_value: 0.4693
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.615
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -2.8e-06
+    t_statistic: -0.723
+    p_value: 0.4696
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.615
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 10 bps daily return (NW)
+    effect: -1.0e-06
+    t_statistic: -0.723
+    p_value: 0.4698
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.615
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 5.9e-06
+    t_statistic: 0.705
+    p_value: 0.481
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6243
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: 6.0e-06
+    t_statistic: 0.702
+    p_value: 0.4827
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6243
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -2.0e-06
+    t_statistic: -0.696
+    p_value: 0.4865
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6255
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: 6.1e-06
+    t_statistic: 0.676
+    p_value: 0.4992
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6299
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -6.5e-06
+    t_statistic: -0.674
+    p_value: 0.5001
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6299
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -4.4e-06
+    t_statistic: -0.673
+    p_value: 0.501
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6299
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -2.9e-06
+    t_statistic: -0.672
+    p_value: 0.5016
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6299
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -4.4e-06
+    t_statistic: -0.633
+    p_value: 0.5266
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6575
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -5.2e-06
+    t_statistic: -0.615
+    p_value: 0.5384
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6684
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -4.3e-06
+    t_statistic: -0.598
+    p_value: 0.5497
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6748
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -2.7e-06
+    t_statistic: -0.598
+    p_value: 0.5498
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6748
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: full 0 bps daily return (NW)
+    effect: -8.0e-07
+    t_statistic: -0.567
+    p_value: 0.5707
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -4.8e-06
+    t_statistic: -0.567
+    p_value: 0.5707
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: full 5 bps daily return (NW)
+    effect: -2.7e-06
+    t_statistic: -0.565
+    p_value: 0.5722
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -3.8e-06
+    t_statistic: -0.563
+    p_value: 0.5735
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.6e-06
+    t_statistic: -0.557
+    p_value: 0.5773
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -4.1e-06
+    t_statistic: -0.556
+    p_value: 0.578
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -2.2e-06
+    t_statistic: -0.553
+    p_value: 0.58
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6846
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.1e-06
+    t_statistic: -0.532
+    p_value: 0.5944
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6978
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -1.0e-06
+    t_statistic: -0.526
+    p_value: 0.5988
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.6991
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|L - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -4.3e-06
+    t_statistic: -0.503
+    p_value: 0.6148
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.714
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -3.3e-06
+    t_statistic: -0.495
+    p_value: 0.6206
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7168
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|G2 - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: 4.3e-06
+    t_statistic: 0.473
+    p_value: 0.6359
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7306
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -1.5e-06
+    t_statistic: -0.464
+    p_value: 0.6427
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7334
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -2.1e-06
+    t_statistic: -0.46
+    p_value: 0.6456
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7334
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -9.0e-07
+    t_statistic: -0.456
+    p_value: 0.6485
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7334
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -9.0e-07
+    t_statistic: -0.445
+    p_value: 0.6563
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.738
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -9.0e-07
+    t_statistic: -0.441
+    p_value: 0.6594
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.738
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 5 bps daily return (NW)
+    effect: -1.3e-06
+    t_statistic: -0.421
+    p_value: 0.6735
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.7499
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -7.0e-07
+    t_statistic: -0.354
+    p_value: 0.7233
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8012
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -2.0e-06
+    t_statistic: -0.329
+    p_value: 0.7425
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8183
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.4e-06
+    t_statistic: -0.322
+    p_value: 0.7471
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8192
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 0 bps daily return (NW)
+    effect: -2.2e-06
+    t_statistic: -0.315
+    p_value: 0.7531
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8216
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -2.0e-06
+    t_statistic: -0.297
+    p_value: 0.7667
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8322
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -2.6e-06
+    t_statistic: -0.277
+    p_value: 0.7817
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8442
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.4e-06
+    t_statistic: -0.235
+    p_value: 0.8142
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.875
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.5e-06
+    t_statistic: -0.217
+    p_value: 0.828
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8838
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 2.4e-06
+    t_statistic: 0.214
+    p_value: 0.8306
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.8838
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: -1.8e-06
+    t_statistic: -0.187
+    p_value: 0.852
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9021
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|H - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.2e-06
+    t_statistic: -0.174
+    p_value: 0.8621
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9084
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|R - trailing_target|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: -1.5e-06
+    t_statistic: -0.159
+    p_value: 0.8734
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9158
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 1.6e-06
+    t_statistic: 0.151
+    p_value: 0.8802
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9185
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: 1.2e-06
+    t_statistic: 0.108
+    p_value: 0.9136
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9467
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.2e-06
+    t_statistic: -0.105
+    p_value: 0.916
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9467
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (conservative)'
+    source: morning_raise_real_prices.json
+    test: 2020_on 10 bps daily return (NW)
+    effect: -3.0e-07
+    t_statistic: -0.093
+    p_value: 0.9256
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.952
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -6.0e-07
+    t_statistic: -0.076
+    p_value: 0.9394
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9617
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: 2.0e-07
+    t_statistic: 0.023
+    p_value: 0.9817
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9987
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing_target|G2 - trailing_target|E (moderate)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 1.0e-07
+    t_statistic: 0.011
+    p_value: 0.9913
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9987
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|L - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 10 bps daily return (NW)
+    effect: -1.0e-07
+    t_statistic: -0.009
+    p_value: 0.9925
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9987
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|R - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 5 bps daily return (NW)
+    effect: 1.0e-07
+    t_statistic: 0.007
+    p_value: 0.9941
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 0.9987
+    raw_reject: false
+    t_above_3: false
+  - study: '#623 trailing|H - trailing|E (moderate_no_signal_exit)'
+    source: morning_raise_real_prices.json
+    test: 2016_2019 0 bps daily return (NW)
+    effect: 0.0
+    t_statistic: 0.0
+    p_value: 1.0
+    holm_reject: false
+    holm_p: 1.0
+    bh_reject: false
+    bh_q: 1.0
     raw_reject: false
     t_above_3: false

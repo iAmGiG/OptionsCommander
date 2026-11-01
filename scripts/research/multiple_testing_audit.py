@@ -25,6 +25,10 @@ so Holm stays valid and BH is approximate). The runner's morning-raise sensitivi
 hypotheses again under another assumption (the open standing in for the morning routine's
 pre-market price), so its comparisons are not tests of their own and stay out of the family.
 
+The #623 morning-raise comparisons (real 09:20 prices, and three variants of the raise, each
+against the evening-only run) are a third family, corrected on its own and pooled with the other
+two, and reported under ``morning_raise``.
+
 Usage:
     ~/miniconda3/envs/OptionsCommander/bin/python scripts/research/multiple_testing_audit.py
 """
@@ -315,6 +319,30 @@ def collect_trailing_exits(rows):
             )
 
 
+def collect_morning_raise(rows):
+    """#623: paired daily-return tests of the morning raise (real 09:20 prices) and its variants."""
+    name = "morning_raise_real_prices.json"
+    path = STRATEGY_RESULTS_DIR / name
+    if not path.exists():
+        print(f"  missing: {name}")
+        return
+    with open(path) as f:
+        data = json.load(f)
+    for r in data["paired_tests"]:  # the main group; the proxy comparisons are in paired_extra
+        t = r.get("return_test")
+        if t and all(math.isfinite(t[k]) for k in ("t_statistic", "p_value")):
+            rows.append(
+                _row(
+                    f"#623 {r['comparison']} ({r['variant']})",
+                    name,
+                    f"{r['period']} {r['cost_bps']:g} bps daily return (NW)",
+                    t["t_statistic"],
+                    t["p_value"],
+                    t["mean_daily_diff"],
+                )
+            )
+
+
 def _correct(rows):
     """Holm, Benjamini-Hochberg and |t| > 3 over one family: (tests, summary, by_study)."""
     df = pd.DataFrame(rows)
@@ -380,6 +408,40 @@ def exit_rule_family(exit_rows, gex_rows):
     }
 
 
+def morning_raise_family(morning_rows, exit_rows, gex_rows):
+    """The #623 tests as a family of their own, and pooled with the GEX and #539 families."""
+    df, summary, by_study = _correct(morning_rows)
+    pooled, _, _ = _correct(gex_rows + exit_rows + morning_rows)
+    ours = pooled[pooled["study"].str.startswith("#623")]
+    summary["pooled_with_gex_and_539_families"] = {
+        "n_tests": len(pooled),
+        "morning_tests_holm_rejections": int(ours["holm_reject"].sum()),
+        "morning_tests_bh_rejections": int(ours["bh_reject"].sum()),
+    }
+    print("\n  #623 morning-raise family (corrected on its own, and pooled):")
+    print(f"  {summary}")
+    print(by_study.to_string(index=False))
+    keep = ["study", "test", "t_statistic", "p_value", "holm_p", "bh_q"]
+    print("\n  Smallest p-values:")
+    print(df[keep].head(8).to_string(index=False))
+    for col in ("holm_p", "bh_q"):
+        df[col] = df[col].round(4)
+    return {
+        "issue": "#623",
+        "description": "The 09:20 morning raise from real pre-market prices (live-rules simulator)",
+        "family": "the 'main' comparisons of morning_raise_real_prices.json: morning raise from "
+        "the real 09:20 price, and three variants (half gap, liquid pre-market only, gap within "
+        "2% only), each against the evening-only run (Newey-West test of the mean daily return "
+        "difference); the open-proxy and variant-against-raise comparisons repeat these under "
+        "another assumption and are not in the family",
+        "dependence_note": "the comparisons share signals and overlap in periods, costs, sizings "
+        "and variants; Holm valid, BH approximate",
+        "summary": summary,
+        "by_study": by_study.to_dict(orient="records"),
+        "tests": df.to_dict(orient="records"),
+    }
+
+
 def main():
     print("=" * 60)
     print("  MULTIPLE-TESTING AUDIT, LAG-1 GEX TESTS (#576)")
@@ -422,6 +484,10 @@ def main():
     collect_trailing_exits(exit_rows)
     if exit_rows:
         output["exit_rules"] = exit_rule_family(exit_rows, rows)
+    morning_rows = []
+    collect_morning_raise(morning_rows)
+    if morning_rows:
+        output["morning_raise"] = morning_raise_family(morning_rows, exit_rows, rows)
     path = RESULTS_DIR / "multiple_testing_audit.yaml"
     with open(path, "w") as f:
         yaml.dump(

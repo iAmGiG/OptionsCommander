@@ -59,6 +59,11 @@ thin pre-market, or none, leaves the price nearer the previous close, where the 
 nothing. The omitted effect runs against the trailing modes (more trail exits, lower
 Sharpe): scripts/research/trailing_vs_bracket.py measures it.
 
+``morning_prices`` (#623) replaces the open with the real 09:20 price per symbol and day (the last
+pre-market trade before 09:20, split-adjusted to the daily series' scale; see
+scripts/research/morning_raise_real_prices.py). A day without a price has no morning raise for
+that symbol. A raised stop above the open fills at the open, like any gap through a stop.
+
 Prices are split-adjusted (ResearchBacktester); dividends are not included.
 """
 
@@ -88,6 +93,10 @@ class LiveRules:
     exit_mode: str = "bracket"  # bracket | trailing | trailing_target (module docstring)
     signal_exit: bool = True  # a SELL signal closes the position at the open
     morning_raise: bool = False  # sensitivity: also raise stops from the open (module docstring)
+    # #623: per symbol, the split-adjusted price the 09:20 routine sees, by date (NaN or a missing
+    # date: no morning raise for that symbol that day). With it, ``morning_raise`` raises from
+    # these prices instead of the open. The prices must be known by 09:20 on their own day.
+    morning_prices: Optional[Dict[str, pd.Series]] = None
 
 
 def compute_signals(
@@ -233,6 +242,8 @@ def simulate(  # noqa: C901
         raise ValueError(f"exit_mode {rules.exit_mode!r} is not one of {EXIT_MODES}")
     if rules.morning_raise and rules.exit_mode == "bracket":
         raise ValueError("morning_raise needs a trailing exit mode: the bracket never raises")
+    if rules.morning_prices is not None and not rules.morning_raise:
+        raise ValueError("morning_prices are only used with morning_raise=True")
     trailing = LiveTrailingStop() if rules.exit_mode != "bracket" else None
     has_target = rules.exit_mode != "trailing"
     cost = rules.cost_bps / 1e4
@@ -298,11 +309,17 @@ def simulate(  # noqa: C901
             bar = bars[symbol]
             if bar is None:
                 continue
+            if price_field == "morning":  # the supplied 09:20 price; none that day: no raise
+                price = rules.morning_prices[symbol].get(day, float("nan"))
+                if not np.isfinite(price):
+                    continue
+            else:
+                price = float(bar[price_field])
             level = trailing.raised_stop(
                 symbol,
                 pos["ref_price"],
                 pos["stop"],
-                float(bar[price_field]),
+                float(price),
                 share_scale.get(symbol, {}).get(day, 1.0),
             )
             if level is not None:
@@ -315,7 +332,7 @@ def simulate(  # noqa: C901
             # The morning routine raises before the open, so the day's range meets the raised
             # stop. The open stands in for the pre-market price; the positions bought at this
             # open are not there yet
-            raise_stops(day, bars, "open")
+            raise_stops(day, bars, "open" if rules.morning_prices is None else "morning")
         # Book as the pre-market decision sees it: exits at or after the open come later
         book = {s: p["qty"] * last_close.get(s, p["entry_price"]) for s, p in positions.items()}
         buying_power = cash

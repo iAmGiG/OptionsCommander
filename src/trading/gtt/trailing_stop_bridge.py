@@ -150,11 +150,9 @@ def restore_trailing_stops_from_gtt(
     skipped = 0
     errors = 0
 
-    # Get all active TRAILING_STOP triggers
+    # Positions' saved states only: a trailing trigger a user made has no position to restore
     all_triggers = gtt_manager.get_triggers(active_only=True)
-    trailing_triggers = [
-        t for t in all_triggers if t.condition_type == ConditionType.TRAILING_STOP.value
-    ]
+    trailing_triggers = [t for t in all_triggers if _holds_position_state(t)]
 
     logger.info("Restoring %d trailing stops from GTT", len(trailing_triggers))
 

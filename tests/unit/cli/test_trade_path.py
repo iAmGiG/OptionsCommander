@@ -166,6 +166,42 @@ def test_buy_with_a_sell_signal_and_no_position_still_asks_to_override(monkeypat
     assert order_placed(orchestrator) == ("BUY", 10)
 
 
+def override(monkeypatch, capsys, answer):
+    """Answer the prompt on a sale's suggestion: the result, the screen, the suggestion."""
+    suggestion = _suggestion(Signal.SELL)
+    suggestion.stop_loss, suggestion.take_profit = 105.0, 90.0
+    shown = []
+
+    def fake_input(prompt=""):
+        shown.append(capsys.readouterr().out)
+        return answer
+
+    monkeypatch.setattr("builtins.input", fake_input)
+    handler = handler_module.TradeHandler(MagicMock(), MagicMock(), None, "confirm")
+    decision = TradeDecision(suggestion=suggestion)
+    return asyncio.run(handler._handle_buy_override(decision)), shown, suggestion
+
+
+def test_the_override_prompt_shows_the_buy_it_would_place(monkeypatch, capsys):
+    decision, shown, _ = override(monkeypatch, capsys, "yes")
+
+    assert "BUY (LONG)" in shown[0]
+    assert "SELL (SHORT)" not in shown[0]
+    assert "$95.00" in shown[0]  # the stop is below the price
+    assert "$105.00" not in shown[0]
+    assert decision.suggestion.signal == Signal.BUY
+    assert (decision.suggestion.stop_loss, decision.suggestion.take_profit) == (95.0, 110.0)
+
+
+def test_declining_the_override_changes_nothing_and_offers_no_short(monkeypatch, capsys):
+    decision, _, suggestion = override(monkeypatch, capsys, "no")
+
+    assert decision is None
+    assert suggestion.signal == Signal.SELL
+    assert suggestion.stop_loss == 105.0
+    assert "short AAPL" not in capsys.readouterr().out
+
+
 # Selling a position: the user's own exit
 
 

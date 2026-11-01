@@ -145,6 +145,25 @@ def test_a_partial_sale_updates_the_quantity(cycle, stops, gtt):
     assert stops.stop_states["SPY"].quantity == 9
 
 
+def test_restoring_leaves_a_users_trailing_trigger_out(stops, gtt, caplog):
+    holding(stops, gtt, "SPY", 657.60, 744.47, 773.43, 14)
+    gtt.create_trigger(
+        symbol="AAPL",
+        condition_type=ConditionType.TRAILING_STOP,
+        trigger_value=0.05,
+        action_type=ActionType.ALERT,
+    )
+
+    fresh = TrailingStopManager(order_manager=None, config=MagicMock())
+    with caplog.at_level("WARNING", logger=bridge.logger.name):
+        result = bridge.restore_trailing_stops_from_gtt(fresh)
+
+    assert result["restored"] == 1
+    assert result["skipped"] == 0
+    assert set(fresh.stop_states) == {"SPY"}
+    assert "Incomplete" not in caplog.text
+
+
 def test_a_trigger_the_user_made_stays(cycle, stops, gtt):
     user_trigger = gtt.create_trigger(
         symbol="NVDA",

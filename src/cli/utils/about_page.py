@@ -1,5 +1,5 @@
 """
-About Page - Quick status dashboard for AgentEdge.
+About Page - Quick status dashboard for OptionsCommander.
 
 Displays account info, market status, and system info
 in a compact, premium format.
@@ -7,16 +7,12 @@ in a compact, premium format.
 
 import logging
 import subprocess
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
 
-from src.utils.date_utils import (
-    get_datetime_now,
-    get_market_close_time,
-    get_market_open_time,
-    today_str,
-)
+from src.utils.date_utils import get_datetime_now
+from src.utils.market_hours import get_market_hours_for_date
 from src.utils.safe_print import get_symbol, safe_print
 
 # NYSE timezone
@@ -24,9 +20,7 @@ NYSE_TZ = ZoneInfo("America/New_York")
 
 logger = logging.getLogger(__name__)
 
-# AgentEdge branding
-APP_NAME = "AgentEdge"
-APP_TAGLINE = "Multi-Agent Trading System"
+APP_NAME = "OptionsCommander"
 
 
 def _get_repo_url() -> str:
@@ -49,7 +43,24 @@ def _get_repo_url() -> str:
             return url
     except (subprocess.TimeoutExpired, OSError):
         pass
-    return "github.com/AutoGen-Trader"
+    return "github.com/iAmGiG/OptionsCommander"
+
+
+def _time_until(now: datetime, when: time) -> str:
+    """Hours and minutes from now until a later time today."""
+    delta = now.replace(hour=when.hour, minute=when.minute, second=0, microsecond=0) - now
+    hours, remainder = divmod(int(delta.total_seconds()), 3600)
+    return f"{hours}h {remainder // 60}m"
+
+
+def _next_open(now: datetime) -> str:
+    """The next session after today, by the same calendar the routines use."""
+    for days_ahead in range(1, 11):
+        day = now.date() + timedelta(days=days_ahead)
+        open_time, _, is_trading_day = get_market_hours_for_date(day)
+        if is_trading_day:
+            return f"Opens {day:%a %b %d}, {open_time:%I:%M %p} ET"
+    return ""
 
 
 def _get_nyse_time() -> Tuple[str, str, str]:
@@ -65,32 +76,15 @@ def _get_nyse_time() -> Tuple[str, str, str]:
         # Format time for display
         time_str = now.strftime("%a %b %d, %I:%M %p ET")
 
-        # Get market open/close times for today
-        today = today_str()
-        market_open = get_market_open_time(today)
-        market_close = get_market_close_time(today)
+        # Weekends, holidays and early closes come from the market calendar
+        open_time, close_time, is_trading_day = get_market_hours_for_date(now)
+        current = now.time()
 
-        if market_open <= now <= market_close:
-            status = "OPEN"
-            # Calculate time until close
-            delta = market_close - now
-            hours, remainder = divmod(int(delta.total_seconds()), 3600)
-            minutes = remainder // 60
-            next_event = f"Closes in {hours}h {minutes}m"
-        else:
-            status = "CLOSED"
-            # Calculate next open
-            if now > market_close:
-                # After close, next open is tomorrow
-                next_event = "Opens tomorrow 9:30 AM"
-            else:
-                # Before open today
-                delta = market_open - now
-                hours, remainder = divmod(int(delta.total_seconds()), 3600)
-                minutes = remainder // 60
-                next_event = f"Opens in {hours}h {minutes}m"
-
-        return time_str, status, next_event
+        if is_trading_day and open_time <= current < close_time:
+            return time_str, "OPEN", f"Closes in {_time_until(now, close_time)}"
+        if is_trading_day and current < open_time:
+            return time_str, "CLOSED", f"Opens in {_time_until(now, open_time)}"
+        return time_str, "CLOSED", _next_open(now)
 
     except Exception as e:
         logger.debug(f"Error getting market time: {e}")
@@ -191,7 +185,7 @@ def show_about(account_monitor=None) -> str:
     # Build output
     lines.append("")
     lines.append("=" * width)
-    lines.append(f"{'A G E N T E D G E':^{width}}")
+    lines.append(f"{' '.join(APP_NAME.upper()):^{width}}")
     lines.append("=" * width)
 
     # Account section with status indicator
@@ -229,5 +223,4 @@ __all__ = [
     "show_about",
     "display_about",
     "APP_NAME",
-    "APP_TAGLINE",
 ]

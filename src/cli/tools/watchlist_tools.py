@@ -309,7 +309,7 @@ def show_watchlists() -> str:
 
     watchlists = result.get("watchlists", [])
     if not watchlists:
-        return "No watchlists. Use 'create watchlist NAME' to create one."
+        return "No watchlists. Use '/watchlist create NAME' to create one."
 
     lines = [f"Watchlists ({len(watchlists)})", "=" * 40]
     for w in watchlists:

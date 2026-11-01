@@ -51,8 +51,8 @@ def create_price_alert(
 
     Args:
         symbol: Stock ticker symbol (e.g., "AAPL")
-        alert_type: Type of alert - "above", "below", "gain", "loss"
-        trigger_value: Price or percentage that triggers alert
+        alert_type: Type of alert - "above" or "below"
+        trigger_value: Price that triggers the alert
         message: Optional custom message
 
     Returns:
@@ -71,21 +71,16 @@ def create_price_alert(
             "price_above": AlertType.PRICE_ABOVE,
             "below": AlertType.PRICE_BELOW,
             "price_below": AlertType.PRICE_BELOW,
-            "gain": AlertType.PCT_GAIN,
-            "pct_gain": AlertType.PCT_GAIN,
-            "loss": AlertType.PCT_LOSS,
-            "pct_loss": AlertType.PCT_LOSS,
-            "stop": AlertType.STOP_LOSS,
-            "stop_loss": AlertType.STOP_LOSS,
-            "target": AlertType.TAKE_PROFIT,
-            "take_profit": AlertType.TAKE_PROFIT,
         }
 
         alert_type_enum = type_map.get(alert_type.lower())
         if not alert_type_enum:
             return {
                 "status": "error",
-                "message": f"Unknown alert type: {alert_type}. Use: above, below, gain, loss, stop, target",
+                "message": (
+                    f"Unsupported alert type: {alert_type}. Use above or below: only those "
+                    "are ever checked."
+                ),
             }
 
         alert = mgr.create_alert(
@@ -322,7 +317,10 @@ def show_user_alerts(symbol: Optional[str] = None) -> str:
 create_price_alert_tool = FunctionTool(
     func=create_price_alert,
     name="create_price_alert",
-    description="Create a new price alert for a stock (above/below threshold, gain/loss percent).",
+    description=(
+        "Create a price alert for a stock, above or below a price. It only fires when "
+        "check_alerts_with_prices is called: no routine checks user alerts."
+    ),
 )
 
 list_alerts_tool = FunctionTool(

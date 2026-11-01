@@ -79,7 +79,11 @@ def market_data_result(result: Any) -> str:
         return json.dumps(result, default=str)
     if result.empty:
         return json.dumps(
-            {"data": [], "message": f"No data found. Columns: {list(result.columns)}"}
+            {
+                "data": [],
+                "message": "No data returned: the symbol or dates may have none, or the "
+                "data sources may be failing. Don't read this as the market being flat.",
+            }
         )
     frame = result if isinstance(result.index, pd.RangeIndex) else result.reset_index()
     return frame.to_json(orient="records", date_format="iso")

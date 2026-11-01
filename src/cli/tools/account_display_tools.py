@@ -58,7 +58,8 @@ def switch_account(account_id: str) -> Dict:
     """
     Switch to a different paper trading account.
 
-    Changes the active account used for all trading operations. Live accounts are
+    Changes which account the account views call active. Orders and the routines keep the
+    account the CLI started with, until it's restarted with --account. Live accounts are
     refused: the user switches to those in the CLI with a typed confirmation.
 
     Args:
@@ -139,8 +140,9 @@ switch_account_tool = FunctionTool(
     func=switch_account,
     name="switch_account",
     description=(
-        "Switch to a different paper trading account. Live accounts are refused; "
-        "the user must switch to those in the CLI."
+        "Mark a different paper account active for the account views. Orders and the routines "
+        "keep the account the CLI started with. Live accounts are refused: the user must "
+        "switch to those in the CLI."
     ),
 )
 

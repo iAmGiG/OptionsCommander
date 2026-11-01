@@ -50,9 +50,7 @@ def _load_daily_bars(symbol: str, date: str) -> pd.DataFrame:
     return df[df.index <= end]
 
 
-def fetch_market_context_data(
-    date: str = "2024-01-15", symbols: List[str] = ["SPY", "QQQ"]
-) -> Dict[str, Any]:
+def fetch_market_context_data(date: str, symbols: List[str] = ["SPY", "QQQ"]) -> Dict[str, Any]:
     """
     Fetch market context data (SPY/QQQ) for enhanced sentiment analysis.
 
@@ -144,7 +142,7 @@ def fetch_market_context_data(
         logger.error(f"Market context tool error: {e}")
         return {
             "market_context": {},
-            "market_summary": {"overall_sentiment": "NEUTRAL", "error": str(e)},
+            "market_summary": {"overall_sentiment": "UNKNOWN", "error": str(e)},
             "date_analyzed": date,
             "symbols_analyzed": symbols,
             "tool_name": "market_context",
@@ -196,15 +194,24 @@ def _create_market_summary(market_data: Dict[str, Any]) -> Dict[str, Any]:
     spy_data = market_data.get("SPY", {})
     qqq_data = market_data.get("QQQ", {})
 
-    # Extract signals
-    spy_daily = spy_data.get("daily_change_pct", 0.0)
-    qqq_daily = qqq_data.get("daily_change_pct", 0.0)
-    spy_trend = spy_data.get("trend_5day_pct", 0.0)
-    qqq_trend = qqq_data.get("trend_5day_pct", 0.0)
+    # No data is not a flat market (#637): only what was asked for counts as missing
+    missing = [symbol for symbol, data in market_data.items() if data.get("no_data")]
+    available = [data for data in (spy_data, qqq_data) if data and not data.get("no_data")]
+    if missing or not available:
+        return {
+            "overall_sentiment": "UNKNOWN",
+            "market_daily_avg": None,
+            "market_trend_avg": None,
+            "spy_signal": spy_data.get("interpretation", "No data"),
+            "qqq_signal": qqq_data.get("interpretation", "No data"),
+            "interpretation": (
+                f"Market sentiment unknown: no data for {', '.join(missing) or 'SPY or QQQ'}"
+            ),
+        }
 
     # Calculate overall sentiment
-    daily_avg = (spy_daily + qqq_daily) / 2
-    trend_avg = (spy_trend + qqq_trend) / 2
+    daily_avg = sum(data.get("daily_change_pct", 0.0) for data in available) / len(available)
+    trend_avg = sum(data.get("trend_5day_pct", 0.0) for data in available) / len(available)
 
     # Determine overall market sentiment
     if daily_avg > 1.0 and trend_avg > 2.0:
@@ -239,6 +246,7 @@ def _create_fallback_data(symbol: str, date: str, error: str = None) -> Dict[str
         "trend_5day_pct": 0.0,
         "interpretation": f"{symbol}: No data available" + (f" ({error})" if error else ""),
         "error": error,
+        "no_data": True,
     }
 
 

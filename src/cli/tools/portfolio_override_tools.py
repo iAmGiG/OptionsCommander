@@ -361,7 +361,10 @@ def show_portfolio_config() -> str:
 set_portfolio_override_tool = FunctionTool(
     func=set_portfolio_override,
     name="set_portfolio_override",
-    description="Set a runtime override for a portfolio configuration value.",
+    description=(
+        "Save an override for a portfolio configuration value. It's only stored: sizing, "
+        "risk checks and the routines don't read overrides, so no trade changes."
+    ),
 )
 
 clear_portfolio_override_tool = FunctionTool(
@@ -379,7 +382,10 @@ clear_all_overrides_tool = FunctionTool(
 get_portfolio_value_tool = FunctionTool(
     func=get_portfolio_value,
     name="get_portfolio_value",
-    description="Get effective portfolio config value (override or default).",
+    description=(
+        "Get a saved portfolio configuration value (override or default), not the account's "
+        "value. Sizing, risk checks and the routines don't read these."
+    ),
 )
 
 list_portfolio_overrides_tool = FunctionTool(

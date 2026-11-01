@@ -15,6 +15,7 @@ from typing import Dict, Optional
 
 from agent_framework import FunctionTool
 
+from src.autogen_agents.agents.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
 from src.cli.commands.timeframe_commands import get_timeframe_commands
 from src.utils.safe_print import get_symbol
 
@@ -156,28 +157,20 @@ def get_timeframe_for_agent(command: str, arg: Optional[str] = None) -> Dict:
 # Multi-timeframe and custom timeframe support
 
 
-# Multi-timeframe presets (from voters_config.yaml)
+# Multi-timeframe presets: the weights the voter actually uses (#637), with a trading style
+_PRESET_STYLES = {
+    "trend_following": "swing",
+    "intraday": "day",
+    "position": "position",
+    "scalping": "scalp",
+}
 MULTI_TF_PRESETS = {
-    "trend_following": {
-        "description": "Trend following strategy (1d primary)",
-        "timeframes": {"1d": 0.50, "4h": 0.30, "1h": 0.20},
-        "style": "swing",
-    },
-    "intraday": {
-        "description": "Intraday trading (1h primary)",
-        "timeframes": {"1h": 0.50, "15m": 0.30, "5m": 0.20},
-        "style": "day",
-    },
-    "position": {
-        "description": "Position trading (1w primary)",
-        "timeframes": {"1w": 0.40, "1d": 0.40, "4h": 0.20},
-        "style": "position",
-    },
-    "scalping": {
-        "description": "Scalping (5m primary)",
-        "timeframes": {"5m": 0.60, "1m": 0.30, "15m": 0.10},
-        "style": "scalp",
-    },
+    name: {
+        "description": preset["description"],
+        "timeframes": preset["timeframes"],
+        "style": _PRESET_STYLES.get(name, "custom"),
+    }
+    for name, preset in MULTI_TIMEFRAME_PRESETS.items()
 }
 
 # Track current mode

@@ -504,14 +504,12 @@ def show_orders() -> str:
     for symbol, orders in by_symbol.items():
         if not orders:
             continue
-        first_side = orders[0].get("side", "buy")
-        direction = "LONG" if first_side == "buy" else "SHORT"
         symbol_local = local_state.get(symbol, {})
         local_orders = []
         if symbol_local.get("stop_price"):
             local_orders.append(
                 {
-                    "side": "sell" if direction == "LONG" else "buy",
+                    "side": "sell",
                     "type": "stop",
                     "price": symbol_local["stop_price"],
                     "qty": symbol_local.get("quantity", 0),
@@ -520,7 +518,7 @@ def show_orders() -> str:
             )
             has_local = True
         all_orders = orders + local_orders
-        lines.append(f"┌─ ${symbol} ({len(all_orders)} orders) - {direction}")
+        lines.append(f"┌─ ${symbol} ({len(all_orders)} orders)")
         stops = [o for o in all_orders if o.get("type") == "stop"]
         limits = [o for o in all_orders if o.get("type") == "limit"]
         others = [o for o in all_orders if o.get("type") not in ("stop", "limit")]

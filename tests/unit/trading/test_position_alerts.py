@@ -405,7 +405,7 @@ def test_a_failing_alert_check_is_reported_and_does_not_fail_the_routine(
     cycle.local_state_manager.save.assert_called_once()
 
 
-def test_alerts_measure_the_stop_after_the_raise(cycle):
+def test_alerts_measure_the_stop_after_the_raise(cycle, monkeypatch):
     """The raise happens before the alert check, so the alert sees the new stop."""
 
     def raise_spy_stop(broker_state):
@@ -413,8 +413,11 @@ def test_alerts_measure_the_stop_after_the_raise(cycle):
         return []
 
     cycle.calculate_stop_adjustments = MagicMock(side_effect=raise_spy_stop)
+    monkeypatch.setattr(
+        "src.trading.scheduling.trading_cycle.is_market_hours", lambda: True
+    )  # the evening raise needs an open market
 
-    cycle.morning_routine(raise_errors=True)
+    cycle.evening_routine(raise_errors=True)
 
     assert cycle.position_tracker.positions["SPY"].stop_loss_price == 747.0
     assert cycle.last_alerts[0].details["stop_price"] == 747.0

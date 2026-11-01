@@ -459,6 +459,7 @@ class StateReconciler:
         broker_state: Dict[str, Any],
         local_state: Dict[str, Any],
         now: Optional[datetime] = None,
+        raise_to_trailing: bool = True,
     ) -> tuple[List[Discrepancy], List[StopRepair]]:
         """
         Find long positions with no live stop, and GTC orders near Alpaca's 90-day limit.
@@ -466,10 +467,11 @@ class StateReconciler:
         Alpaca cancels GTC orders 90 days after creation, bracket legs included, so a
         position's stop can lapse without notice. A missing stop is re-placed at the
         last known stop (local state, else entry minus the configured stop loss); a GTC
-        stop older than STOP_RENEW_AFTER_DAYS is renewed. Either is raised to the
-        trailing-stop level when that is higher (and below the price): an order placed
-        outside market hours can't be modified in the same run, so the routine's later
-        adjustment step couldn't raise it.
+        stop older than STOP_RENEW_AFTER_DAYS is renewed. With raise_to_trailing, either is
+        raised to the trailing-stop level when that is higher (and below the price): an
+        order placed outside market hours can't be modified in the same run, so the
+        routine's later adjustment step couldn't raise it. The morning routine turns this
+        off, as it doesn't raise stops (#623), so a repair there keeps the stop's level.
 
         Reported for a human instead of repaired:
         - no usable stop level below the current price (that stop would trigger at once);
@@ -507,8 +509,12 @@ class StateReconciler:
             if stops:
                 renewals, reviews = self._stop_renewals(symbol, stops, quantity, now)
                 for renewal in renewals:
-                    trailing = self._trailing_level(
-                        symbol, positions, renewal.stop_price, quantity, current_price
+                    trailing = (
+                        self._trailing_level(
+                            symbol, positions, renewal.stop_price, quantity, current_price
+                        )
+                        if raise_to_trailing
+                        else None
                     )
                     if trailing is not None:
                         renewal.reason += (
@@ -531,8 +537,10 @@ class StateReconciler:
                 details["reason"] = "shares are held by open sell orders, so a stop can't be added"
             else:
                 reason = "no live stop order (GTC stops lapse after 90 days)"
-                trailing = self._trailing_level(
-                    symbol, positions, stop_price, quantity, current_price
+                trailing = (
+                    self._trailing_level(symbol, positions, stop_price, quantity, current_price)
+                    if raise_to_trailing
+                    else None
                 )
                 if trailing is not None:
                     reason += f"; placed at the trailing level (last stop ${stop_price:.2f})"

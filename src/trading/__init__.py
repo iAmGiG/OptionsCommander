@@ -58,7 +58,6 @@ from .instruments.timeframe_tools import (
 )
 
 # Orders
-from .orders.order_manager import OrderManager
 from .orders.partial_exit_manager import PartialExitManager
 from .orders.trailing_stop_manager import TrailingStopManager, get_current_price
 
@@ -81,7 +80,6 @@ from .risk.simple_risk_manager import SimpleRiskManager
 # Scheduling
 from .scheduling.daily_scheduler import DailyScheduler
 from .scheduling.trading_cycle import CostEfficientTradeCycle, RoutineType
-from .scheduling.trading_pipeline import TradingPipeline
 
 # State
 from .state.broker_state_cache import BrokerStateCache
@@ -102,7 +100,6 @@ __all__ = [
     "get_trading_client",
     "APIErrorTranslator",
     # Orders
-    "OrderManager",
     "PartialExitManager",
     "TrailingStopManager",
     # Positions
@@ -123,7 +120,6 @@ __all__ = [
     "DailyScheduler",
     "CostEfficientTradeCycle",
     "RoutineType",
-    "TradingPipeline",
     # Accounts
     "AccountManager",
     "get_account_manager",

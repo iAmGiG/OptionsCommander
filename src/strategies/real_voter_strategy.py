@@ -480,7 +480,7 @@ class RealVoterStrategy(StrategyAnalyzer):
             confidence = result.get("confidence", 0.0)
 
             # Action taken (this will be updated later if trade is executed)
-            # For now, mark as "pending" - ExecutorAgent will update this
+            # For now, mark as "pending"
             action_taken = "pending" if signal != Signal.HOLD else "hold_signal"
 
             # Record to database

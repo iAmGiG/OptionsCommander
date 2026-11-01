@@ -34,12 +34,12 @@ OptionsCommander (formerly RH2MAS) is a human-in-loop algorithmic trading platfo
 
 | Component | Status | Notes |
 | ----------- | -------- | ------- |
-| **ScannerAgent** | 🚧 Implementation | Multi-ticker MACD+RSI scanning (#386) |
-| **RiskAgent** | 🚧 Implementation | Position sizing, circuit breaker (#387) |
-| **ExecutorAgent** | ✅ Complete | Trade execution, simulation mode (#388) |
-| **TradingOrchestrator** | ✅ Complete | Workflow management, state persistence (#389) |
-| **TradingPipeline** | ✅ Complete | Full 5-phase daily workflow orchestrator (#323) |
-| **Agent Factory & Bus** | ✅ Complete | Agent Bus infrastructure (#390) for pub-sub messaging |
+| **ScannerAgent** | Removed (#331) | Never reachable from a command; its watchlist config stays for `/watchlist scanner` |
+| **RiskAgent** | Removed (#331) | Never reachable from a command; `SimpleRiskManager` does the CLI's risk checks |
+| **ExecutorAgent** | Removed (#331) | Never reachable from a command; `AlpacaExecutionManager` places the CLI's orders |
+| **TradingOrchestrator** (multi-agent) | Removed (#331) | The CLI uses `src/core/trading_orchestrator.py` |
+| **TradingPipeline** | Removed (#331) | Never called by anything; the routines in `trading_cycle.py` do this work |
+| **Agent Bus** | In use | Written by the voter, read by nothing yet; the factory was removed (#331) |
 | **TrailingStopManager** | ✅ Complete | Progressive stop logic (#321) |
 | **GTT Triggers** | ✅ Complete | Persistent price triggers, multi-day trailing stops (#340) |
 | **Trading Modes** | ✅ Complete | Natural language risk modes (#400) |

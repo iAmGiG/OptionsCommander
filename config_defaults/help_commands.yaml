@@ -859,7 +859,7 @@ exit:
     \  show <name>       - Show specific watchlist details\n\
     \  create <name> [desc] - Create a new watchlist\n\
     \  limits            - Show watchlist statistics\n\
-    \  scanner           - Show ScannerAgent tier status\n\n\
+    \  scanner           - Show scanner tier status\n\n\
     User watchlists are for personal tracking.\n\
     Scanner tiers are for automated scan prioritization."
 

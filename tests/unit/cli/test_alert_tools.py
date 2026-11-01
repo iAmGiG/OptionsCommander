@@ -131,12 +131,3 @@ def test_alert_history_honours_the_limit(cycle):
     result = alert_tools.get_alert_history(limit=1)
 
     assert result["returned"] == 1 and result["total_alerts"] == 2
-
-
-def test_position_status_is_found_by_symbol(cycle):
-    alert_tools.check_alerts()
-
-    result = alert_tools.get_position_alert_status("spy")
-
-    assert result["status"] == "success" and result["position_id"] == "SPY"
-    assert result["take_profit_price"] is None and result["stop_loss_price"] == 744.47

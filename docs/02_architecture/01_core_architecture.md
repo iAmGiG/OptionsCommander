@@ -16,7 +16,7 @@ src/
 │   ├── orders/, state/, gtt/       # stops, reconciliation, GTT triggers
 │   └── scheduling/                 # morning/evening routines run from cron
 │
-├── cli/tools/                      # CLI tools (FunctionTools); state-changing ones need approval
+├── cli/tools/                      # CLI tools (plain functions); state-changing ones need approval
 │
 ├── market_data/                    # alpaca_market_data.py, unified_market_tool.py, market_context_tool.py
 └── cache/                          # SQLite cache (TradingCacheManager)
@@ -157,20 +157,7 @@ manager = AlpacaOrderManager(mode="live")   # Live trading (with confirmations)
 #### Agent Framework tools for all functionality
 
 - Standardized response formats
-- Agent-friendly error handling
-- Consistent tool interface across all agents
-
-**Tool Integration**:
-
-```python
-from src.cli.tools import get_cli_tool, get_cli_tools_by_category
-
-# Read-only tools run without asking
-orders = get_cli_tool("show_orders")
-
-# State-changing tools (cancel, switch account, ...) have approval_mode "always_require"
-cancel_tools = get_cli_tools_by_category("order")
-```
+- Errors returned as readable messages
 
 ## Configuration Management
 

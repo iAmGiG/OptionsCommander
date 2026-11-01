@@ -14,7 +14,7 @@ Complete integration with Alpaca Markets providing both market data acquisition 
 1. **Market Data**: Real-time and historical OHLCV bars, quotes, trades, snapshots
 2. **Order Management**: All order types with advanced risk management
 3. **Account Monitoring**: Real-time account status and position tracking
-4. **Agent Framework Tools**: `FunctionTool` wrappers for the agents and the CLI
+4. **CLI Tools**: plain functions in `src/cli/tools/`, behind the slash commands
 
 ---
 
@@ -153,14 +153,14 @@ count = result['count']     # Number of bars retrieved
 
 - **File**: `src/trading/broker/alpaca_trading_client.py`
 - **Tests**: 29/29 passing
-- **Agent and CLI tools**: `src/cli/tools/` (Agent Framework `FunctionTool`s)
+- **CLI tools**: `src/cli/tools/` (plain functions)
 
 ### Architecture
 
 ```bash
 src/trading/broker/
 └── alpaca_trading_client.py     # Core order management classes
-src/cli/tools/                   # FunctionTool wrappers (orders, account, stops, ...)
+src/cli/tools/                   # Plain functions (orders, account, stops, ...)
 
 Classes:
 ├── AlpacaTradingClient          # Base client with unified live/paper support
@@ -258,19 +258,6 @@ result = manager.cancel_all_orders(symbol="AAPL")
 
 # Cancel all open orders
 result = manager.cancel_all_orders()
-```
-
-### Agent Framework Tools - Orders
-
-```python
-from src.cli.tools import get_cli_tool, get_cli_tools_by_category
-
-# Read-only: runs without asking
-show_orders = get_cli_tool("show_orders")
-
-# State-changing (cancel_order, cancel_all_orders, ...): approval_mode "always_require",
-# so an agent must get approval before it runs them (REQUIRES_APPROVAL in src/cli/tools/__init__.py)
-order_tools = get_cli_tools_by_category("order")
 ```
 
 ### Configuration

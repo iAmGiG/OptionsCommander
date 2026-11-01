@@ -9,9 +9,8 @@ import pytest
 
 from config_defaults.trading_config import ClimbRate, TrailingStopConfig
 
-from src.cli.tools import get_cli_tool, order_tools, portfolio_tools, trailing_stop_tools
+from src.cli.tools import order_tools, trailing_stop_tools
 from src.cli.tools.timeframe_tools import MULTI_TF_PRESETS
-from src.cli.tools.user_alert_tools import create_price_alert
 from src.market_data import unified_market_tool
 from src.trading.instruments.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
 from src.trading.orders.trailing_stop_manager import TrailingStopManager
@@ -31,68 +30,6 @@ def test_a_preset_shows_the_weights_the_voter_runs(name):
 def test_market_data_has_no_default_symbol_or_dates():
     with pytest.raises(TypeError):
         unified_market_tool.fetch_unified_market_data()
-
-
-# Portfolio tools
-
-
-def test_the_portfolio_tools_read_the_broker():
-    cycle = MagicMock()
-    with (
-        patch("src.trading.scheduling.trading_cycle.CostEfficientTradeCycle", return_value=cycle),
-        patch.object(portfolio_tools, "show_portfolio", return_value="real view") as show,
-    ):
-        assert get_cli_tool("show_portfolio").func() == "real view"
-        show.assert_called_with(cycle.account_monitor, cycle, specific_ticker=None)
-
-        assert get_cli_tool("get_position").func("spy") == "real view"
-        show.assert_called_with(cycle.account_monitor, cycle, specific_ticker="SPY")
-
-
-def test_a_broker_failure_says_so_without_details():
-    with patch(
-        "src.trading.scheduling.trading_cycle.CostEfficientTradeCycle",
-        side_effect=RuntimeError("secret detail"),
-    ):
-        reply = get_cli_tool("show_portfolio").func()
-
-    assert "Could not read the portfolio" in reply
-    assert "secret detail" not in reply
-
-
-# User alerts
-
-
-@pytest.mark.parametrize(
-    "alert_type", ["gain", "pct_gain", "loss", "pct_loss", "stop", "stop_loss", "target"]
-)
-def test_an_alert_that_could_never_fire_is_refused(alert_type):
-    manager = MagicMock()
-    with patch("src.cli.tools.user_alert_tools._get_alerts_manager", return_value=manager):
-        result = create_price_alert("AAPL", alert_type, 10.0)
-
-    assert result["status"] == "error"
-    assert "above or below" in result["message"]
-    manager.create_alert.assert_not_called()
-
-
-def test_alert_descriptions_say_no_routine_checks_them():
-    assert "no routine checks" in get_cli_tool("create_price_alert").description
-
-
-# Overrides and accounts
-
-
-@pytest.mark.parametrize("name", ["set_portfolio_override", "get_portfolio_value"])
-def test_override_descriptions_say_nothing_reads_them(name):
-    assert "don't read" in get_cli_tool(name).description
-
-
-def test_switch_account_says_orders_keep_their_account():
-    tool = get_cli_tool("switch_account")
-
-    assert "keep the account the CLI started with" in tool.description
-    assert "all trading operations" not in tool.func.__doc__
 
 
 # Climb rate

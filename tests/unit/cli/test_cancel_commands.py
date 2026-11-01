@@ -143,19 +143,10 @@ def test_cancel_all_partial_and_total_failure_are_not_success(manager):
     assert order_tools.cancel_all_orders()["status"] == "error"
 
 
-def test_cancel_symbol_only_touches_that_symbol(manager):
-    result = order_tools.cancel_symbol_orders("tsla")
-
-    assert result["symbol"] == "TSLA"
-    assert result["cancelled_count"] == 1
-    assert cancelled_ids(manager) == [TSLA_LIMIT["id"]]
-
-
 def test_a_failed_order_lookup_is_an_error_not_no_orders(manager):
     manager.get_orders.side_effect = RuntimeError("broker down")
 
     assert order_tools.cancel_all_orders()["status"] == "error"
-    assert order_tools.cancel_symbol_orders("SPY")["status"] == "error"
     manager.cancel_order.assert_not_called()
 
 

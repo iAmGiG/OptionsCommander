@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
-import src.cli.tools as cli_tools
 from src.cli.scheduler.monitor import SchedulerMonitor
 from src.cli.scheduler_cli import SchedulerCLI
 from src.cli.tools import scheduler_tools
@@ -420,11 +419,3 @@ def test_the_status_tool_still_answers_when_the_notices_cannot_be_read(agent_sch
     status = scheduler_tools.get_scheduler_status()
 
     assert status["status"] == "success" and status["open_notices"] is None
-
-
-def test_no_agent_tool_can_acknowledge_a_notice():
-    names = {tool.name for tool in cli_tools.get_all_cli_tools()}
-
-    assert not [name for name in names if "notice" in name or name.split("_")[0] == "ack"]
-    assert not [name for name in vars(scheduler_tools) if "ack" in name.split("_")]
-    assert "set_routine_enabled" in cli_tools.REQUIRES_APPROVAL  # the approval list is as before

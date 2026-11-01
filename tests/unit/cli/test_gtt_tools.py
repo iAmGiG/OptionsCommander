@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.cli.commands import slash_commands
-from src.cli.tools import get_cli_tool, gtt_tools
+from src.cli.tools import gtt_tools
 from src.trading.gtt import trailing_stop_bridge as bridge
 from src.trading.gtt.action_executor import ActionExecutor
 from src.trading.gtt.gtt_manager import ActionType, ConditionType, GTTManager
@@ -90,13 +90,6 @@ def test_an_order_trigger_without_its_order_is_refused(gtt, order):
 @pytest.mark.parametrize("action", ["sell", "buy", "cancel", "cancel_order", "nonsense"])
 def test_an_unknown_action_is_refused_not_turned_into_an_alert(gtt, action):
     assert "Unknown action" in refused(symbol="SPY", condition="below", value=700, action=action)
-
-
-def test_the_schema_offers_side_and_quantity():
-    properties = get_cli_tool("create_gtt_trigger").parameters()["properties"]
-
-    assert "side" in properties
-    assert "quantity" in properties
 
 
 def test_an_alert_stays_an_alert(gtt):

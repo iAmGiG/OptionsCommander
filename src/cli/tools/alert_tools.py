@@ -1,5 +1,5 @@
 """
-Alert Display Tools - FunctionTool wrappers for position alerts.
+Alert Display Tools for position alerts.
 
 Issue #433/#458: Extract alert display commands from cli_session.py.
 
@@ -17,9 +17,6 @@ import dataclasses
 import logging
 from typing import Any, Dict, List
 
-from agent_framework import FunctionTool
-
-from src.trading.positions.position_tracker import position_key
 from src.utils.safe_print import get_symbol
 
 logger = logging.getLogger(__name__)
@@ -82,11 +79,6 @@ def _format_alert(alert: Any) -> Dict[str, Any]:
             "details": getattr(alert, "details", {}),
             "timestamp": str(getattr(alert, "timestamp", "")),
         }
-
-
-# =============================================================================
-# FunctionTool Wrapper Functions
-# =============================================================================
 
 
 def check_alerts() -> Dict[str, Any]:
@@ -205,101 +197,6 @@ def get_alert_history(limit: int = 10) -> Dict[str, Any]:
         return {"status": "error", "error": str(e)}
 
 
-def get_position_alert_status(ticker: str) -> Dict[str, Any]:
-    """
-    Get alert status for a specific position.
-
-    Args:
-        ticker: Stock ticker symbol
-
-    Returns:
-        Dict with:
-        - status: "success", "not_found", or "error"
-        - ticker: The requested ticker
-        - position_status: Current position status
-        - recent_alerts: Recent alerts for this position
-        - current_levels: Stop/target levels if available
-    """
-    try:
-        trading_cycle = _get_trading_cycle()
-        if not trading_cycle:
-            return {"status": "not_initialized", "message": "Trading cycle not available"}
-
-        if not hasattr(trading_cycle, "position_tracker"):
-            return {"status": "not_initialized", "message": "Position tracker not available"}
-
-        ticker_upper = ticker.upper()
-        position_tracker = trading_cycle.position_tracker
-
-        # One entry per open position, keyed by its symbol
-        position_id = position_key(ticker_upper)
-        position = position_tracker.positions.get(position_id)
-        if position is None:
-            return {
-                "status": "not_found",
-                "ticker": ticker_upper,
-                "message": f"No tracked position for {ticker_upper}",
-            }
-
-        # Get alerts for this position
-        position_alerts = [
-            _format_alert(a) for a in position.alert_history if hasattr(position, "alert_history")
-        ]
-
-        return {
-            "status": "success",
-            "ticker": ticker_upper,
-            "position_id": position_id,
-            "position_status": position.status,
-            "entry_price": position.entry_price,
-            "quantity": position.quantity,
-            "stop_loss_price": position.stop_loss_price,
-            "take_profit_price": position.take_profit_price,
-            "recent_alerts": position_alerts[-5:],  # Last 5 alerts
-            "total_alerts": len(position_alerts),
-        }
-
-    except Exception as e:
-        logger.error(f"Error getting alert status for {ticker}: {e}", exc_info=True)
-        return {"status": "error", "ticker": ticker, "error": str(e)}
-
-
-def get_monitored_positions_count() -> Dict[str, Any]:
-    """
-    Get count of positions being monitored for alerts.
-
-    Returns:
-        Dict with:
-        - status: "success" or "error"
-        - active_positions: Number of active positions
-        - total_tracked: Total positions in tracker (including closed)
-    """
-    try:
-        trading_cycle = _get_trading_cycle()
-        if not trading_cycle:
-            return {"status": "not_initialized", "message": "Trading cycle not available"}
-
-        if not hasattr(trading_cycle, "position_tracker"):
-            return {"status": "not_initialized", "message": "Position tracker not available"}
-
-        position_tracker = trading_cycle.position_tracker
-        all_positions = position_tracker.positions
-
-        active = sum(1 for p in all_positions.values() if p.status == "ACTIVE")
-        closed = sum(1 for p in all_positions.values() if p.status != "ACTIVE")
-
-        return {
-            "status": "success",
-            "active_positions": active,
-            "closed_positions": closed,
-            "total_tracked": len(all_positions),
-        }
-
-    except Exception as e:
-        logger.error(f"Error getting monitored positions count: {e}", exc_info=True)
-        return {"status": "error", "error": str(e)}
-
-
 # =============================================================================
 # Display Functions (Issue #459)
 # =============================================================================
@@ -347,63 +244,8 @@ def show_alerts() -> str:
     return "\n".join(lines)
 
 
-# =============================================================================
-# FunctionTool Registration
-# =============================================================================
-
-
-show_alerts_tool = FunctionTool(
-    func=show_alerts,
-    name="show_alerts",
-    description="Display current position alerts with formatted output.",
-)
-
-check_alerts_tool = FunctionTool(
-    func=check_alerts,
-    name="check_alerts",
-    description="Check current position alerts including approaching stop/target and profit zones.",
-)
-
-get_alert_history_tool = FunctionTool(
-    func=get_alert_history,
-    name="get_alert_history",
-    description="Get recent alert history with timestamps and details.",
-)
-
-get_position_alert_status_tool = FunctionTool(
-    func=get_position_alert_status,
-    name="get_position_alert_status",
-    description="Get alert status and stop/target levels for a specific ticker.",
-)
-
-get_monitored_positions_count_tool = FunctionTool(
-    func=get_monitored_positions_count,
-    name="get_monitored_positions_count",
-    description="Get count of positions being monitored for alerts.",
-)
-
-
-# Export list for CLI tools registry
-CLI_ALERT_TOOLS = [
-    show_alerts_tool,
-    check_alerts_tool,
-    get_alert_history_tool,
-    get_position_alert_status_tool,
-    get_monitored_positions_count_tool,
-]
-
 __all__ = [
-    # Display Functions
     "show_alerts",
-    # Data Functions
     "check_alerts",
     "get_alert_history",
-    "get_position_alert_status",
-    "get_monitored_positions_count",
-    # FunctionTools
-    "CLI_ALERT_TOOLS",
-    "check_alerts_tool",
-    "get_alert_history_tool",
-    "get_position_alert_status_tool",
-    "get_monitored_positions_count_tool",
 ]

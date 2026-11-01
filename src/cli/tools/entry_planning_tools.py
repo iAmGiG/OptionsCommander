@@ -1,21 +1,18 @@
 """
-Entry Planning CLI Tools - FunctionTool wrappers for entry planning.
+Entry Planning CLI Tools for entry planning.
 
 Issue #366: OHLCV-Based Intraday Entry Plan
 Related: CLI integration for A Stream features
 
-This module wraps the entry_planning module functions as FunctionTool
-instances for integration with the AutoGen agent architecture.
+This module wraps the entry_planning module functions for the CLI.
 
 Original Implementation: src/trading/instruments/entry_planning.py
-Pattern: Pure function wrappers → FunctionTool → Registry
 """
 
 from datetime import date, timedelta
 from typing import Tuple
 
 import pandas as pd
-from agent_framework import FunctionTool
 
 from src.trading.instruments.data_fetch import fetch_market_data
 from src.trading.instruments.entry_planning import (
@@ -369,67 +366,9 @@ def get_atr(symbol: str, period: int = 14, lookback_days: int = 60) -> str:
         return f"{get_symbol('ERROR')} Error calculating ATR: {str(e)}"
 
 
-# ============================================================================
-# FunctionTool Definitions
-# ============================================================================
-
-get_entry_plan_tool = FunctionTool(
-    func=get_entry_plan,
-    name="get_entry_plan",
-    description=(
-        "Generate an entry plan for a stock with ATR-based stops, "
-        "support/resistance levels, and volume confirmation. "
-        "Returns entry price, stop loss, take profit, and plan quality."
-    ),
-)
-
-get_support_resistance_tool = FunctionTool(
-    func=get_support_resistance,
-    name="get_support_resistance",
-    description=(
-        "Show support and resistance levels for a stock based on recent "
-        "price action. Useful for identifying entry zones and stop placement."
-    ),
-)
-
-get_volume_analysis_tool = FunctionTool(
-    func=get_volume_analysis,
-    name="get_volume_analysis",
-    description=(
-        "Analyze volume patterns to determine if there's sufficient "
-        "conviction for a trade entry. Compares current vs average volume."
-    ),
-)
-
-get_atr_tool = FunctionTool(
-    func=get_atr,
-    name="get_atr",
-    description=(
-        "Get Average True Range (ATR) for a stock to assess volatility "
-        "and determine appropriate stop loss distances."
-    ),
-)
-
-
-# ============================================================================
-# Tool Collection for Registry
-# ============================================================================
-
-CLI_ENTRY_PLANNING_TOOLS = [
-    get_entry_plan_tool,
-    get_support_resistance_tool,
-    get_volume_analysis_tool,
-    get_atr_tool,
-]
-
 __all__ = [
     "get_entry_plan",
     "get_support_resistance",
     "get_volume_analysis",
     "get_atr",
-    "get_entry_plan_tool",
-    "get_support_resistance_tool",
-    "get_volume_analysis_tool",
-    "get_atr_tool",
-    "CLI_ENTRY_PLANNING_TOOLS",
 ]

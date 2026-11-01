@@ -57,44 +57,8 @@ def module_sandbox():
 
 
 @pytest.fixture
-def voter_tools_module(module_sandbox, monkeypatch):
-    """Load voter_tools module directly."""
-
-    # First mock the TradingConfig dependency
-    class MockMACD:
-        fast = 13
-        slow = 34
-        signal = 8
-
-    class MockRSI:
-        period = 14
-        oversold = 30
-        overbought = 70
-
-    class MockTradingConfig:
-        def get_macd_config(self):
-            return MockMACD()
-
-        def get_rsi_config(self):
-            return MockRSI()
-
-    # Patch only TradingConfig on the real module; replacing the whole module dropped
-    # get_config and broke later imports (restored after the test by monkeypatch)
-    import config_defaults.trading_config as trading_config_module
-
-    monkeypatch.setattr(trading_config_module, "TradingConfig", MockTradingConfig)
-
-    # The tool modules use Agent Framework's FunctionTool (#606), which is installed
-
-    module_path = project_root / "src" / "cli" / "tools" / "voter_tools.py"
-    return import_module_directly(str(module_path), "voter_tools_test")
-
-
-@pytest.fixture
 def backup_tools_module(module_sandbox, monkeypatch):
     """Load backup_tools module directly."""
-
-    # The tool modules use Agent Framework's FunctionTool (#606), which is installed
 
     module_path = project_root / "src" / "cli" / "tools" / "backup_tools.py"
     return import_module_directly(str(module_path), "backup_tools_test")
@@ -105,100 +69,6 @@ def temp_backup_dir():
     """Create temporary backup directory for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
-
-
-# =============================================================================
-# Tests: Issue #488 - Voter Tools
-# =============================================================================
-
-
-class TestVoterTools:
-    """Test voter CLI tools (Issue #488)."""
-
-    def test_show_voter_config_returns_string(self, voter_tools_module):
-        """Test show_voter_config returns formatted string."""
-        result = voter_tools_module.show_voter_config()
-
-        assert isinstance(result, str)
-        assert "VoterAgent Configuration" in result
-        assert "MACD Parameters" in result
-        assert "RSI Parameters" in result
-
-    def test_explain_voting_logic_returns_string(self, voter_tools_module):
-        """Test explain_voting_logic returns formatted explanation."""
-        result = voter_tools_module.explain_voting_logic()
-
-        assert isinstance(result, str)
-        assert "Voting Logic" in result
-        assert "STRONG" in result
-        assert "WEAK" in result
-        assert "CONFLICT" in result
-
-    def test_explain_macd_params_returns_string(self, voter_tools_module):
-        """Test explain_macd_params returns formatted explanation."""
-        result = voter_tools_module.explain_macd_params()
-
-        assert isinstance(result, str)
-        assert "MACD Parameters" in result
-        assert "Fibonacci" in result
-        assert "13/34/8" in result
-
-    def test_explain_rsi_params_returns_string(self, voter_tools_module):
-        """Test explain_rsi_params returns formatted explanation."""
-        result = voter_tools_module.explain_rsi_params()
-
-        assert isinstance(result, str)
-        assert "RSI Parameters" in result
-        assert "Oversold" in result
-        assert "Overbought" in result
-
-    def test_get_voter_parameters_returns_dict(self, voter_tools_module):
-        """Test get_voter_parameters returns structured data."""
-        result = voter_tools_module.get_voter_parameters()
-
-        assert isinstance(result, dict)
-        assert "macd" in result
-        assert "rsi" in result
-        assert "thresholds" in result
-        assert "performance" in result
-
-        # Check MACD values
-        assert result["macd"]["fast"] == 13
-        assert result["macd"]["slow"] == 34
-        assert result["macd"]["signal"] == 8
-
-    def test_compare_with_traditional_returns_string(self, voter_tools_module):
-        """Test compare_with_traditional returns comparison table."""
-        result = voter_tools_module.compare_with_traditional()
-
-        assert isinstance(result, str)
-        assert "Comparison" in result
-        assert "Fibonacci" in result
-        assert "Traditional" in result
-
-    def test_show_signal_interpretation_valid_signals(self, voter_tools_module):
-        """Test show_signal_interpretation for all signal types."""
-        for signal_type in ["STRONG", "WEAK", "CONFLICT", "NEUTRAL"]:
-            result = voter_tools_module.show_signal_interpretation(signal_type)
-
-            assert isinstance(result, str)
-            assert signal_type in result
-            assert "Position" in result
-
-    def test_show_signal_interpretation_invalid_signal(self, voter_tools_module):
-        """Test show_signal_interpretation with invalid signal."""
-        result = voter_tools_module.show_signal_interpretation("INVALID")
-
-        assert "Unknown signal type" in result
-
-    def test_voter_tools_collection_exists(self, voter_tools_module):
-        """Test CLI_VOTER_TOOLS collection is properly defined."""
-        CLI_VOTER_TOOLS = voter_tools_module.CLI_VOTER_TOOLS
-
-        assert isinstance(CLI_VOTER_TOOLS, list)
-        # 7 explanation tools plus 7 voter-management tools (list, presets, promote/demote, role)
-        assert len(CLI_VOTER_TOOLS) == 14
-        assert len(set(map(id, CLI_VOTER_TOOLS))) == len(CLI_VOTER_TOOLS)
 
 
 # =============================================================================
@@ -377,13 +247,6 @@ class TestBackupTools:
             assert "No backups" in result or "no directory" in result.lower()
         finally:
             backup_tools_module.BACKUP_DIR = original_backup_dir
-
-    def test_backup_tools_collection_exists(self, backup_tools_module):
-        """Test CLI_BACKUP_TOOLS collection is properly defined."""
-        CLI_BACKUP_TOOLS = backup_tools_module.CLI_BACKUP_TOOLS
-
-        assert isinstance(CLI_BACKUP_TOOLS, list)
-        assert len(CLI_BACKUP_TOOLS) == 7  # 7 backup tools
 
     def test_default_paths_defined(self, backup_tools_module):
         """Test default path constants are defined."""

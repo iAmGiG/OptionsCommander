@@ -1,5 +1,5 @@
 """
-Watchlist Tools - FunctionTool wrappers for user-defined watchlists.
+Watchlist Tools for user-defined watchlists.
 
 Issue #480/#481: CLI tools for SQLite-backed watchlists.
 
@@ -14,8 +14,6 @@ Uses src.trading.alerts_watchlists.AlertsWatchlistsManager for persistence.
 
 import logging
 from typing import Any, Dict, Optional
-
-from agent_framework import FunctionTool
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +32,6 @@ def _get_watchlist_manager():
     except Exception as e:
         logger.error(f"Failed to get watchlist manager: {e}")
         return None
-
-
-# =============================================================================
-# FunctionTool Wrapper Functions
-# =============================================================================
 
 
 def create_watchlist(
@@ -352,79 +345,6 @@ def show_watchlist(name: str) -> str:
     return "\n".join(lines)
 
 
-# =============================================================================
-# FunctionTool Registration
-# =============================================================================
-
-
-create_watchlist_tool = FunctionTool(
-    func=create_watchlist,
-    name="create_watchlist",
-    description="Create a new watchlist for tracking symbols.",
-)
-
-list_watchlists_tool = FunctionTool(
-    func=list_watchlists,
-    name="list_watchlists",
-    description="List all user-defined watchlists.",
-)
-
-get_watchlist_tool = FunctionTool(
-    func=get_watchlist,
-    name="get_watchlist",
-    description="Get a specific watchlist by name with all its symbols.",
-)
-
-delete_watchlist_tool = FunctionTool(
-    func=delete_watchlist,
-    name="delete_watchlist",
-    description="Delete a watchlist by name.",
-)
-
-add_to_watchlist_tool = FunctionTool(
-    func=add_to_watchlist,
-    name="add_to_watchlist",
-    description="Add a stock symbol to a watchlist.",
-)
-
-remove_from_watchlist_tool = FunctionTool(
-    func=remove_from_watchlist,
-    name="remove_from_watchlist",
-    description="Remove a stock symbol from a watchlist.",
-)
-
-get_watchlist_symbols_tool = FunctionTool(
-    func=get_watchlist_symbols,
-    name="get_watchlist_symbols",
-    description="Get all symbols in a watchlist.",
-)
-
-show_watchlists_tool = FunctionTool(
-    func=show_watchlists,
-    name="show_watchlists",
-    description="Display all watchlists with formatted output.",
-)
-
-show_watchlist_tool = FunctionTool(
-    func=show_watchlist,
-    name="show_watchlist",
-    description="Display a specific watchlist with formatted output.",
-)
-
-
-# Export list for CLI tools registry
-CLI_WATCHLIST_TOOLS = [
-    create_watchlist_tool,
-    list_watchlists_tool,
-    get_watchlist_tool,
-    delete_watchlist_tool,
-    add_to_watchlist_tool,
-    remove_from_watchlist_tool,
-    get_watchlist_symbols_tool,
-    show_watchlists_tool,
-    show_watchlist_tool,
-]
-
 __all__ = [
     "create_watchlist",
     "list_watchlists",
@@ -435,5 +355,4 @@ __all__ = [
     "get_watchlist_symbols",
     "show_watchlists",
     "show_watchlist",
-    "CLI_WATCHLIST_TOOLS",
 ]

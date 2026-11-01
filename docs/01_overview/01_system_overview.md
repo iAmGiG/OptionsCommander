@@ -66,7 +66,6 @@ This is a **human-guided trade management system**, not an autonomous trading bo
 - Real-time data via Alpaca SDK
 - Intelligent caching (>90% API call reduction)
 - Multi-provider normalization (Alpha Vantage fallback)
-- Agent Framework `FunctionTool` wrappers for agent access
 
 **Order Types**:
 
@@ -111,7 +110,7 @@ Clean architectural boundaries:
    - **instruments/**: Tickers, timeframes, indicators
    - **utils/**: Trading utilities
 2. **Data Layer** (`src/market_data/`, `src/cache/`): Market data acquisition, caching and normalization
-3. **CLI Layer** (`src/cli/`): Human-in-loop interfaces with FunctionTool architecture
+3. **CLI Layer** (`src/cli/`): Human-in-loop interfaces: slash commands and typed requests, on plain functions in `src/cli/tools/`
 
 ### Key Design Principles
 

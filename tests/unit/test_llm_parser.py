@@ -11,7 +11,7 @@ import openai
 import pytest
 from agent_framework.openai import RawOpenAIChatCompletionClient
 
-from src.parsers import AutoGenLLMParser, LLMParser
+from src.parsers import LLMParser
 
 
 def _parser(handler):
@@ -96,10 +96,6 @@ def test_an_authentication_failure_is_a_configuration_error():
 
     with pytest.raises(ValueError, match="Configuration error"):
         asyncio.run(parser.parse("buy 50 AAPL"))
-
-
-def test_the_old_name_still_works():
-    assert AutoGenLLMParser is LLMParser
 
 
 # Nothing makes the model keep to the schema (#632)

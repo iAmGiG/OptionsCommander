@@ -32,6 +32,7 @@ See [../README.md](../README.md) for consolidated research status (STOP/DONE/CON
 | [methodology_validation_summary.md](methodology_validation_summary.md) | #523, #495 | Methodology fixes and validation | ✅ DONE |
 | [live_rules_baseline.md](live_rules_baseline.md) | #574 | Baseline of the live CLI rules for paper validation | ✅ Complete |
 | [trailing_vs_bracket.md](trailing_vs_bracket.md) | #539 | Live trailing-stop exits against the fixed bracket | ✅ Complete |
+| [partial_exits.md](partial_exits.md) | #584 | Partial exits against the live trailing exit, three designs | ✅ Complete (no reliable gain) |
 
 ## Results
 
@@ -51,6 +52,7 @@ Experimental results are stored as YAML files in the [results/](results/) folder
 | [raf_kama_old_vs_new.json](results/raf_kama_old_vs_new.json) | #532, #529 | ✅ DONE | The old RAF and KAMA runners, one methodology change at a time |
 | [live_rules_baseline.yaml](results/live_rules_baseline.yaml) | #574 | 🛑 STOP | Live CLI rules, 2009 to 2026-10-09, two modes, three cost levels |
 | [trailing_vs_bracket.json](results/trailing_vs_bracket.json) | #539 | ✅ DONE | Exit modes bracket, trailing, trailing_target; sizing, costs, paired tests |
+| [partial_exits.json](results/partial_exits.json) | #584 | ✅ DONE | Four partial-exit implementations at +4% / +5%, sizing, costs, paired tests, fills, sensitivities, per symbol |
 
 ## Key Findings (Dec 2025, updated Oct 2026)
 

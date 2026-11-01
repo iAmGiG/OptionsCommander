@@ -79,6 +79,44 @@ EXIT_MODES = ("bracket", "trailing", "trailing_target")
 
 
 @dataclass
+class PartialPlan:
+    """
+    Partial exits (#584): a share of each position sells at a profit target, the rest keeps the
+    trailing stop. The plan is the PartialExitManager's (two targets, 50/50, the first a limit
+    at ``target_pct`` over the fill, the second "trailing"), in whole shares: the first target
+    gets ``int(n * first_ratio)`` of the ``n`` shares, the last takes the remainder, and a
+    position of one share has no plan. Needs ``exit_mode="trailing"`` (the plan supplies the
+    only target).
+
+    ``design`` is how the plan reaches the broker (the three designs of #584):
+
+    1. shrink the stop: the target shares rest as a limit sell and have no stop; the others
+       have the trailing stop. The limit fills on an intraday touch (at the open on a gap
+       above it). If the stop shares are stopped out, ``unprotected`` says what happens to
+       the target shares: ``"hold"`` keeps them resting (until the target, a SELL signal, or
+       the end of the data), ``"exit_next_open"`` sells them at the next session's open (a
+       routine finding a position with no stop).
+    2. software targets: every share keeps the trailing stop; the target is seen only at
+       the 09:20 routine (the open stands in) and the 15:50 routine (the close stands in),
+       and sells at that price when the price is at or past the target. No intraday fill.
+    3. per-tranche orders: every tranche has the trailing stop and the target shares also a
+       limit sell (OCO); the limit fills on an intraday touch. A bar that touches both the
+       stop and the target counts as the stop (``same_bar="stop"``, as the bracket does);
+       ``"target"`` is the optimistic reading, for sensitivity.
+
+    ``limit_through_bps`` makes a limit fill only when the high trades that many bps through
+    the target (a touch is not always a fill); the fill is at the target.
+    """
+
+    design: int = 3
+    target_pct: float = 0.04
+    first_ratio: float = 0.5
+    unprotected: str = "hold"
+    same_bar: str = "stop"
+    limit_through_bps: float = 0.0
+
+
+@dataclass
 class LiveRules:
     """Sizing, limits, exits and costs of the live path."""
 
@@ -97,6 +135,12 @@ class LiveRules:
     # date: no morning raise for that symbol that day). With it, ``morning_raise`` raises from
     # these prices instead of the open. The prices must be known by 09:20 on their own day.
     morning_prices: Optional[Dict[str, pd.Series]] = None
+    # #584: partial exits (None: every position is one block, as before)
+    partial: Optional[PartialPlan] = None
+    # #584 sensitivity: extra slippage on stop-market fills, bps below the fill price (every
+    # stop fill, or only gaps through the stop). 0: stops fill at the stop / the open, as before.
+    stop_slip_bps: float = 0.0
+    stop_slip_gap_only: bool = False
 
 
 def compute_signals(
@@ -256,6 +300,16 @@ def simulate(  # noqa: C901
         raise ValueError("morning_raise needs a trailing exit mode: the bracket never raises")
     if rules.morning_prices is not None and not rules.morning_raise:
         raise ValueError("morning_prices are only used with morning_raise=True")
+    plan = rules.partial
+    if plan is not None:
+        if rules.exit_mode != "trailing":
+            raise ValueError("partial exits need exit_mode='trailing' (the plan sets the target)")
+        if plan.design not in (1, 2, 3):
+            raise ValueError(f"partial design {plan.design!r} is not 1, 2 or 3")
+        if plan.unprotected not in ("hold", "exit_next_open"):
+            raise ValueError(f"unprotected {plan.unprotected!r} is not hold or exit_next_open")
+        if plan.same_bar not in ("stop", "target"):
+            raise ValueError(f"same_bar {plan.same_bar!r} is not stop or target")
     trailing = LiveTrailingStop() if rules.exit_mode != "bracket" else None
     has_target = rules.exit_mode != "trailing"
     cost = rules.cost_bps / 1e4
@@ -295,31 +349,40 @@ def simulate(  # noqa: C901
         frame = prices[symbol]
         return frame.loc[day] if day in frame.index else None
 
+    def slipped(price, reason):
+        """Extra slippage on a stop-market fill (#584 sensitivity; off by default)."""
+        if not rules.stop_slip_bps:
+            return price
+        kinds = ("stop_gap",) if rules.stop_slip_gap_only else ("stop", "stop_gap")
+        return price * (1 - rules.stop_slip_bps / 1e4) if reason in kinds else price
+
     def close_position(symbol, day, price, reason):
         nonlocal cash
         pos = positions.pop(symbol)
+        price = slipped(price, reason)
         if pos["raised"] and reason in ("stop", "stop_gap"):
             reason = "trail" if reason == "stop" else "trail_gap"  # a raised stop
         fill = price * (1 - cost)
         cash += pos["qty"] * fill
-        trades.append(
-            {
-                "symbol": symbol,
-                "entry_date": pos["entry_date"],
-                "entry_price": pos["entry_price"],
-                "exit_date": day,
-                "exit_price": fill,
-                "reason": reason,
-                "qty": pos["qty"],
-                "return": fill / pos["entry_price"] - 1,
-            }
-        )
+        row = {
+            "symbol": symbol,
+            "entry_date": pos["entry_date"],
+            "entry_price": pos["entry_price"],
+            "exit_date": day,
+            "exit_price": fill,
+            "reason": reason,
+            "qty": pos["qty"],
+            "return": fill / pos["entry_price"] - 1,
+        }
+        if "pid" in pos:
+            row["pid"] = pos["pid"]
+        trades.append(row)
 
     def raise_stops(day, bars, price_field):
         """Each held position's stop moves to its trailing level at the bar's open or close."""
         for symbol, pos in positions.items():
             bar = bars[symbol]
-            if bar is None:
+            if bar is None or pos.get("no_stop"):  # no_stop: design 1, stop shares all sold
                 continue
             if price_field == "morning":  # the supplied 09:20 price; none that day: no raise
                 price = rules.morning_prices.get(symbol, {}).get(day, float("nan"))
@@ -337,6 +400,118 @@ def simulate(  # noqa: C901
             if level is not None:
                 pos["stop"] = level
                 pos["raised"] = True
+
+    next_pid = 0
+    stats = {
+        "with_plan": 0,
+        "no_plan_one_share": 0,
+        "same_bar_stop_and_target": 0,
+        "orphan_target_shares": 0,
+        "target_touched_not_seen": 0,
+    }
+
+    def sell_part(symbol, day, qty, price, reason):
+        """Sell ``qty`` of a planned position at ``price`` (before costs); closes it at zero."""
+        nonlocal cash
+        pos = positions[symbol]
+        qty = min(qty, pos["qty"])
+        price = slipped(price, reason)
+        if pos["raised"] and reason in ("stop", "stop_gap"):
+            reason = "trail" if reason == "stop" else "trail_gap"
+        fill = price * (1 - cost)
+        cash += qty * fill
+        pos["qty"] -= qty
+        trades.append(
+            {
+                "symbol": symbol,
+                "entry_date": pos["entry_date"],
+                "entry_price": pos["entry_price"],
+                "exit_date": day,
+                "exit_price": fill,
+                "reason": reason,
+                "qty": qty,
+                "return": fill / pos["entry_price"] - 1,
+                "pid": pos["pid"],
+            }
+        )
+        if pos["qty"] <= 1e-9:
+            positions.pop(symbol)
+
+    def partial_day(symbol, day, bar, entry_day):  # noqa: C901
+        """
+        One session of a position under the partial-exit plan (module docstring, PartialPlan).
+
+        Order of events: the SELL signal and the 09:20 check at the open (not on the entry
+        day: the position is bought at the open), a gap through the stop or the limit, the
+        day's range against the stop and the limit, then the 15:50 check at the close
+        (design 2). Only the open is used before the range, only the close after it.
+        """
+        pos = positions[symbol]
+        design = plan.design
+        stop, target = pos["stop"], pos.get("plan_target", float("inf"))
+        through = target * (1 + plan.limit_through_bps / 1e4)
+        if not entry_day:
+            if pos.get("orphan"):  # design 1, exit_next_open: the routine finds no stop
+                sell_part(symbol, day, pos["qty"], bar.open, "orphan_exit")
+                return
+            if design == 2 and pos["t1"] > 0 and bar.open >= target:  # the 09:20 routine
+                sell_part(symbol, day, pos["t1"], bar.open, "target_check_open")
+                pos["t1"] = 0.0
+        t1 = pos["t1"]
+        stop_qty = pos["qty"] - t1 if design == 1 else pos["qty"]  # shares the stop covers
+        limit_live = design in (1, 3) and t1 > 0
+        stopped = target_hit = False
+        if not entry_day:  # gaps: the bar's open against the stop in force and the limit
+            if stop_qty > 0 and bar.open <= stop:
+                stopped = True
+                sell_part(symbol, day, stop_qty, bar.open, "stop_gap")
+            if limit_live and symbol in positions and bar.open >= target:
+                target_hit = True
+                sell_part(symbol, day, t1, bar.open, "target_gap")
+        if symbol not in positions:
+            return
+        if not stopped and stop_qty > 0 and bar.low <= stop:
+            stopped = True
+            both = limit_live and not target_hit and bar.high >= through
+            if both:
+                stats["same_bar_stop_and_target"] += 1
+            if design == 3 and both and plan.same_bar == "target":
+                sell_part(symbol, day, t1, target, "target")  # optimistic: the limit came first
+                target_hit = True
+                sell_part(symbol, day, pos["qty"], stop, "stop")
+            else:
+                sell_part(symbol, day, stop_qty, stop, "stop")  # design 3: OCO takes the target
+        # design 1: the limit is independent of the stop shares; design 3: the stop cancelled it
+        if (
+            limit_live
+            and not target_hit
+            and (design == 1 or not stopped)
+            and symbol in positions
+            and bar.high >= through
+        ):
+            target_hit = True
+            sell_part(symbol, day, t1, target, "target")
+        if symbol not in positions:
+            return
+        if target_hit:
+            pos["t1"] = 0.0
+        if design == 3 and stopped:
+            return
+        if design == 1 and stopped:
+            # the stop shares are gone; the target shares (if any) rest with no stop
+            pos["no_stop"] = True
+            if pos["t1"] > 0:
+                stats["orphan_target_shares"] += 1
+                if plan.unprotected == "exit_next_open":
+                    pos["orphan"] = True
+            return
+        if design == 2 and pos["t1"] > 0:
+            if bar.close >= target:  # the 15:50 routine
+                sell_part(symbol, day, pos["t1"], bar.close, "target_check_close")
+                pos["t1"] = 0.0
+            elif bar.high >= target and not pos.get("seen_touch"):
+                pos["seen_touch"] = True  # touched in the session but at neither check
+                stats["target_touched_not_seen"] += 1
 
     for day in calendar:
         bars = {sym: bar_on(sym, day) for sym in prices}
@@ -358,6 +533,9 @@ def simulate(  # noqa: C901
                 close_position(symbol, day, bar.open, "signal")
                 continue
             pos = positions[symbol]
+            if "pid" in pos:
+                partial_day(symbol, day, bar, entry_day=False)
+                continue
             price, reason = _bracket_exit(bar, pos["stop"], pos["target"], gap=True)
             if price is not None:
                 close_position(symbol, day, price, reason)
@@ -378,7 +556,8 @@ def simulate(  # noqa: C901
                 blocked["no_prior_close"] += 1
                 continue
             scale = share_scale.get(symbol, {}).get(day, 1.0)  # the day's split level
-            qty = int(rules.position_pct * equity_prev / (prev_close * scale)) * scale
+            n_whole = int(rules.position_pct * equity_prev / (prev_close * scale))
+            qty = n_whole * scale
             if qty <= 0:
                 blocked["under_one_share"] += 1
                 continue
@@ -403,6 +582,19 @@ def simulate(  # noqa: C901
                 "target": bar.open * (1 + rules.target_pct) if has_target else float("inf"),
                 "raised": False,
             }
+            if plan is not None:
+                pos = positions[symbol]
+                pos["pid"] = next_pid
+                next_pid += 1
+                if n_whole >= 2:
+                    pos["t1"] = int(n_whole * plan.first_ratio) * scale
+                    pos["plan_target"] = bar.open * (1 + plan.target_pct)
+                    stats["with_plan"] += 1
+                else:
+                    pos["t1"] = 0.0
+                    stats["no_plan_one_share"] += 1
+                partial_day(symbol, day, bar, entry_day=True)
+                continue
             price, reason = _bracket_exit(
                 bar, positions[symbol]["stop"], positions[symbol]["target"], gap=False
             )
@@ -421,20 +613,23 @@ def simulate(  # noqa: C901
         equity[day] = equity_prev
 
     for symbol, pos in positions.items():  # still open at the end: marked, not closed
-        trades.append(
-            {
-                "symbol": symbol,
-                "entry_date": pos["entry_date"],
-                "entry_price": pos["entry_price"],
-                "exit_date": None,
-                "exit_price": last_close[symbol],
-                "reason": "open",
-                "qty": pos["qty"],
-                "return": last_close[symbol] / pos["entry_price"] - 1,
-            }
-        )
+        row = {
+            "symbol": symbol,
+            "entry_date": pos["entry_date"],
+            "entry_price": pos["entry_price"],
+            "exit_date": None,
+            "exit_price": last_close[symbol],
+            "reason": "open",
+            "qty": pos["qty"],
+            "return": last_close[symbol] / pos["entry_price"] - 1,
+        }
+        if "pid" in pos:
+            row["pid"] = pos["pid"]
+        trades.append(row)
     trades_frame = pd.DataFrame(trades)
     trades_frame.attrs["blocked"] = blocked
+    if plan is not None:
+        trades_frame.attrs["partial"] = stats
     return pd.Series(equity, name="equity"), trades_frame
 
 

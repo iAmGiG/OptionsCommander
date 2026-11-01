@@ -35,6 +35,10 @@ The #623 morning-raise comparisons (real 09:20 prices, and three variants of the
 against the evening-only run) are a third family, corrected on its own and pooled with the other
 two, and reported under ``morning_raise``.
 
+The #584 partial-exit comparisons (eight plans: three designs and a variant of one, at two first
+targets, each against the evening-only trailing exit) are a fourth family, corrected on its own and
+pooled with the other three, and reported under ``partial_exits``.
+
 Usage:
     ~/miniconda3/envs/OptionsCommander/bin/python scripts/research/multiple_testing_audit.py
 """
@@ -349,6 +353,30 @@ def collect_morning_raise(rows):
             )
 
 
+def collect_partial_exits(rows):
+    """#584: paired daily-return tests of each partial-exit plan against the trailing exit."""
+    name = "partial_exits.json"
+    path = STRATEGY_RESULTS_DIR / name
+    if not path.exists():
+        print(f"  missing: {name}")
+        return
+    with open(path) as f:
+        data = json.load(f)
+    for r in data["paired_tests"]:  # the family; design-against-design rows are in paired_extra
+        t = r.get("return_test")
+        if t and all(math.isfinite(t[k]) for k in ("t_statistic", "p_value")):
+            rows.append(
+                _row(
+                    f"#584 {r['comparison']} ({r['variant']})",
+                    name,
+                    f"{r['period']} {r['cost_bps']:g} bps daily return (NW)",
+                    t["t_statistic"],
+                    t["p_value"],
+                    t["mean_daily_diff"],
+                )
+            )
+
+
 def collect_entry_signals(rows):
     """#532 / #529: each candidate's paired test against the baseline and alpha against equal weight."""
     name = "raf_kama_live_rules.json"
@@ -528,6 +556,39 @@ def morning_raise_family(morning_rows, exit_rows, gex_rows):
     }
 
 
+def partial_exit_family(partial_rows, morning_rows, exit_rows, gex_rows):
+    """The #584 tests as a family of their own, and pooled with the GEX, #539 and #623 families."""
+    df, summary, by_study = _correct(partial_rows)
+    pooled, _, _ = _correct(gex_rows + exit_rows + morning_rows + partial_rows)
+    ours = pooled[pooled["study"].str.startswith("#584")]
+    summary["pooled_with_gex_539_and_623_families"] = {
+        "n_tests": len(pooled),
+        "partial_tests_holm_rejections": int(ours["holm_reject"].sum()),
+        "partial_tests_bh_rejections": int(ours["bh_reject"].sum()),
+    }
+    print("\n  #584 partial-exit family (corrected on its own, and pooled):")
+    print(f"  {summary}")
+    print(by_study.to_string(index=False))
+    keep = ["study", "test", "t_statistic", "p_value", "holm_p", "bh_q"]
+    print("\n  Smallest p-values:")
+    print(df[keep].head(8).to_string(index=False))
+    for col in ("holm_p", "bh_q"):
+        df[col] = df[col].round(4)
+    return {
+        "issue": "#584",
+        "description": "Partial exits against the live trailing exit, three designs (live-rules simulator)",
+        "family": "the 8 planned configurations of partial_exits.json (designs 1 hold / 1 exit, 2 "
+        "and 3, at first targets +4% and +5%) each against the evening-only trailing exit "
+        "(Newey-West test of the mean daily return difference); design-against-design, "
+        "against-bracket and sensitivity comparisons are not in the family",
+        "dependence_note": "the comparisons share signals and overlap in periods, costs, sizings "
+        "and plans; Holm valid, BH approximate",
+        "summary": summary,
+        "by_study": by_study.to_dict(orient="records"),
+        "tests": df.to_dict(orient="records"),
+    }
+
+
 def main():
     print("=" * 60)
     print("  MULTIPLE-TESTING AUDIT, LAG-1 GEX TESTS (#576)")
@@ -574,6 +635,10 @@ def main():
     collect_morning_raise(morning_rows)
     if morning_rows:
         output["morning_raise"] = morning_raise_family(morning_rows, exit_rows, rows)
+    partial_rows = []
+    collect_partial_exits(partial_rows)
+    if partial_rows:
+        output["partial_exits"] = partial_exit_family(partial_rows, morning_rows, exit_rows, rows)
     entry_rows = []
     collect_entry_signals(entry_rows)
     if entry_rows:

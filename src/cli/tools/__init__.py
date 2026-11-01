@@ -33,7 +33,6 @@ PORTFOLIO_TOOLS = "portfolio"
 ORDER_TOOLS = "order"
 SCHEDULER_TOOLS = "scheduler"
 ALERT_TOOLS = "alert"
-EXECUTION_MODE_TOOLS = "execution_mode"
 # DB-backed tools (Issue #481)
 USER_ALERT_TOOLS = "user_alert"
 WATCHLIST_TOOLS = "watchlist"
@@ -226,8 +225,6 @@ def _discover_and_register_tools() -> None:
         ("order_tools", "CLI_ORDER_TOOLS", ORDER_TOOLS),
         ("scheduler_tools", "CLI_SCHEDULER_TOOLS", SCHEDULER_TOOLS),
         ("alert_tools", "CLI_ALERT_TOOLS", ALERT_TOOLS),
-        # Phase 1E (#459): Execution mode tools
-        ("execution_mode_tools", "CLI_EXECUTION_MODE_TOOLS", EXECUTION_MODE_TOOLS),
         # DB-backed tools (Issue #481): User alerts, watchlists, portfolio overrides
         ("user_alert_tools", "CLI_USER_ALERT_TOOLS", USER_ALERT_TOOLS),
         ("watchlist_tools", "CLI_WATCHLIST_TOOLS", WATCHLIST_TOOLS),
@@ -264,7 +261,6 @@ REQUIRES_APPROVAL = frozenset(
         "disable_gtt_trigger",
         "enable_scheduler",
         "set_routine_enabled",
-        "set_execution_mode",
         "set_trading_mode",
         "switch_account",
         "set_portfolio_override",
@@ -313,7 +309,6 @@ __all__ = [
     "ORDER_TOOLS",
     "SCHEDULER_TOOLS",
     "ALERT_TOOLS",
-    "EXECUTION_MODE_TOOLS",
     # DB-backed tool categories (Issue #481)
     "USER_ALERT_TOOLS",
     "WATCHLIST_TOOLS",

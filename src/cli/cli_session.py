@@ -29,13 +29,6 @@ from src.cli.handlers import TradeHandler
 
 # Issue #459: Import extracted tool functions for Phase 1E integration
 from src.cli.tools.alert_tools import show_alerts
-from src.cli.tools.execution_mode_tools import (
-    confirm_and_set_auto_mode,
-    format_mode_change_result,
-    set_execution_mode,
-    set_orchestrator,
-    show_execution_mode,
-)
 from src.cli.tools.mode_tools import set_mode, show_current_mode, show_mode_comparison
 from src.cli.tools.order_tools import (
     cancel_orders_by_id,
@@ -50,8 +43,11 @@ from src.cli.tools.scheduler_tools import show_scheduler
 from src.cli.utils.error_utils import sanitize_error_message
 from src.cli.utils.help_system import HelpSystem
 from src.cli.utils.input_parser import (
+    MODE_NAMES,
     extract_ticker_from_query,
     is_cancel_request,
+    is_mode_request,
+    is_scheduler_request,
     parse_cancel_request,
 )
 from src.cli.utils.intent_classifier import IntentClassifier
@@ -113,9 +109,6 @@ class CLISession:
         self.orchestrator = orchestrator
         self.autonomy_mode = "confirm"  # or "auto"
         self.user_id = "cli_user"
-
-        # Issue #459: Set orchestrator for execution mode tools
-        set_orchestrator(orchestrator)
 
         # Initialize help system (Issue #369)
         self.help_system = HelpSystem()
@@ -382,10 +375,7 @@ class CLISession:
         # Only use keyword routing for system-specific features (scheduler, alerts)
         # Let LLM parser handle trade vs status_query distinction
 
-        if any(
-            word in input_lower
-            for word in ["scheduler", "schedule", "execution", "morning", "evening", "routine"]
-        ):
+        if is_scheduler_request(user_input):
             # Scheduler queries
             await self._handle_scheduler_request(user_input)
 
@@ -398,13 +388,6 @@ class CLISession:
         elif is_cancel_request(user_input):
             # Order cancellation (Issue #360)
             await self._handle_cancel_request(user_input)
-
-        elif any(
-            phrase in input_lower
-            for phrase in ["execution mode", "execution-mode", "set execution", "show execution"]
-        ):
-            # Execution mode management (Issue #332)
-            await self._handle_execution_mode_request(user_input)
 
         elif (
             any(
@@ -452,20 +435,7 @@ class CLISession:
             # Timeframe management (Issue #365)
             await self._handle_timeframe_request(user_input)
 
-        elif any(
-            phrase in input_lower
-            for phrase in [
-                "trading mode",
-                "risk mode",
-                "show mode",
-                "current mode",
-                "set mode",
-                "change mode",
-                "conservative",
-                "moderate",
-                "aggressive",
-            ]
-        ):
+        elif is_mode_request(user_input):
             # Trading mode management (Issue #400)
             await self._handle_trading_mode_request(user_input)
 
@@ -738,47 +708,6 @@ class CLISession:
             return
         print(format_cancel_result(cancel_orders_by_id([o["id"] for o in orders])))
 
-    async def _handle_execution_mode_request(self, user_input: str):
-        """
-        Handle execution mode view/change requests.
-        Issue #332/#459: Uses execution_mode_tools functions.
-        """
-        input_lower = user_input.lower()
-
-        # Determine if this is a "show" or "set" request
-        is_show = any(word in input_lower for word in ["show", "what", "current", "get"])
-        is_set = any(word in input_lower for word in ["set", "change", "switch"])
-
-        if is_show and not is_set:
-            print(show_execution_mode())
-            return
-
-        # Extract target mode from input
-        target_mode = None
-        for mode in ["confirm", "auto", "paper", "disabled"]:
-            if mode in input_lower:
-                target_mode = mode
-                break
-
-        if not target_mode:
-            print(show_execution_mode())
-            return
-
-        # Set new mode using tools
-        result = set_execution_mode(target_mode)
-
-        if result["status"] == "requires_confirmation":
-            # AUTO mode needs user confirmation
-            print(format_mode_change_result(result))
-            print("\nSwitch to AUTO mode? [yes/no]: ", end="")
-            confirm = input().strip().lower()
-            if confirm != "yes":
-                print("❌ Mode change cancelled")
-                return
-            result = confirm_and_set_auto_mode()
-
-        print(format_mode_change_result(result))
-
     async def _handle_trading_mode_request(self, user_input: str):
         """
         Handle trading mode view/change requests.
@@ -796,9 +725,9 @@ class CLISession:
         input_lower = user_input.lower()
 
         # Determine if this is a "show" or "set" request
-        is_show = any(word in input_lower for word in ["show", "what", "current", "get", "display"])
-        is_set = any(word in input_lower for word in ["set", "change", "switch", "use"])
-        mode_name_only = input_lower.strip() in ["conservative", "moderate", "aggressive"]
+        is_show = bool(re.search(r"\b(?:show|what|current|get|display)\b", input_lower))
+        is_set = bool(re.search(r"\b(?:set|change|switch|use)\b", input_lower))
+        mode_name_only = input_lower.strip() in MODE_NAMES
 
         # Check for comparison request
         if "compare" in input_lower or "comparison" in input_lower:
@@ -813,8 +742,8 @@ class CLISession:
 
         # Try to extract target mode from input
         target_mode_str = None
-        for mode in ["conservative", "moderate", "aggressive"]:
-            if mode in input_lower:
+        for mode in MODE_NAMES:
+            if re.search(rf"\b{mode}\b", input_lower):
                 target_mode_str = mode
                 break
 

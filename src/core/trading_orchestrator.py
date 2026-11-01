@@ -124,6 +124,10 @@ class TradingOrchestrator:
 
                 raise ValueError(f"Invalid request: {request}")
 
+            # Nothing to analyze: don't send an empty symbol to the data sources (#636)
+            if not request.ticker:
+                raise ValueError("No symbol given")
+
             # Step 3: Strategy analysis
             analysis = await self.analyzer.analyze(request)
             logger.debug(

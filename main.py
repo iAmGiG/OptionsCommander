@@ -9,10 +9,10 @@ Usage:
     python main.py --daemon                  # Run automated scheduler
     python main.py --run-due                 # Run any routine due now, then exit (cron)
 
-In CLI, use natural language for trading modes:
-    > buy SPY aggressively
-    > I want to be conservative with this AAPL trade
+In the CLI, set the trading mode with a command:
+    > set mode aggressive
     > set risk mode to moderate
+    > show mode
 """
 
 import argparse
@@ -165,10 +165,9 @@ def list_accounts():
 def trade_assist(account_id: str = None):
     """Interactive CLI trading assistant.
 
-    Trading modes can be set via natural language:
-        > buy SPY aggressively
+    Set the trading mode with a command:
+        > set mode aggressive
         > set risk mode to conservative
-        > I want to be careful with this trade
 
     Args:
         account_id: Optional account ID to use (#401)

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal, Optional
 
+import openai
 from agent_framework import FunctionTool, Message
 from agent_framework.openai import RawOpenAIChatCompletionClient
 
@@ -109,6 +110,36 @@ def _parse_trade_request(
     }
 
 
+PARSE_TIMEOUT_SECONDS = 30
+PARSE_MAX_RETRIES = 2
+MAX_ERROR_CHAIN = 10
+
+
+def _service_failure(error: BaseException) -> Optional[str]:
+    """
+    What went wrong if it was the model service, not the input (#636): by the SDK's own
+    exception types, which the framework wraps, as an error's text can repeat the input.
+    """
+    seen = error
+    for _ in range(MAX_ERROR_CHAIN):
+        if seen is None:
+            break
+        if isinstance(seen, (openai.AuthenticationError, openai.PermissionDeniedError)):
+            return "Configuration error"
+        if isinstance(
+            seen,
+            (
+                openai.RateLimitError,
+                openai.APITimeoutError,
+                openai.APIConnectionError,
+                openai.InternalServerError,
+            ),
+        ):
+            return "Model service unavailable"
+        seen = seen.__cause__ or seen.__context__
+    return None
+
+
 # Nothing makes the model keep to the schema (#632): the tool is offered, never run, so its
 # arguments are checked here. Anything but an explicit "buy" or "sell" is a review.
 _TIMINGS = ("now", "pullback", "dip", "breakout", "limit")
@@ -178,11 +209,22 @@ class LLMParser(InputParser):
                     "or update config.json"
                 )
 
-            self.client = RawOpenAIChatCompletionClient(model=model or _tool_model, api_key=key)
+            # The SDK's default is 600 s per attempt, with the CLI waiting on it
+            self.client = RawOpenAIChatCompletionClient(
+                model=model or _tool_model,
+                async_client=openai.AsyncOpenAI(
+                    api_key=key, timeout=PARSE_TIMEOUT_SECONDS, max_retries=PARSE_MAX_RETRIES
+                ),
+            )
 
         self._tool = PARSE_TOOL
         # Deterministic for parsing; the tool is offered, never run
-        self._options = {"temperature": 0.0, "max_tokens": 1024, "tools": [self._tool]}
+        self._options = {
+            "temperature": 0.0,
+            "max_tokens": 1024,
+            "tools": [self._tool],
+            "tool_choice": {"mode": "required", "required_function_name": self._tool.name},
+        }
         logger.info(f"LLMParser initialized with model: {model or _tool_model}")
 
     async def parse(self, user_input: str, user_id: Optional[str] = None) -> TradeRequest:
@@ -199,11 +241,8 @@ class LLMParser(InputParser):
         Raises:
             ValueError: If input cannot be parsed
         """
-        # Auto-correct obvious errors first
-        corrected_input = self._autocorrect(user_input)
-
         # Build prompt
-        prompt = self._build_prompt(corrected_input)
+        prompt = self._build_prompt(user_input)
 
         try:
             # Call the LLM, offering the parse tool
@@ -252,11 +291,10 @@ class LLMParser(InputParser):
             return request
 
         except Exception as e:
-            # Catch specific OpenAI API auth errors
-            error_str = str(e).lower()
-            if "401" in error_str or "authentication" in error_str or "api key" in error_str:
-                logger.error("OpenAI API authentication error", exc_info=True)
-                raise ValueError("Configuration error") from e
+            failure = _service_failure(e)
+            if failure:
+                logger.error("OpenAI request failed: %s", failure, exc_info=True)
+                raise ValueError(failure) from e
 
             # Generic parse failure - simple message
             logger.debug(f"Parse error for input '{user_input}': {e}", exc_info=True)
@@ -301,10 +339,11 @@ User input: "{user_input}"
 
 First, determine the request_type:
 - "trade" = User wants to buy, sell, or analyze a specific ticker
-  Examples: "buy AAPL", "is SPY good?", "sell my TSLA", "10 shares AAPL"
+  Examples: "buy AAPL", "is SPY good?", "how does SPY look?", "sell my TSLA", "10 shares AAPL"
 - "status_query" = User is asking about account status, orders, or positions
   Examples: "any open orders?", "what positions do I have?", "show my portfolio"
   Note: Words like "any", "what", "show", "check" at the start usually indicate status queries
+  A question about how a named symbol looks or whether it's good is "trade", not "status_query"
 
 If request_type is "trade", extract:
 - ticker: Stock symbol (uppercase, 1-5 letters)
@@ -325,35 +364,10 @@ If request_type is "trade", extract:
   * No timing mentioned → timing=null (execute immediately at market)
 
 If request_type is "status_query":
-- ticker: Empty string (unless asking about specific ticker's position)
+- ticker: The symbol if the input names one, else an empty string
 - action: "review" (default)
 
 Use the parse_trade_request function."""
-
-    def _autocorrect(self, user_input: str) -> str:
-        """
-        Auto-correct obvious errors in user input.
-
-        Examples:
-        - "spy at 60" -> "SPY at 600" (common price typos)
-        """
-        corrected = user_input
-
-        # Common price typos (SPY at 60 -> 600, QQQ at 50 -> 500)
-        common_corrections = {
-            r"\bspy at 60\b": "SPY at 600",
-            r"\bspy at 6([0-9]{2})\b": r"SPY at 6\1",
-            r"\bqqq at 50\b": "QQQ at 500",
-            r"\bqqq at 5([0-9]{2})\b": r"QQQ at 5\1",
-        }
-
-        for pattern, replacement in common_corrections.items():
-            corrected = re.sub(pattern, replacement, corrected, flags=re.IGNORECASE)
-
-        if corrected != user_input:
-            logger.info(f"Auto-corrected: '{user_input}' -> '{corrected}'")
-
-        return corrected
 
 
 # The name before #606 (AutoGen); kept so existing imports work

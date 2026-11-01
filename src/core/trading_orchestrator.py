@@ -433,6 +433,32 @@ class TradingOrchestrator:
 
         return await self.session_store.get_recent_suggestions(user_id, limit)
 
+    def plan_close(self, ticker: str, quantity: Optional[int] = None) -> Optional[dict]:
+        """
+        What selling a long position would take, without changing anything.
+
+        Args:
+            ticker: Stock symbol
+            quantity: Shares to sell; all of them if None
+
+        Returns:
+            The plan to pass to close_position, or None if there's no long position
+        """
+        return self.executor.plan_close(ticker, quantity)
+
+    async def close_position(self, plan: dict) -> OrderResult:
+        """
+        Sell a position at market. This is the user's own exit, so it isn't subject to the
+        signal or the risk check, which limit new exposure.
+
+        Args:
+            plan: From plan_close
+
+        Returns:
+            OrderResult with the outcome
+        """
+        return await self.executor.close_position(plan)
+
     async def cancel_order(self, order_id: str) -> bool:
         """
         Cancel a pending order.

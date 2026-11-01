@@ -35,9 +35,15 @@ def _suggestion(signal, qty=10):
     )
 
 
-def run(monkeypatch, typed, signal, action, mode="confirm", position=None, answers=("yes",)):
+def run(
+    monkeypatch, typed, signal, action, mode="confirm", position=None, answers=("yes",), plan=None
+):
     """Run a typed request; returns the orchestrator and the prompts asked."""
     orchestrator = MagicMock()
+    orchestrator.plan_close.return_value = plan
+    orchestrator.close_position = AsyncMock(
+        return_value=OrderResult(success=True, message="sold", ticker="AAPL", quantity=14)
+    )
     decision = TradeDecision(suggestion=_suggestion(signal))
     decision.suggestion.current_price = 100.0
     orchestrator.process_request = AsyncMock(return_value=decision)
@@ -120,17 +126,6 @@ def test_detect_user_intent(typed, intent):
 
 
 @pytest.mark.parametrize("mode", ["confirm", "auto"])
-def test_sell_with_a_buy_signal_places_no_buy(monkeypatch, capsys, mode):
-    orchestrator, prompts = run(monkeypatch, "sell AAPL", Signal.BUY, "sell", mode)
-
-    assert order_placed(orchestrator) is None
-    assert prompts == []
-    out = capsys.readouterr().out
-    assert "NO ORDER PLACED" in out
-    assert "as requested" not in out
-
-
-@pytest.mark.parametrize("mode", ["confirm", "auto"])
 def test_buy_more_with_a_sell_signal_doesnt_sell_the_position(monkeypatch, mode):
     orchestrator, prompts = run(
         monkeypatch, "buy more AAPL", Signal.SELL, "buy", mode, position=POSITION
@@ -138,12 +133,6 @@ def test_buy_more_with_a_sell_signal_doesnt_sell_the_position(monkeypatch, mode)
 
     assert order_placed(orchestrator) is None
     assert prompts == []
-
-
-def test_a_parsed_sell_counts_as_a_request_without_the_word(monkeypatch):
-    orchestrator, _ = run(monkeypatch, "I am done with AAPL", Signal.BUY, "sell")
-
-    assert order_placed(orchestrator) is None
 
 
 def test_matching_request_and_signal_places_that_order(monkeypatch, capsys):
@@ -154,12 +143,6 @@ def test_matching_request_and_signal_places_that_order(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "BUY (as requested)" in out
     assert "Order: BUY 10 AAPL" in out
-
-
-def test_sell_with_a_sell_signal_and_a_position_sells(monkeypatch):
-    orchestrator, _ = run(monkeypatch, "sell AAPL", Signal.SELL, "sell", position=POSITION)
-
-    assert order_placed(orchestrator) == ("SELL", 10)
 
 
 def test_declining_the_prompt_places_nothing(monkeypatch):
@@ -176,18 +159,147 @@ def test_auto_says_which_order_it_is_placing(monkeypatch, capsys):
     assert "BUY 10 AAPL" in capsys.readouterr().out
 
 
-def test_sell_with_no_position_still_cannot_sell(monkeypatch):
-    orchestrator, prompts = run(monkeypatch, "sell AAPL", Signal.SELL, "sell")
-
-    assert order_placed(orchestrator) is None
-    assert prompts == []
-
-
 def test_buy_with_a_sell_signal_and_no_position_still_asks_to_override(monkeypatch):
     orchestrator, prompts = run(monkeypatch, "buy AAPL", Signal.SELL, "buy", answers=("yes", "yes"))
 
     assert "Do you still want to BUY AAPL" in prompts[0]
     assert order_placed(orchestrator) == ("BUY", 10)
+
+
+# Selling a position: the user's own exit
+
+
+PLAN = {
+    "ticker": "AAPL",
+    "quantity": 14,
+    "held": 14,
+    "market_open": True,
+    "orders_to_cancel": [{"id": "s1", "order_type": "stop", "stop_price": 95.0}],
+}
+
+
+@pytest.mark.parametrize("signal", [Signal.BUY, Signal.HOLD, Signal.SELL])
+@pytest.mark.parametrize("mode", ["confirm", "auto"])
+def test_sell_with_a_position_sells_whatever_the_signal(monkeypatch, signal, mode):
+    orchestrator, prompts = run(monkeypatch, "sell AAPL", signal, "sell", mode, plan=PLAN)
+
+    assert len(prompts) == 1  # in AUTO too
+    orchestrator.close_position.assert_awaited_once_with(PLAN)
+
+
+def test_a_sale_needs_no_analysis(monkeypatch):
+    """An exit can't depend on market data or an indicator being available."""
+    orchestrator, _ = run(monkeypatch, "sell AAPL", Signal.BUY, "sell", plan=PLAN)
+
+    orchestrator.process_request.assert_not_awaited()
+
+
+@pytest.mark.parametrize("answer", ["no", "", "y", "yes please"])
+def test_only_yes_sells(monkeypatch, capsys, answer):
+    orchestrator, _ = run(
+        monkeypatch, "sell AAPL", Signal.BUY, "sell", plan=PLAN, answers=(answer,)
+    )
+
+    orchestrator.close_position.assert_not_awaited()
+    assert "Nothing sold" in capsys.readouterr().out
+
+
+def test_the_prompt_says_what_the_sale_does(monkeypatch, capsys):
+    plan = {**PLAN, "quantity": 5, "market_open": False}
+    run(monkeypatch, "sell 5 AAPL", Signal.BUY, "sell", plan=plan, answers=("no",))
+
+    out = capsys.readouterr().out
+    assert "SELL 5 of your 14 AAPL at market" in out
+    assert "cancels its open stop order @ $95.00" in out
+    assert "market is closed" in out
+
+
+def test_no_cancel_warning_when_nothing_holds_the_shares(monkeypatch, capsys):
+    plan = {**PLAN, "orders_to_cancel": []}
+    run(monkeypatch, "sell AAPL", Signal.BUY, "sell", plan=plan, answers=("no",))
+
+    out = capsys.readouterr().out
+    assert "cancels" not in out
+    assert "market is closed" not in out
+
+
+def test_the_requested_quantity_reaches_the_plan(monkeypatch):
+    orchestrator = MagicMock()
+    orchestrator.plan_close.return_value = None
+    handler = handler_module.TradeHandler(orchestrator, MagicMock(), None, "confirm")
+
+    request = TradeRequest(ticker="AAPL", action="sell", quantity=5)
+    asyncio.run(handler.handle_trade_request("sell 5 AAPL", request))
+
+    orchestrator.plan_close.assert_called_once_with("AAPL", 5)
+
+
+@pytest.mark.parametrize("signal", [Signal.BUY, Signal.SELL, Signal.HOLD])
+def test_sell_with_no_position_cannot_sell(monkeypatch, capsys, signal):
+    orchestrator, prompts = run(monkeypatch, "sell AAPL", signal, "sell")
+
+    assert prompts == []
+    orchestrator.close_position.assert_not_awaited()
+    assert "Cannot SELL" in capsys.readouterr().out
+
+
+def test_a_parsed_sell_counts_without_the_word(monkeypatch):
+    orchestrator, _ = run(monkeypatch, "I am done with AAPL", Signal.BUY, "sell", plan=PLAN)
+
+    orchestrator.close_position.assert_awaited_once()
+
+
+@pytest.mark.parametrize("action", ["review", "sell"])
+def test_a_sell_question_is_not_a_sale(monkeypatch, action):
+    """Whatever the model makes of it."""
+    orchestrator, prompts = run(monkeypatch, "should I sell AAPL?", Signal.BUY, action, plan=PLAN)
+
+    orchestrator.close_position.assert_not_awaited()
+    assert prompts == []
+
+
+def test_a_buy_question_is_not_a_buy(monkeypatch):
+    orchestrator, prompts = run(monkeypatch, "should I buy AAPL?", Signal.BUY, "buy", "auto")
+
+    assert order_placed(orchestrator) is None
+    assert prompts == []
+
+
+@pytest.mark.parametrize("typed", ["short AAPL", "I want to short AAPL", "go short AAPL"])
+def test_a_short_request_doesnt_sell_the_long_position(monkeypatch, capsys, typed):
+    orchestrator, prompts = run(monkeypatch, typed, Signal.SELL, "sell", plan=PLAN)
+
+    orchestrator.close_position.assert_not_awaited()
+    assert prompts == []
+    assert "short selling is not supported" in capsys.readouterr().out
+
+
+def test_a_sale_with_no_symbol_asks_which(monkeypatch, capsys):
+    orchestrator = MagicMock()
+    handler = handler_module.TradeHandler(orchestrator, MagicMock(), None, "confirm")
+
+    request = TradeRequest(ticker="", action="sell")
+    asyncio.run(handler.handle_trade_request("sell it", request))
+
+    orchestrator.plan_close.assert_not_called()
+    assert "Which symbol" in capsys.readouterr().out
+
+
+def test_a_failed_sale_leaves_the_local_state_alone(monkeypatch, capsys):
+    orchestrator = MagicMock()
+    orchestrator.plan_close.return_value = PLAN
+    orchestrator.close_position = AsyncMock(
+        return_value=OrderResult(success=False, message="refused", ticker="AAPL")
+    )
+    monkeypatch.setattr("builtins.input", lambda prompt="": "yes")
+    monkeypatch.setattr(handler_module, "display_result", MagicMock())
+    cycle = MagicMock()
+    handler = handler_module.TradeHandler(orchestrator, MagicMock(), cycle, "confirm")
+
+    request = TradeRequest(ticker="AAPL", action="sell")
+    asyncio.run(handler.handle_trade_request("sell AAPL", request))
+
+    cycle.save_local_state.assert_not_called()
 
 
 # A HOLD signal
@@ -350,23 +462,28 @@ def test_a_cli_trade_keeps_what_a_routine_saved_since_startup(cycle):
     assert saved["AAPL"]["quantity"] == 10
 
 
-def test_a_sale_is_not_recorded_as_a_position(cycle):
-    traded(cycle, Signal.SELL)
+def sold(cycle, qty):
+    handler = handler_module.TradeHandler(MagicMock(), MagicMock(), cycle, "confirm")
+    handler._record_sale("AAPL", qty)
 
-    assert "AAPL" not in saved_positions(cycle)
 
-
-def test_selling_everything_removes_the_position(cycle):
-    routine_saves(cycle, {"AAPL": {"quantity": 10}})
-
-    traded(cycle, Signal.SELL)
+def test_a_sale_of_something_not_recorded_adds_nothing(cycle):
+    sold(cycle, 10)
 
     assert saved_positions(cycle) == {}
+
+
+def test_a_sale_keeps_what_a_routine_saved_since_startup(cycle):
+    routine_saves(cycle, {"SPY": {"quantity": 14, "stop_price": 744.47}, "AAPL": {"quantity": 10}})
+
+    sold(cycle, 10)
+
+    assert saved_positions(cycle) == {"SPY": {"quantity": 14, "stop_price": 744.47}}
 
 
 def test_selling_part_keeps_the_rest(cycle):
     routine_saves(cycle, {"AAPL": {"quantity": 14, "stop_price": 90.0}})
 
-    traded(cycle, Signal.SELL, qty=4)
+    sold(cycle, 4)
 
     assert saved_positions(cycle)["AAPL"] == {"quantity": 10, "stop_price": 90.0}

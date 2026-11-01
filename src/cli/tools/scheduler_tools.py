@@ -251,8 +251,8 @@ def get_routine_description(routine: str = "both") -> Dict[str, Any]:
                 "Fetch current broker state (positions, orders)",
                 "Reconcile with local state",
                 "Record account, positions and new fills (daily records)",
+                "Re-place missing stops and renew aging ones, at their level",
                 "Generate morning report",
-                "Update trailing stops if applicable",
             ],
         },
         "evening": {

@@ -6,6 +6,8 @@
 **Results**: [results/morning_raise_real_prices.json](results/morning_raise_real_prices.json) and [results/morning_raise_real_prices.md](results/morning_raise_real_prices.md) (every table: three variants, 0/5/10 bps, three periods), [results/live_morning_raises.json](results/live_morning_raises.json)
 **Code**: `scripts/research/fetch_premarket_bars.py`, `scripts/research/morning_raise_real_prices.py`, `scripts/research/live_morning_raises.py`, `LiveRules.morning_prices` in `src/backtesting/live_rules_sim.py`
 
+**Decision (owner, 2026-11-01)**: evening only. The morning routine no longer raises stops, and its repairs keep a stop's level.
+
 ## Question
 
 The 09:20 ET routine raises stops to the trailing level from the broker's price at that moment, a pre-market trade. The evening routine (15:50 ET) does the same from the afternoon price. The #539 study could not model the morning raise (daily bars have no 09:20 price) and stood the day's open in for it, which cost the trailing modes about 0.1 Sharpe. Is that so with the real 09:20 price? The owner has three options: keep the morning raise; raise in the morning only from the previous close; raise in the evening only.

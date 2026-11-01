@@ -268,11 +268,13 @@ def test_report_shows_stop_details():
     assert "stop $624.72, 14 shares, no live stop order - AUTO_FIXED" in report
 
 
-def test_morning_routine_adjusts_stops_against_fresh_broker_state(monkeypatch, tmp_path):
+def _cycle_after_a_repair(monkeypatch, tmp_path):
+    """A cycle whose stop check places a stop, so later steps need fresh broker state."""
     import src.trading.scheduling.trading_cycle as cycle_module
     from src.trading.state.state_reconciler import Discrepancy
 
     monkeypatch.setattr(cycle_module, "GTT_AVAILABLE", False)
+    monkeypatch.setattr(cycle_module, "is_market_hours", lambda: True)
     cycle = _cycle(MagicMock())
     stale, fresh = {"positions": {}, "orders": {}}, {"positions": {}, "orders": {"SPY": []}}
     placed = Discrepancy("MISSING_STOP", "SPY", {}, "AUTO_FIXED", "HIGH")
@@ -284,11 +286,27 @@ def test_morning_routine_adjusts_stops_against_fresh_broker_state(monkeypatch, t
     cycle.calculate_stop_adjustments = MagicMock(return_value=[])
     cycle.generate_routine_report = MagicMock(return_value="report")
     cycle._get_report_file_path = lambda routine: str(tmp_path / f"{routine}.md")
+    return cycle, stale, fresh
+
+
+def test_evening_routine_adjusts_stops_against_fresh_broker_state(monkeypatch, tmp_path):
+    cycle, stale, fresh = _cycle_after_a_repair(monkeypatch, tmp_path)
+
+    cycle.evening_routine()
+
+    cycle.fetch_broker_state.assert_called_with(force_refresh=True)
+    cycle.check_and_repair_stops.assert_called_once_with(stale)
+    cycle.calculate_stop_adjustments.assert_called_once_with(fresh)
+
+
+def test_morning_routine_repairs_at_the_stops_level_and_raises_nothing(monkeypatch, tmp_path):
+    cycle, stale, fresh = _cycle_after_a_repair(monkeypatch, tmp_path)
 
     cycle.morning_routine()
 
-    cycle.fetch_broker_state.assert_called_with(force_refresh=True)
-    cycle.calculate_stop_adjustments.assert_called_once_with(fresh)
+    cycle.check_and_repair_stops.assert_called_once_with(stale, raise_to_trailing=False)
+    cycle.calculate_stop_adjustments.assert_not_called()
+    cycle.check_gtt_triggers.assert_called_once_with(fresh)  # still sees the new stop
 
 
 class _Trail:
@@ -350,6 +368,29 @@ class TestStopsAtTheTrailingLevel:
         _, repairs = reconciler.check_protective_stops(_broker(), _local(), NOW)
 
         assert repairs[0].stop_price == 739.21
+
+    def test_the_morning_places_a_missing_stop_at_its_last_level(self):
+        """#623: a pre-market price doesn't set the stop, even through a repair."""
+        _, repairs = _trailing_reconciler(739.21).check_protective_stops(
+            _broker(), _local(), NOW, raise_to_trailing=False
+        )
+
+        assert repairs[0].stop_price == 627.0
+        assert "trailing level" not in repairs[0].reason
+
+    def test_the_morning_renews_an_aging_stop_at_its_level(self):
+        orders = [_stop_order(85)]
+        reconciler = _trailing_reconciler(739.21)
+
+        _, repairs = reconciler.check_protective_stops(
+            _broker(orders=orders), _local(), NOW, raise_to_trailing=False
+        )
+
+        assert repairs[0].kind == "STOP_EXPIRING"
+        assert repairs[0].stop_price == orders[0]["stop_price"]
+        assert repairs[0].replaces_order_id == "sl-1"
+        assert "raised to the trailing level" not in repairs[0].reason
+        assert reconciler.trailing_stop_manager.stop_states == {}  # nothing worked out
 
     def test_an_aging_stop_is_renewed_at_the_trailing_level(self):
         orders = [_stop_order(85)]

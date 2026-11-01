@@ -48,10 +48,10 @@ stop that is hit exits as ``trail`` (``trail_gap`` on a gap), a stop never raise
 ``stop`` / ``stop_gap``. ``signal_exit=False`` switches the SELL-signal exits off, so that
 positions leave only through their stops and targets.
 
-The morning routine (09:20 ET) raises too, from the broker's price at that time. That is a
-pre-market print, not the previous close, so on a gap day it differs from the price the
-evening raise used and the raise is not redundant. Daily bars have no pre-market price, so
-the default leaves the morning raise out. ``morning_raise=True`` is a sensitivity that
+The morning routine (09:20 ET) raised too until #623 removed it, from the broker's price at
+that time: a pre-market print, not the previous close, so on a gap day it differed from the
+price the evening raise used. The default matches the routines and leaves it out.
+``morning_raise=True`` is a sensitivity that
 stands the day's open in for the 09:20 price: stops are raised from the open before the
 day's range is checked, so a gap-up's gain is locked in ahead of the session and a
 reversal can take it. The open is the case in which the gap is fully priced by 09:20; a

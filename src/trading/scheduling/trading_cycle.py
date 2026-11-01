@@ -3,7 +3,7 @@
 Cost-Efficient Trade Cycle - Minimal API calls using GTC orders
 
 Core Principle: Let the broker do the work via GTC orders, minimize LLM/API calls.
-- Morning routine: 9:20 AM ET - reconcile, adjust stops, generate report
+- Morning routine: 9:20 AM ET - reconcile, repair stops, generate report
 - Evening routine: 3:50 PM ET - EOD review and preparation
 - Batch all API calls to minimize costs
 - JSON is for humans, broker is truth
@@ -592,11 +592,18 @@ class CostEfficientTradeCycle:
     # Protective stops - Issue #586
     # -------------------------------------------------------------------------
 
-    def check_and_repair_stops(self, broker_state: Dict[str, Any]) -> List[Discrepancy]:
+    def check_and_repair_stops(
+        self, broker_state: Dict[str, Any], raise_to_trailing: bool = True
+    ) -> List[Discrepancy]:
         """
         Re-place missing protective stops and renew GTC stops near Alpaca's 90-day limit.
 
         Errors are contained, so a failure here never stops the rest of the routine.
+
+        Args:
+            broker_state: Current broker state
+            raise_to_trailing: Also lift a repaired stop to the trailing level. The morning
+                routine says no: its price is a pre-market trade (#623).
 
         Returns:
             Discrepancies to record and report (repairs with their outcome, and cases
@@ -604,7 +611,7 @@ class CostEfficientTradeCycle:
         """
         try:
             needs_review, repairs = self.reconciler.check_protective_stops(
-                broker_state, self.local_state_manager.state
+                broker_state, self.local_state_manager.state, raise_to_trailing=raise_to_trailing
             )
             return needs_review + self.repair_stops(repairs)
         except Exception as e:
@@ -1015,22 +1022,24 @@ class CostEfficientTradeCycle:
             discrepancies = self.reconcile_state(broker_state)
             discrepancies = self._settle_closed_positions(broker_state, discrepancies)
 
-            # Step 2.5: Re-place missing stops, renew aging GTC ones (Issue #586)
-            stop_discrepancies = self.check_and_repair_stops(broker_state)
+            # Step 2.5: Re-place missing stops, renew aging GTC ones (Issue #586), at the level
+            # they had: stops are only raised in the evening (#623)
+            stop_discrepancies = self.check_and_repair_stops(broker_state, raise_to_trailing=False)
             discrepancies.extend(stop_discrepancies)
             self.last_discrepancies = tuple(discrepancies)
             if any(d.action == "AUTO_FIXED" for d in stop_discrepancies):
-                # Later steps (stop adjustments) must see the new stop orders
+                # Later steps (the GTT check counts shares held by stops) see the new stops
                 broker_state = self.fetch_broker_state(force_refresh=True)
 
             # Step 3: Check GTT triggers (no API calls) - Issue #340
             gtt_results = self.check_gtt_triggers(broker_state)
             broker_state = self._after_gtt_actions(broker_state, gtt_results)
 
-            # Steps 4-5: Raise stops to their trailing level
-            adjustments, modification_results = self.raise_stops(broker_state)
+            # No stop raise here (#623): on 09:20 prices it showed no benefit over raising in
+            # the evening, and it locks in gaps the session often gives back
+            adjustments, modification_results = [], None
 
-            # Step 5.2: Position alerts against the stops after the raise (no API calls)
+            # Step 5.2: Position alerts against the live stops (no API calls)
             alerts, alert_lines = self._position_alerts(broker_state)
 
             # Step 5.5: Sync trailing stops to GTT for multi-day persistence (Phase 3, Issue #340)
@@ -1090,14 +1099,14 @@ class CostEfficientTradeCycle:
             broker_state = self._after_gtt_actions(broker_state, gtt_results)
 
             # Raise stops to their trailing level while the market is open, so an
-            # overnight gap can't take the day's gains before the morning run. Run
-            # after hours (by hand), the raise is left to the morning: thin
+            # overnight gap can't take the day's gains. This is the only raise (#623). Run
+            # after hours (by hand), the raise waits for the next evening: thin
             # after-hours prints shouldn't set the stop.
             adjustments, modification_results = [], None
             if is_market_hours():
                 adjustments, modification_results = self.raise_stops(broker_state)
             else:
-                logger.info("Market closed: the stop raise is left to the morning routine")
+                logger.info("Market closed: the stop raise is left to the next evening routine")
 
             # Position alerts against the stops after the raise
             alerts, alert_lines = self._position_alerts(broker_state)

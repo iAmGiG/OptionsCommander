@@ -165,7 +165,8 @@ def test_a_dry_run_sends_no_orders_and_saves_nothing(cycle, routine, tmp_path):
     assert saved == report and report.startswith("> 🧪 **DRY RUN**")
     assert not (tmp_path / f"{name}.md").exists()
     assert "MISSING_STOP: SPY" in report and DRY_RUN_ACTION in report
-    assert "QQQ: would raise stop $691.00 -> $698.77" in report
+    # Only the evening raises stops (#623)
+    assert ("QQQ: would raise stop $691.00 -> $698.77" in report) == (routine == "evening_routine")
     assert "dry run: SPY place_order not executed" in report
     assert "Dry run: daily records not saved" in report
 
@@ -189,10 +190,25 @@ def test_a_dry_run_leaves_the_position_tracker_as_it_was(cycle):
 def test_the_same_run_without_dry_run_acts(cycle, tmp_path):
     m = cycle.mocks
 
-    cycle.morning_routine(raise_errors=True)
+    cycle.evening_routine(raise_errors=True)
 
     m.om.place_stop_order.assert_called_once()
     m.om.modify_order.assert_called_once_with(order_id="sl-q", stop_price=698.77)
+    m.executor.execute_triggers_batch.assert_called_once()
+    m.sync.assert_called_once()
+    cycle.local_state_manager.save.assert_called_once()
+    assert (tmp_path / "evening.md").exists()
+
+
+def test_the_morning_run_repairs_stops_but_doesnt_raise_them(cycle, tmp_path):
+    """#623: the stop due a raise waits for the evening; the missing one is still placed."""
+    m = cycle.mocks
+
+    cycle.morning_routine(raise_errors=True)
+
+    m.om.place_stop_order.assert_called_once()
+    m.om.modify_order.assert_not_called()
+    cycle.calculate_stop_adjustments.assert_not_called()
     m.executor.execute_triggers_batch.assert_called_once()
     m.sync.assert_called_once()
     cycle.local_state_manager.save.assert_called_once()

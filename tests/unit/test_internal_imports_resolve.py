@@ -140,12 +140,10 @@ def test_the_check_notices_a_stale_import(tmp_path):
 @pytest.mark.parametrize(
     "gone",
     [
-        "src.autogen_agents.orchestration.trading_orchestrator",
-        "src.autogen_agents.orchestration.agent_factory",
-        "src.autogen_agents.workflow",
-        "src.autogen_agents.agents.executor_agent",
-        "src.autogen_agents.agents.risk_agent",
-        "src.autogen_agents.agents.scanner_agent",
+        "src.autogen_agents",
+        "src.market_data.market_context_tool",
+        "src.market_data.vxx_volatility_tool",
+        "src.utils.agent_utils",
         "src.trading.scheduling.trading_pipeline",
         "src.trading.orders.order_manager",
         "src.cli.utils.decision_formatter",

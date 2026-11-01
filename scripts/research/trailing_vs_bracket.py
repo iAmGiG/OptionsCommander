@@ -295,7 +295,7 @@ def methodology() -> dict:
 
 def baseline_methodology() -> dict:
     return {
-        "signal": "VoterAgent.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI 14 at 30/70), 90-calendar-day window rescaled to the prior day's raw price level",
+        "signal": "VotingSignal.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI 14 at 30/70), 90-calendar-day window rescaled to the prior day's raw price level",
         "timing": "signal from bars through d-1; fills at day d open",
         "entries": "BUY with no position at the start of the day; whole shares (at the raw price) of position_pct x prior equity at the prior close; max 10 positions and 80% exposure counted before the open; cash",
     }

@@ -1,7 +1,7 @@
 """
-Real VoterStrategy - Wraps the production VoterAgent with MACD+RSI analysis.
+Real VoterStrategy - The production VotingSignal with MACD+RSI analysis.
 
-This adapter integrates the production VoterAgent into
+This adapter integrates the production VotingSignal into
 the plugin architecture while handling market data fetching.
 """
 
@@ -13,20 +13,20 @@ import pandas as pd
 
 from config_defaults.trading_config import TradingConfig
 
-from src.autogen_agents.agents.multi_timeframe_voter import MultiTimeframeVoter
-from src.autogen_agents.agents.voter_agent import VoterAgent
-from src.autogen_agents.tools import fetch_unified_market_data
 from src.cli.tools.timeframe_tools import get_multi_timeframe_params
 from src.core.interfaces.strategy_analyzer import StrategyAnalyzer
 from src.core.models import AnalysisResult, AssetType, Signal, TradeRequest
 from src.core.ranked_voter_config import RankedVoterManager
 from src.core.trading_modes import ModeParameters, get_mode_manager
 from src.database import AnalysisHistoryManager
+from src.market_data.unified_market_tool import fetch_unified_market_data
 from src.trading.instruments.entry_planning import calculate_entry_plan
+from src.trading.instruments.multi_timeframe_voter import MultiTimeframeVoter
 from src.trading.instruments.timeframe_tools import (
     convert_to_alpaca_timeframe,
     get_current_timeframe,
 )
+from src.trading.instruments.voting_signal import VotingSignal
 from src.utils.date_utils import get_datetime_now
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class RealVoterStrategy(StrategyAnalyzer):
     Production VoterStrategy using real MACD+RSI analysis.
 
     Features:
-    - Production VoterAgent (MACD+RSI voting)
+    - Production VotingSignal (MACD+RSI voting)
     - Real market data fetching (Alpaca, Alpha Vantage)
     - MACD(13/34/8) + RSI(14) voting system
     - Confidence-based position sizing
@@ -73,9 +73,7 @@ class RealVoterStrategy(StrategyAnalyzer):
         # Load trading config (fallback for other settings)
         self.config = TradingConfig()
 
-        # Create VoterAgent
-        self.voter = VoterAgent(
-            name="real_voter_strategy",
+        self.voter = VotingSignal(
             macd_params=self.macd_params,
             rsi_params=self.rsi_params,
             use_config_file=True,
@@ -110,17 +108,8 @@ class RealVoterStrategy(StrategyAnalyzer):
         """
         ticker = request.ticker
 
-        # This method now orchestrates the analysis by calling helper methods.
-        # It makes the logic flow clearer and prepares for more complex agent interactions.
         try:
             user_timeframe, market_data = self._fetch_and_prepare_data(ticker)
-
-            # In a future autogen implementation, this would initiate a chat.
-            # For now, it calls the evaluation method directly.
-            # Example:
-            # prompt = f"Analyze {ticker} for a trade signal using MACD and RSI on a {user_timeframe} timeframe."
-            # agent_response = user_proxy.initiate_chat(self.voter, message=prompt, market_data=market_data)
-            # result = self._parse_agent_response(agent_response)
 
             # Issue #505: Check if multi-timeframe mode is active
             tf_params = get_multi_timeframe_params()
@@ -461,7 +450,7 @@ class RealVoterStrategy(StrategyAnalyzer):
         Args:
             ticker: Stock symbol
             timeframe: Current timeframe
-            result: VoterAgent evaluation result
+            result: VotingSignal evaluation result
             signal: Final signal (BUY/SELL/HOLD)
         """
         try:

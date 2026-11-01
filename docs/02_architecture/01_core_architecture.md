@@ -16,13 +16,6 @@ src/
 │   ├── orders/, state/, gtt/       # stops, reconciliation, GTT triggers
 │   └── scheduling/                 # morning/evening routines run from cron
 │
-├── autogen_agents/                 # Agents (Microsoft Agent Framework; the name predates #606)
-│   ├── core/base_agent.py          # BaseAgent: tools, process_with_tools (LLM + tool calling)
-│   ├── agents/voter_agent.py       # MACD+RSI voting agent (the live CLI signal)
-│   ├── agents/                     # scanner, risk, executor agents (in development)
-│   ├── orchestration/              # TradingOrchestrator, AgentBus, AgentFactory (in development)
-│   └── tools/market_tools.py       # Agent Framework FunctionTools for market data
-│
 ├── cli/tools/                      # CLI tools (FunctionTools); state-changing ones need approval
 │
 ├── market_data/                    # alpaca_market_data.py, unified_market_tool.py, market_context_tool.py
@@ -78,31 +71,9 @@ src/
 - `instruments/data_fetch.py`: Market data retrieval utilities
 - `positions/position_tracker.py`: Portfolio tracking functions
 
-### 3. Agent Layer (`src/autogen_agents/`)
+### 3. Signal Layer (`src/trading/instruments/`)
 
-**Purpose**: Multi-agent trading system on Microsoft Agent Framework. An agent's own work (voting, scanning, risk checks) is plain Python; `BaseAgent.process_with_tools()` runs an Agent Framework `Agent` for free-text requests, with up to two tool-calling rounds before the model must answer in text
-
-**Components**:
-
-- **VoterAgent**: ✅ MACD+RSI voting logic (backtest: no edge over buy-and-hold, [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
-- **BaseAgent**: ✅ Foundation class with tools and LLM tool calling; the OpenAI client is created on first use
-- **ScannerAgent**: 🚧 Market opportunity identification (in development)
-- **RiskAgent**: 🚧 Portfolio risk management (in development)
-- **ExecutorAgent**: 🚧 Trade execution coordination (in development)
-- **TradingOrchestrator**: 🚧 Multi-agent workflow management (in development)
-
-**Responsibilities**:
-
-- Coordinate multi-agent workflows
-- Make trading decisions via ensemble voting
-- Manage agent communication and message passing
-- Integrate with tools from integration and business logic layers
-
-**Key Files**:
-
-- `agents/voter_agent.py`: MACD+RSI voting agent
-- `core/base_agent.py`: Common agent functionality
-- `orchestration/trading_orchestrator.py`: Multi-agent coordination
+**Purpose**: The MACD+RSI vote the CLI analyses a request with. `VotingSignal` holds the rules; `MultiTimeframeVoter` runs them across timeframes. Neither calls an LLM. The agents built around them were retired (#331); the only LLM call left is the natural-language parser, `src/parsers/llm_parser.py`.
 
 ### 4. Data Layer (`src/market_data/`, `src/cache/`)
 
@@ -333,17 +304,6 @@ tests/
 
 ## Integration Points
 
-### Agents
-
-**Tool Access**: agents get the market tools by default (`src/autogen_agents/tools/`); pass `tools=[...]` to `BaseAgent` to choose others.
-
-```python
-from src.autogen_agents.agents.voter_agent import VoterAgent
-
-voter = VoterAgent(name="voter")  # no API key needed until an LLM call
-print([tool.name for tool in voter.tools])
-```
-
 ### Direct Usage
 
 **Programmatic Access**:
@@ -406,7 +366,7 @@ order = manager.place_market_order("AAPL", 10, "buy")
 
 ### ✅ Agent System Foundation
 
-- VoterAgent with MACD+RSI voting logic
+- VotingSignal with MACD+RSI voting logic
 - BaseAgent foundation with tool integration
 - Configuration system for dynamic parameter adjustment
 - Message handling and agent communication framework

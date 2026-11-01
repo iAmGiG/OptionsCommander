@@ -61,7 +61,7 @@ Earlier findings (Dec 2025 - Jan 2026):
 
 | Component | Status |
 |-----------|--------|
-| VoterAgent | In use (paper account) |
+| VotingSignal | In use (paper account) |
 | CLI Trade Assistant | Complete |
 | Alpaca Integration | Operational |
 | Position Management | Complete |
@@ -69,17 +69,14 @@ Earlier findings (Dec 2025 - Jan 2026):
 | Daily Scheduler | In use (cron, paper account) |
 | SQLite Cache | Complete (90%+ hit rate) |
 | LLM Intent Routing | Complete |
-| ScannerAgent | In Development |
-| RiskAgent | In Development |
-| ExecutorAgent | In Development |
 
 ---
 
-## Core Agents
+## Core Components
 
-### VoterAgent (in use on paper)
+### VotingSignal (in use on paper)
 
-Location: `src/autogen_agents/agents/voter_agent.py`
+Location: `src/trading/instruments/voting_signal.py`
 
 - **MACD Signal Generation**: 13/34/8 Fibonacci periods
 - **RSI Momentum Analysis**: 14-period with 30/70 thresholds
@@ -91,13 +88,6 @@ Location: `src/autogen_agents/agents/voter_agent.py`
 - **Natural Language Commands**: GPT-4o-mini parses trade requests
 - **Context-Aware Routing**: Distinguishes "any open orders?" from ticker "ANY"
 - **Scalable Design**: No hardcoded keyword patterns for ticker disambiguation
-
-### Agents in Development
-
-- **ScannerAgent**: Market opportunity identification
-- **RiskAgent**: Position sizing and risk management
-- **ExecutorAgent**: Trade execution via Alpaca API
-- **TradingOrchestrator**: Multi-agent coordination
 
 ---
 
@@ -120,7 +110,7 @@ ALPACA_PAPER_API_KEY: "your_key" # Required: Paper trading
 ALPACA_PAPER_SECRET: "your_key"  # Required: Paper trading
 ALPACA_ENDPOINT: "https://paper-api.alpaca.markets/v2"
 
-# Optional - VoterAgent uses pure math, no LLM required
+# Optional - VotingSignal uses pure math, no LLM required
 OPEN_AI_KEY: "sk-..."
 ```
 
@@ -202,10 +192,6 @@ The morning (9:20 AM ET) and evening (3:50 PM ET) routines run on NYSE trading d
 ```text
 OptionsCommander/           # repository root
 ├── src/
-│   ├── autogen_agents/     # AI agents (Microsoft Agent Framework; the name predates #606)
-│   │   ├── agents/         # VoterAgent (MACD+RSI voting); other agents in development
-│   │   ├── core/           # Base agent class
-│   │   └── ...             # Orchestration, tools, workflow
 │   ├── trading/            # Trading infrastructure
 │   │   ├── broker/         # Alpaca integration
 │   │   ├── orders/         # Order management
@@ -247,8 +233,8 @@ python -m pytest tests/ -v
 ruff check src/
 ruff format --check src/
 
-# VoterAgent validation
-python -c "from src.autogen_agents.agents.voter_agent import VoterAgent; print('OK')"
+# Signal import check
+python -c "from src.trading.instruments.voting_signal import VotingSignal; print('OK')"
 ```
 
 ### Contributing

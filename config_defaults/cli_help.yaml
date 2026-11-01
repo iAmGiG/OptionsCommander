@@ -101,7 +101,7 @@ interactive_commands:
         description: "Exit CLI"
 
 features:
-  - "VoterAgent (MACD+RSI voting) - backtest: no edge over buy-and-hold (#574)"
+  - "VotingSignal (MACD+RSI voting) - backtest: no edge over buy-and-hold (#574)"
   - "Trading Modes - Conservative/Moderate/Aggressive via natural language"
   - "Configuration System - YAML-based strategy parameters"
   - "Timeframe Support - Trade on 1m to 1M timeframes"

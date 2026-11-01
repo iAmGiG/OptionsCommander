@@ -208,7 +208,7 @@ def trade_assist(account_id: str = None):
             f"   - Default Mode: {mode_params.mode.value} (say 'aggressive' or 'conservative' to change)"
         )
         print("   - LLM Parser: gpt-4o-mini")
-        print("   - Strategy: RealVoterAgent (MACD+RSI voting)")
+        print("   - Strategy: RealVoterStrategy (MACD+RSI voting)")
 
         if active_account_info:
             print(f"   - Account: {active_account_info.alias or account_id} ({alpaca_mode})")
@@ -221,7 +221,7 @@ def trade_assist(account_id: str = None):
         factory = OrchestratorFactory()
         orchestrator = factory.create(
             order_manager=None,  # Auto-create from factory
-            use_real_voter=True,  # Use production VoterAgent
+            use_real_voter=True,  # Use the production voting signal
             use_real_alpaca=True,  # Use real Alpaca OrderManager
             alpaca_mode=alpaca_mode,  # Use detected mode from account
         )

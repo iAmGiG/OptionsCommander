@@ -2,7 +2,7 @@
 """
 Multi-Timeframe Ranked Voting System
 
-Issue #395: Implement multi-timeframe voting that runs VoterAgent across
+Issue #395: Implement multi-timeframe voting that runs VotingSignal across
 multiple timeframes simultaneously with weighted consensus.
 
 Concept: Timeframe confluence - signals from multiple timeframes must align
@@ -24,6 +24,7 @@ import pandas as pd
 
 from src.trading.instruments.data_fetch import fetch_market_data
 from src.trading.instruments.timeframe_tools import convert_to_alpaca_timeframe
+from src.trading.instruments.voting_signal import VotingSignal
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ class MultiTimeframeVoter:
     """
     Multi-timeframe ranked voting system.
 
-    Runs VoterAgent's ranked voting across multiple timeframes and aggregates
+    Runs VotingSignal's ranked voting across multiple timeframes and aggregates
     results using weighted consensus voting.
 
     Usage:
@@ -121,8 +122,7 @@ class MultiTimeframeVoter:
             self.preset_name = "trend_following"
             self.min_data_days = config["min_data_days"]
 
-        # Lazy import to avoid circular dependencies
-        self._voter_agent = None
+        self._voter: Optional[VotingSignal] = None
 
         logger.info(
             f"MultiTimeframeVoter initialized with preset '{self.preset_name}': "
@@ -145,13 +145,11 @@ class MultiTimeframeVoter:
         }
         return {tf: defaults.get(tf, 30) for tf in timeframes}
 
-    def _get_voter_agent(self):
-        """Get or create voter agent instance."""
-        if self._voter_agent is None:
-            from src.autogen_agents.agents.voter_agent import VoterAgent
-
-            self._voter_agent = VoterAgent()
-        return self._voter_agent
+    def _get_voter(self) -> VotingSignal:
+        """Get or create the voting signal."""
+        if self._voter is None:
+            self._voter = VotingSignal()
+        return self._voter
 
     def _fetch_data_for_timeframe(
         self, symbol: str, timeframe: str, end_date: Optional[datetime] = None
@@ -207,7 +205,7 @@ class MultiTimeframeVoter:
             TimeframeResult or None if evaluation failed
         """
         try:
-            voter = self._get_voter_agent()
+            voter = self._get_voter()
             result = voter.evaluate_ranked_voting(symbol, price_data)
 
             return TimeframeResult(

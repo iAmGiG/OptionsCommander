@@ -1,5 +1,5 @@
 """
-VotingSignal: VoterAgent's MACD+RSI signal without the agent framework (#606).
+VotingSignal: the MACD+RSI signal, free of the agent framework (#606).
 
 The golden values below come from VoterAgent before the signal was moved out of it
 (development at f9fc63a); the move must not change a single number.
@@ -9,14 +9,11 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from src.autogen_agents.agents.voter_agent import VoterAgent
-from src.autogen_agents.core import base_agent
 from src.trading.instruments.voting_signal import VotingSignal
 
 REPO = Path(__file__).resolve().parents[3]
@@ -83,48 +80,6 @@ def test_the_signal_loads_no_agent_framework_or_llm_client(tmp_path):
     assert [line for line in out.stdout.splitlines() if line.startswith("LOADED=")] == ["LOADED="]
 
 
-def _agent():
-    """A VoterAgent without BaseAgent's LLM client: only the parts these tests use."""
-    agent = object.__new__(VoterAgent)
-    agent.signal = VotingSignal()
-    agent._publish_events = True
-    agent._publish_voting_result = MagicMock()
-    return agent
-
-
-@pytest.mark.parametrize("method", ["evaluate_voting", "evaluate_ranked_voting"])
-def test_the_agent_returns_the_signals_decision(method):
-    agent = _agent()
-
-    for seed in (0, 1, 4):
-        assert getattr(agent, method)("S", _series(seed), True) == getattr(VotingSignal(), method)(
-            "S", _series(seed), True
-        )
-
-
-def test_the_agent_publishes_buys_and_sells_only():
-    agent = _agent()
-
-    agent.evaluate_voting("BUY", _series(0))
-    agent.evaluate_voting("HOLD", _series(1))
-    agent.evaluate_voting("SELL", _series(4))
-
-    published = [c.args[0] for c in agent._publish_voting_result.call_args_list]
-    assert published == ["BUY", "SELL"]
-
-
-def test_agent_parameters_are_the_signals():
-    agent = _agent()
-
-    agent.reconfigure(timeframe="4h", macd_params={"fast": 8})
-    agent.rsi_params = {"period": 7, "oversold": 25, "overbought": 75}
-
-    assert agent.signal.timeframe == "4h"
-    assert agent.signal.macd_params["fast"] == 8
-    assert agent.signal.rsi_params["period"] == 7
-    assert agent.current_config["timeframe"] == "4h"
-
-
 def test_a_decision_keeps_the_parameters_it_was_computed_with():
     signal = VotingSignal()
     result = signal.evaluate_voting("S0", _series(0))
@@ -154,19 +109,3 @@ def test_reset_restores_every_parameter_including_the_timeframe():
     assert signal.timeframe == "1d"
     assert signal.rsi_params["period"] == 14
     assert signal.current_config["timeframe"] == "1d"
-
-
-@pytest.mark.parametrize("use_config_file", [True, False])
-def test_the_agent_constructor_wires_its_signal(monkeypatch, use_config_file):
-    """The real VoterAgent.__init__, with only BaseAgent's LLM client set-up skipped."""
-    monkeypatch.setattr(base_agent.BaseAgent, "__init__", lambda self, *args, **kwargs: None)
-
-    agent = VoterAgent(name="voter", timeframe="4h", use_config_file=use_config_file)
-
-    assert isinstance(agent.signal, VotingSignal)
-    assert agent.timeframe == "4h" and agent.current_config["timeframe"] == "4h"
-    if use_config_file:
-        assert agent.config is agent.signal.config is not None
-    else:
-        assert agent.signal.config is None and not hasattr(agent, "config")
-    assert agent.evaluate_voting("S0", _series(0))["action"] == "BUY"

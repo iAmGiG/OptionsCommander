@@ -21,7 +21,7 @@ This backtests the rules the live CLI trades with, timed the way a pre-market ro
 
 | Part | Live source | Simulation |
 | ---- | ----------- | ---------- |
-| Signal | `RealVoterStrategy` calls `VoterAgent.evaluate_ranked_voting` | The same call, on a 90-calendar-day close window |
+| Signal | `RealVoterStrategy` calls `VotingSignal.evaluate_ranked_voting` | The same call, on a 90-calendar-day close window |
 | Indicators | MACD 13/34/8, histogram beyond ±0.1 (dollars); RSI 14 at 30/70, on bars split-adjusted as of the fetch | Unchanged; the window is rescaled to the decision day's split level, since the threshold is in dollars |
 | Timing | Pre-market decision | Bars through day d-1; fills at day d's open |
 | Size | `SimpleRiskManager`: risk_per_trade × equity, whole shares (signal strength ignored) | 2% (moderate) or 1% (conservative) of the prior close's equity, whole shares at the raw price |

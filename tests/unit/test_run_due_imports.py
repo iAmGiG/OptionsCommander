@@ -23,7 +23,6 @@ loaded = sorted(
     name for name in sys.modules
     if name.split(".")[0] in ("cli", "agent_framework", "openai")
     or name in ("core.factory", "src.cli") or name.startswith("src.cli.")
-    or name == "src.autogen_agents" or name.startswith("src.autogen_agents.")
 )
 print("EXIT", code)
 print("LOADED", loaded)

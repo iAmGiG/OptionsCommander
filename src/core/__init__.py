@@ -4,9 +4,7 @@ Core trading system architecture.
 This package contains the foundational interfaces, models, and orchestrator
 for the new plugin-based architecture.
 
-For agent communication, use src/autogen_agents/agent_bus.py (Issue #390).
 For trading modes, use src/core/trading_modes.py (Issue #400).
-Legacy components (autogen_agents, old strategies) are imported separately.
 """
 
 from .interfaces import ExecutionManager, InputParser, RiskManager, StrategyAnalyzer

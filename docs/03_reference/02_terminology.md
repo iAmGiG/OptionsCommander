@@ -2,11 +2,7 @@
 
 ## Agent Architecture
 
-- **VoterAgent** = MACD+RSI voting agent, the live signal (no backtested edge; see the [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
-- **ScannerAgent** = Market scanning and opportunity identification (in development)
-- **RiskAgent** = Risk management and position sizing (in development)
-- **ExecutorAgent** = Trade execution and order management (minimal implementation)
-- **TradingOrchestrator** = Multi-agent coordination and workflow management
+- **VotingSignal** = MACD+RSI voting, the live signal (no backtested edge; see the [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
 - **BaseAgent** = Parent class for all trading agents with tool integration
 
 ## Legacy Agent Acronyms (Deprecated V0-V4 System)
@@ -52,7 +48,6 @@
 
 ### Current Directory Structure
 
-- **`src/autogen_agents/`** = Trading agents on Agent Framework (the name predates #606)
 - **`src/deprecated/v0_v4_agents/`** = Legacy sentiment-based agent system
 - **`src/trading_tools/`** = Core trading utilities (indicators, data fetching, risk management)
 - **`config_defaults/`** = Default configuration files and parameter management
@@ -66,6 +61,6 @@
 
 ### Agent Development Status
 
-- **✅ IN USE** = VoterAgent (runs on the paper account)
+- **✅ IN USE** = VotingSignal (runs on the paper account)
 - **🚧 IN DEVELOPMENT** = Scanner, Risk, Executor, Trading Orchestrator agents
 - **❌ DEPRECATED** = V0-V4 sentiment framework (complex, unproven ROI)

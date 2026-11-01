@@ -127,19 +127,10 @@ Many commands support short aliases for faster typing:
 
 ## Current Development Commands
 
-### Agent Testing ✅
+### Import Check ✅
 
 ```bash
-# VoterAgent (MACD+RSI voting)
-python -c "from src.autogen_agents.agents.voter_agent import VoterAgent; print('VoterAgent: OK')"
-
-# Multi-agent development testing
-python -c "from src.autogen_agents.agents.scanner_agent import ScannerAgent; print('ScannerAgent: In Development')"
-python -c "from src.autogen_agents.agents.risk_agent import RiskAgent; print('RiskAgent: In Development')"
-python -c "from src.autogen_agents.agents.executor_agent import ExecutorAgent; print('ExecutorAgent: In Development')"
-
-# Trading orchestrator coordination
-python -c "from src.autogen_agents.orchestration.trading_orchestrator import TradingOrchestrator; print('Orchestrator: In Development')"
+python -c "from src.trading.instruments.voting_signal import VotingSignal; print('VotingSignal: OK')"
 
 # All unit tests (read the test-safety notes in docs/07_testing/README.md before a full run)
 python -m unittest discover tests
@@ -275,9 +266,8 @@ python scripts/analysis/generate_results_summary.py --advanced
 python --version
 conda info --envs
 
-# Verify the agent imports work
-python -c "from src.autogen_agents.agents.voter_agent import VoterAgent; print('VoterAgent import successful')"
-python -c "from src.autogen_agents.core.base_agent import BaseAgent; print('BaseAgent import successful')"
+# Verify the signal imports
+python -c "from src.trading.instruments.voting_signal import VotingSignal; print('VotingSignal import successful')"
 
 # Test cache data loading (SQLite)
 python scripts/utilities/cache_manager.py query AAPL --start 2024-01-01 --end 2024-12-31

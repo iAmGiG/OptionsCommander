@@ -368,6 +368,16 @@ def test_cleanup_removes_nothing_without_the_manager(backups, monkeypatch):
     assert backup_files(backups) == before
 
 
+# /watchlist scanner, from the config module's new home
+
+
+def test_watchlist_scanner_still_reads_its_config(capsys):
+    from src.trading.instruments import scanner_config
+
+    assert scanner_config.SCANNER_CONFIG_PATH.exists()
+    assert "Scanner Tiered Watchlist" in run("/watchlist scanner", capsys)
+
+
 # Help
 
 

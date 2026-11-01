@@ -155,13 +155,13 @@ trailing_stops:
 ### Timeframe Configuration (Issue #365)
 
 ```python
-from src.autogen_agents.agents.voter_agent import VoterAgent
+from src.trading.instruments.voting_signal import VotingSignal
 
 # Default: loads "1d" from config
-voter = VoterAgent(name="daily_voter", use_config_file=True)
+voter = VotingSignal(use_config_file=True)
 
 # Explicit timeframe for intraday trading
-voter_1h = VoterAgent(name="hourly_voter", timeframe="1h", use_config_file=False)
+voter_1h = VotingSignal(timeframe="1h", use_config_file=False)
 
 # Reconfigure timeframe dynamically
 voter.reconfigure(timeframe="15m")

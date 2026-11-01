@@ -1,6 +1,6 @@
 # OptionsCommander Overview
 
-**Status**: Multi-agent trading platform; VoterAgent runs on a paper account
+**Status**: Trading platform; the MACD+RSI VotingSignal runs on a paper account
 **Foundation**: Microsoft Agent Framework (AutoGen until #606)
 **Backtested Performance**: Sharpe 0.69 at 5 bps a side with the live rules, no edge over buy-and-hold ([live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
 
@@ -27,7 +27,7 @@ This is a **human-guided trade management system**, not an autonomous trading bo
 
 ### ✅ Components in Use
 
-**VoterAgent** - MACD+RSI voting, in use on the paper account (no backtested edge over buy-and-hold):
+**VotingSignal** - MACD+RSI voting, in use on the paper account (no backtested edge over buy-and-hold):
 
 - Backtested Sharpe Ratio: 0.69 at 5 bps a side (live rules, 2009 to 2026-10-09)
 - Win Rate: 44.2%
@@ -110,9 +110,8 @@ Clean architectural boundaries:
    - **accounts/**: Multi-account management
    - **instruments/**: Tickers, timeframes, indicators
    - **utils/**: Trading utilities
-2. **Agent Layer** (`src/autogen_agents/`): Multi-agent trading coordination
-3. **Data Layer** (`src/market_data/`, `src/cache/`): Market data acquisition, caching and normalization
-4. **CLI Layer** (`src/cli/`): Human-in-loop interfaces with FunctionTool architecture
+2. **Data Layer** (`src/market_data/`, `src/cache/`): Market data acquisition, caching and normalization
+3. **CLI Layer** (`src/cli/`): Human-in-loop interfaces with FunctionTool architecture
 
 ### Key Design Principles
 
@@ -199,7 +198,7 @@ See the [research documentation](../08_research/README.md) for what this project
 
 - Core voting architecture implemented
 - MACD+RSI implemented and tested (no edge at live timing, #574)
-- Single-agent system (VoterAgent) in use on paper
+- One signal (VotingSignal) in use on paper
 
 ### Phase 3: In Progress 🚧
 

@@ -12,7 +12,7 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 ### `ImportError` for `autogen_agentchat` or `autogen_ext`
 
 - **Issue**: Old code or a local script still imports AutoGen
-- **Solution**: Use `from agent_framework import FunctionTool` for tools and `BaseAgent` (`src/autogen_agents/core/base_agent.py`) for agents. The package directory keeps its `autogen_agents` name
+- **Solution**: AutoGen was removed in #606 and the agents in #331. Signals are in `src/trading/instruments/voting_signal.py`; the parser in `src/parsers/llm_parser.py` is the one LLM call.
 
 ### "OpenAI API key not found"
 
@@ -25,7 +25,7 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 - **Issue**: Agent Framework's `FunctionTool` takes keyword arguments only
 - **Solution**: `FunctionTool(func=..., name="...", description="...")`
 
-### VoterAgent MACD/RSI Calculation Errors
+### VotingSignal MACD/RSI Calculation Errors
 
 - **Issue**: Indicator imports or data format issues
 - **Solution**: Verify `src/trading/instruments/indicators.py` imports work
@@ -47,18 +47,18 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 ### Cache Issues (SQLite-Based)
 
 - **Issue**: Cache misses or incomplete data
-- **Symptoms**: VoterAgent backtests showing date jumps, missing trading days
+- **Symptoms**: VotingSignal backtests showing date jumps, missing trading days
 - **Solution**: Use TradingCacheManager (SQLite) for all agent market data access
 - **Prevention**: Ensure agents fetch through `fetch_unified_market_data` (`src/market_data/unified_market_tool.py`)
 - **Check Cache**: Run `python scripts/utilities/cache_manager.py stats` to verify cache health
 
-### VoterAgent Data Access Issues
+### VotingSignal Data Access Issues
 
-- **Issue**: VoterAgent not finding market data for MACD/RSI calculations
+- **Issue**: VotingSignal not finding market data for MACD/RSI calculations
 - **Symptoms**: "No market data available" despite cache containing data
 - **Solution**: Verify TradingCacheManager integration and cache hits
 - **Debug**: Check `python scripts/utilities/cache_manager.py query SYMBOL --start DATE --end DATE`
-- **Code**: Check `src/autogen_agents/agents/voter_agent.py` data fetching logic
+- **Code**: Check `src/strategies/real_voter_strategy.py` data fetching logic
 
 ### Market Data Format Issues
 
@@ -82,7 +82,7 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 ### Module Import Issues
 
 - **Solution**: Run commands and tests from the project root directory
-- **Verification**: `python -c "from src.autogen_agents.agents.voter_agent import VoterAgent; print('VoterAgent import successful')"`
+- **Verification**: `python -c "from src.trading.instruments.voting_signal import VotingSignal; print('OK')"`
 - **Environment**: Call the env's Python directly (`~/miniconda3/envs/OptionsCommander/bin/python`); `conda activate` is broken on this host
 
 ## Package and Environment Issues
@@ -102,7 +102,7 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 
 ### Agent Date/Time Issues
 
-- **VoterAgent**: Ensure proper date range formatting for market data requests
+- **VotingSignal**: Ensure proper date range formatting for market data requests
 - **General**: Use consistent YYYY-MM-DD format across all agents
 - **Timezone**: Market data cache handles timezone conversion automatically
 
@@ -110,9 +110,8 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 
 ### Agent Performance
 
-- **VoterAgent**: Optimized MACD+RSI calculations with SQLite caching
+- **VotingSignal**: Optimized MACD+RSI calculations with SQLite caching
 - **Cache Hit Rate**: Should achieve 90%+ with TradingCacheManager (8-10x faster than file-based)
-- **Parallel Processing**: Multiple agents can run concurrently via TradingOrchestrator
 - **Cache Maintenance**: Run `python scripts/utilities/cache_manager.py cleanup` weekly to remove expired data
 
 ### API Rate Limits (Current System)
@@ -123,6 +122,6 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 
 ### Agent Memory Usage
 
-- **VoterAgent**: Lightweight, only loads necessary market data
+- **VotingSignal**: Lightweight, only loads necessary market data
 - **BaseAgent**: Efficient tool registration and memory management
 - **Monitoring**: Use `python -m memory_profiler` for agent performance testing

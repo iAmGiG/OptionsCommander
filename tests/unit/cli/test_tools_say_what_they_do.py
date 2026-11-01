@@ -3,20 +3,17 @@ A tool's words match what it does (#637): for someone at the CLI, and for a mode
 a tool. The broker and data sources are mocked.
 """
 
-import json
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
 import pytest
 
 from config_defaults.trading_config import ClimbRate, TrailingStopConfig
 
-from src.autogen_agents.agents.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
-from src.autogen_agents.tools.market_tools import market_data_result
 from src.cli.tools import get_cli_tool, order_tools, portfolio_tools, trailing_stop_tools
 from src.cli.tools.timeframe_tools import MULTI_TF_PRESETS
 from src.cli.tools.user_alert_tools import create_price_alert
-from src.market_data import market_context_tool, unified_market_tool
+from src.market_data import unified_market_tool
+from src.trading.instruments.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
 from src.trading.orders.trailing_stop_manager import TrailingStopManager
 
 # Multi-timeframe presets
@@ -28,84 +25,12 @@ def test_a_preset_shows_the_weights_the_voter_runs(name):
     assert MULTI_TF_PRESETS[name]["style"]
 
 
-# Market data can't quietly be 2024, or quietly be nothing
+# Market data can't quietly be 2024
 
 
 def test_market_data_has_no_default_symbol_or_dates():
     with pytest.raises(TypeError):
         unified_market_tool.fetch_unified_market_data()
-    with pytest.raises(TypeError):
-        market_context_tool.fetch_market_context_data()
-
-
-def test_the_model_must_give_a_symbol_and_dates():
-    from src.autogen_agents.tools.market_tools import unified_market_tool as tool
-
-    required = set(tool.parameters()["required"])
-
-    assert {"symbol", "start_date", "end_date"} <= required
-
-
-def context_with(monkeypatch, data_for):
-    def fetch(symbol, *args, **kwargs):
-        return data_for.get(symbol, pd.DataFrame())
-
-    monkeypatch.setattr(market_context_tool, "fetch_unified_market_data", fetch)
-    return market_context_tool.fetch_market_context_data("2026-10-09")
-
-
-def test_no_data_at_all_is_unknown_not_neutral(monkeypatch):
-    summary = context_with(monkeypatch, {})["market_summary"]
-
-    assert summary["overall_sentiment"] == "UNKNOWN"
-    assert summary["market_daily_avg"] is None
-    assert "SPY" in summary["interpretation"]
-    assert "QQQ" in summary["interpretation"]
-
-
-def test_data_for_only_one_symbol_is_unknown(monkeypatch):
-    bars = pd.DataFrame(
-        {"close": [100.0 + i for i in range(7)], "volume": [1000] * 7},
-        index=pd.date_range("2026-10-01", periods=7),
-    )
-
-    summary = context_with(monkeypatch, {"SPY": bars})["market_summary"]
-
-    assert summary["overall_sentiment"] == "UNKNOWN"
-    assert "QQQ" in summary["interpretation"]
-
-
-def test_asking_for_one_symbol_only_needs_that_symbol(monkeypatch):
-    bars = pd.DataFrame(
-        {"close": [100.0 + i for i in range(7)], "volume": [1000] * 7},
-        index=pd.date_range("2026-10-01", periods=7),
-    )
-    monkeypatch.setattr(market_context_tool, "fetch_unified_market_data", lambda *a, **k: bars)
-
-    summary = market_context_tool.fetch_market_context_data("2026-10-07", symbols=["SPY"])
-
-    assert summary["market_summary"]["overall_sentiment"] != "UNKNOWN"
-    # The average is SPY's own, not halved by the QQQ that wasn't asked for
-    assert summary["market_summary"]["market_daily_avg"] == pytest.approx(
-        summary["market_context"]["SPY"]["daily_change_pct"], abs=0.01
-    )
-
-
-def test_a_tool_failure_is_unknown(monkeypatch):
-    monkeypatch.setattr(
-        market_context_tool, "_create_market_summary", MagicMock(side_effect=OSError)
-    )
-
-    summary = market_context_tool.fetch_market_context_data("2026-10-09")["market_summary"]
-
-    assert summary["overall_sentiment"] == "UNKNOWN"
-
-
-def test_an_empty_result_doesnt_read_as_a_flat_market():
-    reply = json.loads(market_data_result(pd.DataFrame()))
-
-    assert reply["data"] == []
-    assert "data sources may be failing" in reply["message"]
 
 
 # Portfolio tools

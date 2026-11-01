@@ -1,0 +1,320 @@
+{
+  "raf": {
+    "2020-2025 (old data)": {
+      "per_symbol": {
+        "QQQ": {
+          "1_as_published": {
+            "sharpe": 0.689,
+            "trades": 56
+          },
+          "2_next_open": {
+            "sharpe": 0.838,
+            "trades": 56
+          },
+          "3_real_high_low": {
+            "sharpe": 0.789,
+            "trades": 56
+          },
+          "4_5bps": {
+            "sharpe": 0.732,
+            "trades": 56
+          },
+          "buy_and_hold_sharpe": 0.817
+        },
+        "SPY": {
+          "1_as_published": {
+            "sharpe": 0.593,
+            "trades": 56
+          },
+          "2_next_open": {
+            "sharpe": 0.724,
+            "trades": 56
+          },
+          "3_real_high_low": {
+            "sharpe": 0.772,
+            "trades": 52
+          },
+          "4_5bps": {
+            "sharpe": 0.704,
+            "trades": 52
+          },
+          "buy_and_hold_sharpe": 0.7
+        },
+        "IWM": {
+          "1_as_published": {
+            "sharpe": 0.284,
+            "trades": 59
+          },
+          "2_next_open": {
+            "sharpe": 0.193,
+            "trades": 59
+          },
+          "3_real_high_low": {
+            "sharpe": 0.266,
+            "trades": 61
+          },
+          "4_5bps": {
+            "sharpe": 0.209,
+            "trades": 61
+          },
+          "buy_and_hold_sharpe": 0.382
+        },
+        "TQQQ": {
+          "1_as_published": {
+            "sharpe": 0.503,
+            "trades": 60
+          },
+          "2_next_open": {
+            "sharpe": 0.605,
+            "trades": 60
+          },
+          "3_real_high_low": {
+            "sharpe": 0.663,
+            "trades": 55
+          },
+          "4_5bps": {
+            "sharpe": 0.644,
+            "trades": 55
+          },
+          "buy_and_hold_sharpe": 0.722
+        },
+        "SOXL": {
+          "1_as_published": {
+            "sharpe": 0.333,
+            "trades": 63
+          },
+          "2_next_open": {
+            "sharpe": 0.564,
+            "trades": 63
+          },
+          "3_real_high_low": {
+            "sharpe": 0.483,
+            "trades": 60
+          },
+          "4_5bps": {
+            "sharpe": 0.47,
+            "trades": 60
+          },
+          "buy_and_hold_sharpe": 0.675
+        }
+      },
+      "mean_sharpe": {
+        "1_as_published": 0.48,
+        "2_next_open": 0.585,
+        "3_real_high_low": 0.595,
+        "4_5bps": 0.552,
+        "buy_and_hold": 0.659
+      }
+    },
+    "2009 to 2026-10-09": {
+      "per_symbol": {
+        "QQQ": {
+          "1_as_published": {
+            "sharpe": 0.519,
+            "trades": 186
+          },
+          "2_next_open": {
+            "sharpe": 0.633,
+            "trades": 186
+          },
+          "3_real_high_low": {
+            "sharpe": 0.605,
+            "trades": 178
+          },
+          "4_5bps": {
+            "sharpe": 0.538,
+            "trades": 178
+          },
+          "buy_and_hold_sharpe": 0.756
+        },
+        "SPY": {
+          "1_as_published": {
+            "sharpe": 0.289,
+            "trades": 191
+          },
+          "2_next_open": {
+            "sharpe": 0.325,
+            "trades": 191
+          },
+          "3_real_high_low": {
+            "sharpe": 0.288,
+            "trades": 173
+          },
+          "4_5bps": {
+            "sharpe": 0.212,
+            "trades": 173
+          },
+          "buy_and_hold_sharpe": 0.553
+        },
+        "IWM": {
+          "1_as_published": {
+            "sharpe": 0.206,
+            "trades": 188
+          },
+          "2_next_open": {
+            "sharpe": 0.189,
+            "trades": 188
+          },
+          "3_real_high_low": {
+            "sharpe": 0.085,
+            "trades": 190
+          },
+          "4_5bps": {
+            "sharpe": 0.022,
+            "trades": 190
+          },
+          "buy_and_hold_sharpe": 0.407
+        },
+        "TQQQ": {
+          "1_as_published": {
+            "sharpe": 0.47,
+            "trades": 173
+          },
+          "2_next_open": {
+            "sharpe": 0.588,
+            "trades": 173
+          },
+          "3_real_high_low": {
+            "sharpe": 0.585,
+            "trades": 155
+          },
+          "4_5bps": {
+            "sharpe": 0.562,
+            "trades": 155
+          },
+          "buy_and_hold_sharpe": 0.893
+        },
+        "SOXL": {
+          "1_as_published": {
+            "sharpe": 0.404,
+            "trades": 179
+          },
+          "2_next_open": {
+            "sharpe": 0.524,
+            "trades": 179
+          },
+          "3_real_high_low": {
+            "sharpe": 0.535,
+            "trades": 167
+          },
+          "4_5bps": {
+            "sharpe": 0.519,
+            "trades": 167
+          },
+          "buy_and_hold_sharpe": 0.816
+        }
+      },
+      "mean_sharpe": {
+        "1_as_published": 0.378,
+        "2_next_open": 0.452,
+        "3_real_high_low": 0.42,
+        "4_5bps": 0.371,
+        "buy_and_hold": 0.685
+      }
+    }
+  },
+  "weekly_kama": {
+    "2016-2024 (old window)": {
+      "per_symbol": {
+        "SPY": {
+          "as_published": 0.453,
+          "5bps": 0.447,
+          "trades_per_year": 0.77,
+          "buy_and_hold_sharpe": 0.811
+        },
+        "QQQ": {
+          "as_published": 0.834,
+          "5bps": 0.831,
+          "trades_per_year": 0.55,
+          "buy_and_hold_sharpe": 0.983
+        },
+        "AAPL": {
+          "as_published": 0.933,
+          "5bps": 0.929,
+          "trades_per_year": 0.89,
+          "buy_and_hold_sharpe": 1.098
+        },
+        "MSFT": {
+          "as_published": 1.158,
+          "5bps": 1.155,
+          "trades_per_year": 0.55,
+          "buy_and_hold_sharpe": 1.129
+        },
+        "NVDA": {
+          "as_published": 1.518,
+          "5bps": 1.515,
+          "trades_per_year": 0.77,
+          "buy_and_hold_sharpe": 1.48
+        },
+        "GOOGL": {
+          "as_published": 0.675,
+          "5bps": 0.671,
+          "trades_per_year": 0.89,
+          "buy_and_hold_sharpe": 0.814
+        },
+        "AMZN": {
+          "as_published": 0.809,
+          "5bps": 0.804,
+          "trades_per_year": 1.0,
+          "buy_and_hold_sharpe": 0.886
+        }
+      },
+      "mean": {
+        "as_published": 0.911,
+        "5bps": 0.907,
+        "buy_and_hold_sharpe": 1.029
+      }
+    },
+    "2009 to 2026-10-09": {
+      "per_symbol": {
+        "SPY": {
+          "as_published": 0.47,
+          "5bps": 0.462,
+          "trades_per_year": 0.9,
+          "buy_and_hold_sharpe": 0.589
+        },
+        "QQQ": {
+          "as_published": 0.701,
+          "5bps": 0.695,
+          "trades_per_year": 0.85,
+          "buy_and_hold_sharpe": 0.817
+        },
+        "AAPL": {
+          "as_published": 0.908,
+          "5bps": 0.904,
+          "trades_per_year": 0.85,
+          "buy_and_hold_sharpe": 0.856
+        },
+        "MSFT": {
+          "as_published": 0.688,
+          "5bps": 0.682,
+          "trades_per_year": 1.01,
+          "buy_and_hold_sharpe": 0.695
+        },
+        "NVDA": {
+          "as_published": 0.883,
+          "5bps": 0.881,
+          "trades_per_year": 1.01,
+          "buy_and_hold_sharpe": 0.88
+        },
+        "GOOGL": {
+          "as_published": 0.445,
+          "5bps": 0.441,
+          "trades_per_year": 1.01,
+          "buy_and_hold_sharpe": 0.568
+        },
+        "AMZN": {
+          "as_published": 0.574,
+          "5bps": 0.57,
+          "trades_per_year": 1.17,
+          "buy_and_hold_sharpe": 0.812
+        }
+      },
+      "mean": {
+        "as_published": 0.667,
+        "5bps": 0.662,
+        "buy_and_hold_sharpe": 0.745
+      }
+    }
+  }
+}

@@ -106,6 +106,7 @@ def compute_signals(
     start: str,
     end: str,
     lookback_days: int = 90,
+    bars: Optional[Dict[str, pd.DataFrame]] = None,
 ) -> pd.DataFrame:
     """
     Signal for each symbol on each of its trading days in [start, end].
@@ -113,6 +114,12 @@ def compute_signals(
     The window holds the closes strictly before the day, within ``lookback_days``
     calendar days, rescaled to that day's split level (its raw / adjusted ratio, which
     depends only on the split calendar).
+
+    ``bars`` (per symbol, split-adjusted ``high`` / ``low`` on the same dates as ``closes``)
+    adds ``High`` and ``Low`` columns to the window, rescaled the same way, for signals that
+    need the day's range. ``frame.attrs["day"]`` carries the decision day, so a signal can
+    cut its own shorter window (the live voter's 90 calendar days) or tell which week is
+    still open. Neither changes a signal that reads only ``Close``.
 
     Returns:
         DataFrame indexed by (date, symbol) with ``action`` and ``position_size``
@@ -129,7 +136,12 @@ def compute_signals(
             start_i = dates.searchsorted(day - pd.Timedelta(days=lookback_days))
             window = series.iloc[start_i:end_i]
             scale = ratio.iloc[end_i]
-            result = signal_fn(symbol, pd.DataFrame({"Close": window * scale}))
+            frame = pd.DataFrame({"Close": window * scale})
+            if bars is not None:
+                frame["High"] = bars[symbol]["high"].iloc[start_i:end_i] * scale
+                frame["Low"] = bars[symbol]["low"].iloc[start_i:end_i] * scale
+            frame.attrs["day"] = day
+            result = signal_fn(symbol, frame)
             rows.append(
                 (day, symbol, result.get("action", "HOLD"), result.get("position_size", 0.0))
             )

@@ -19,7 +19,13 @@ valid, BH is approximate.
 The #539 exit-rule comparisons (trailing exits against the fixed bracket, in the live-rules
 simulator) are tests of a trading rule, not of a GEX effect, so they are corrected as a family of
 their own and reported under ``exit_rules``; the GEX family's numbers do not change. The same
-tests pooled with the GEX family are reported too. Every comparison in the runner's
+tests pooled with the GEX family are reported too.
+
+The #532 / #529 entry-signal candidates (RAF alone and as a third voter, weekly KAMA alone and as a
+trend filter, in the live-rules simulator) are corrected as a third family, reported under
+``entry_signals``: for each of the six candidates, a Newey-West test of its daily return difference
+against the #574 baseline and its alpha against equal-weight buy-and-hold of the same symbols
+(every period and cost, 108 tests; the headline subset is 5 bps, full period, 12 tests). Every comparison in the runner's
 ``paired_tests`` is in the family (periods, costs, sizings and the no-signal-exit variant overlap,
 so Holm stays valid and BH is approximate). The runner's morning-raise sensitivity runs the same
 hypotheses again under another assumption (the open standing in for the morning routine's
@@ -343,6 +349,86 @@ def collect_morning_raise(rows):
             )
 
 
+def collect_entry_signals(rows):
+    """#532 / #529: each candidate's paired test against the baseline and alpha against equal weight."""
+    name = "raf_kama_live_rules.json"
+    path = STRATEGY_RESULTS_DIR / name
+    if not path.exists():
+        print(f"  missing: {name}")
+        return
+    with open(path) as f:
+        data = json.load(f)
+    labels = data["methodology"]["candidates"]
+    for r in data["paired_tests"]:
+        t = r.get("return_test")
+        if not t:
+            continue
+        rows.append(
+            _row(
+                f"#532/#529 {labels[r['candidate']]} vs baseline",
+                name,
+                f"{r['period']} {r['cost_bps']:g} bps daily return difference (NW)",
+                t["t_statistic"],
+                t["p_value"],
+                t["mean_daily_diff"],
+            )
+        )
+    for cand, label in labels.items():
+        for cost_key, res in data["scenarios"][cand].items():
+            for period, a in res["alpha_vs_equal_weight"].items():
+                rows.append(
+                    _row(
+                        f"#532/#529 {label} alpha vs equal weight",
+                        name,
+                        f"{period} {cost_key} alpha (NW)",
+                        a["alpha_t"],
+                        a["alpha_p"],
+                        a["alpha_ann_pct"],
+                    )
+                )
+
+
+def entry_signal_family(entry_rows, gex_rows):
+    """The #532 / #529 tests as a family of their own, a headline subset, and pooled with GEX."""
+    df, summary, by_study = _correct(entry_rows)
+    headline_rows = [
+        r for r in entry_rows if r["test"].startswith("full ") and " 5 bps" in r["test"]
+    ] + [r for r in entry_rows if r["test"].startswith("full 5bps")]
+    head, head_summary, _ = _correct(headline_rows)
+    pooled, _, _ = _correct(gex_rows + entry_rows)
+    ours = pooled[pooled["study"].str.startswith("#532/#529")]
+    summary["headline_5bps_full_period"] = head_summary
+    summary["pooled_with_gex_family"] = {
+        "n_tests": len(pooled),
+        "entry_tests_holm_rejections": int(ours["holm_reject"].sum()),
+        "entry_tests_bh_rejections": int(ours["bh_reject"].sum()),
+    }
+    print("\n  #532 / #529 entry-signal family (corrected on its own):")
+    print(f"  {summary}")
+    print(by_study.to_string(index=False))
+    keep = ["study", "test", "t_statistic", "p_value", "effect", "holm_p", "bh_q"]
+    print("\n  Smallest p-values:")
+    print(df[keep].head(6).to_string(index=False))
+    print("\n  Headline subset (5 bps, full period), smallest p-values:")
+    print(head[keep].head(6).to_string(index=False))
+    for frame in (df, head):
+        for col in ("holm_p", "bh_q"):
+            frame[col] = frame[col].round(4)
+    return {
+        "issues": "#532, #529",
+        "description": "RAF and weekly KAMA candidates against the #574 baseline (live-rules simulator)",
+        "family": "for each of six candidates: Newey-West test of the daily return difference "
+        "against the baseline and of the alpha against equal weight, by period (full, 2009-2019, "
+        "2020 on) and cost (0, 5, 10 bps)",
+        "dependence_note": "the candidates share the universe, days and the baseline; periods and "
+        "costs overlap; Holm valid, BH approximate",
+        "summary": summary,
+        "by_study": by_study.to_dict(orient="records"),
+        "tests": df.to_dict(orient="records"),
+        "headline_tests": head.to_dict(orient="records"),
+    }
+
+
 def _correct(rows):
     """Holm, Benjamini-Hochberg and |t| > 3 over one family: (tests, summary, by_study)."""
     df = pd.DataFrame(rows)
@@ -488,6 +574,10 @@ def main():
     collect_morning_raise(morning_rows)
     if morning_rows:
         output["morning_raise"] = morning_raise_family(morning_rows, exit_rows, rows)
+    entry_rows = []
+    collect_entry_signals(entry_rows)
+    if entry_rows:
+        output["entry_signals"] = entry_signal_family(entry_rows, rows)
     path = RESULTS_DIR / "multiple_testing_audit.yaml"
     with open(path, "w") as f:
         yaml.dump(

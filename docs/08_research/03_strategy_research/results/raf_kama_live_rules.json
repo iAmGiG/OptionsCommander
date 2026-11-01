@@ -1,0 +1,6079 @@
+{
+  "run_timestamp": "2026-11-01T18:36:10.461850",
+  "issue": "#532, #529",
+  "description": "RAF and weekly KAMA on the live rules (#574 baseline) at live timing",
+  "methodology": {
+    "doc": "\nRAF (#532) and weekly KAMA (#529) re-tested on the live rules (#574 baseline is the bar).\n\nBoth claims came from research before the look-ahead and methodology fixes: signals executed at the\nclose that produced them, no costs, synthetic high/low for the stochastics, 5-7 symbols, 2020-2025.\nThis runs them through ``live_rules_sim`` at live timing (signal from bars through d - 1, fill at\nday d's open, the risk manager's sizing and limits, the -5% / +8% bracket, 0 / 5 / 10 bps a side) on\nthe #574 universe, 2009 to 2026-10-09, in-sample 2009-2019 and out-of-sample 2020 on.\n\nRULES, FIXED BEFORE ANY RESULT WAS SEEN (no parameter search). Where an issue leaves a choice, the\nplainest reading is used and listed here:\n\n1. RAF alone (#532 pseudo-code, parameters of #532 / raf_research.md): BUY when fast Stoch(5,3)\n   %K > %D, medium Stoch(8,5) %K > 50, slow Stoch(17,5) %K > 50, close > TEMA(28) and Fisher > 0;\n   SELL on the mirror image; else HOLD. Choices: %K = SMA(smooth) of the raw stochastic over the\n   first number of bars, %D = SMA(3) of %K; Fisher is Ehlers' (10 bars, median price), the issue\n   gives no parameters; real daily highs and lows. The old research did not use the issue's rule\n   (no %D cross, no Fisher, synthetic high/low), so this is not a replication of its code.\n2. RAF as third voter: votes of the live MACD and RSI voters (live code, 90-day window) plus RAF.\n   Proposed rule (#532): 3 agree = STRONG, 2 agree = MODERATE, fewer = HOLD. Two BUY votes are a\n   BUY, two SELL votes a SELL (the sim sizes every entry the same way; the strength only orders\n   same-day entries).\n3. Weekly KAMA alone, BUY when BULLISH, SELL when BEARISH, else HOLD. #529 and weekly_kama_research.md\n   disagree on parameters, so both are run as pre-declared tests:\n   3a \"research\": lookback 10, fast 2, slow 30; BULLISH = KAMA 6-week slope > 0, Fold-MA(5, idx 2)\n      3-week slope > 0, weekly close above both (the #467 profile, indicators.py defaults).\n   3b \"issue\": lookback 6, fast 6, slow 7; BULLISH = weekly close > KAMA and KAMA rising over one\n      week (the Option A snippet).\n   A weekly value is used only once its week has closed: the decision on day d sees the weeks that\n   ended before the Monday-Sunday week of d (so Monday through Friday of the current week never\n   leak, and a Friday close is used from the next Monday).\n4. Weekly KAMA as a trend filter on the live voter: a voter BUY goes through only while the weekly\n   state is BULLISH (BEARISH and NEUTRAL hold off new entries); voter SELLs pass. \"Reduce size or\n   exit\" on BEARISH is not modelled (the sim has one size; the exit variant is not run). 4a uses\n   the research parameters, 4b the issue's.\n\nComparison: the #574 baseline (live voter signal, moderate sizing 2%, SELL exits on, bracket), same\ndays. Statistics as live_rules_baseline.py: Sharpe with a 20-day block-bootstrap interval, alpha\nagainst equal-weight buy-and-hold of the same symbols (Newey-West t), win rate, max drawdown, trade\ncount, turnover; a paired bootstrap of the Sharpe difference and a Newey-West test of the mean\ndaily return difference against the baseline (the test the multiple-testing audit collects).\n\nUsage:\n    ~/miniconda3/envs/OptionsCommander/bin/python -s scripts/research/raf_kama_live_rules.py\n",
+    "kama_specs": {
+      "research": {
+        "lookback": 10,
+        "fast": 2,
+        "slow": 30,
+        "rule": "slopes",
+        "fold_periods": 5,
+        "fold_index": 2,
+        "fold_slope_weeks": 3
+      },
+      "issue": {
+        "lookback": 6,
+        "fast": 6,
+        "slow": 7,
+        "rule": "price_vs_kama"
+      }
+    },
+    "candidates": {
+      "raf_alone": "1. RAF alone",
+      "raf_third_voter": "2. MACD + RSI + RAF, 2 of 3",
+      "kama_research_alone": "3a. Weekly KAMA alone (10/2/30 + Fold MA)",
+      "kama_issue_alone": "3b. Weekly KAMA alone (6/6/7)",
+      "kama_research_filter": "4a. Voter + weekly KAMA filter (10/2/30 + Fold MA)",
+      "kama_issue_filter": "4b. Voter + weekly KAMA filter (6/6/7)"
+    },
+    "sizing": "moderate, 2% of equity per position, SELL-signal exits on, bracket -5%/+8%",
+    "costs_bps_per_side": [
+      0.0,
+      5.0,
+      10.0
+    ],
+    "headline_cost_bps": 5.0,
+    "data": "equity_prices_daily, split-adjusted, read-only, 2008-01-02 to 2026-10-09",
+    "periods": {
+      "decisions": "2009-01-02 to 2026-10-09",
+      "in_sample": "2009-2019",
+      "out_of_sample": "2020 on"
+    }
+  },
+  "universe": [
+    "AAPL",
+    "AMD",
+    "AMZN",
+    "COIN",
+    "GOOGL",
+    "IWM",
+    "META",
+    "MSFT",
+    "NFLX",
+    "NVDA",
+    "PLTR",
+    "QQQ",
+    "SPXL",
+    "SPY",
+    "SQQQ",
+    "TQQQ",
+    "TSLA",
+    "UPRO",
+    "VTI"
+  ],
+  "missing_symbols": [
+    "CRM"
+  ],
+  "signal_summary": {
+    "baseline": {
+      "BUY": 21694,
+      "SELL": 25875,
+      "HOLD": 29405,
+      "buy_share_pct": 28.2,
+      "sell_share_pct": 33.6
+    },
+    "raf_alone": {
+      "BUY": 13230,
+      "SELL": 8192,
+      "HOLD": 55552,
+      "buy_share_pct": 17.2,
+      "sell_share_pct": 10.6
+    },
+    "raf_third_voter": {
+      "BUY": 11203,
+      "SELL": 7636,
+      "HOLD": 58135,
+      "buy_share_pct": 14.6,
+      "sell_share_pct": 9.9
+    },
+    "kama_research_alone": {
+      "BUY": 24955,
+      "SELL": 9707,
+      "HOLD": 42312,
+      "buy_share_pct": 32.4,
+      "sell_share_pct": 12.6
+    },
+    "kama_issue_alone": {
+      "BUY": 53350,
+      "SELL": 23378,
+      "HOLD": 246,
+      "buy_share_pct": 69.3,
+      "sell_share_pct": 30.4
+    },
+    "kama_research_filter": {
+      "BUY": 5934,
+      "SELL": 25875,
+      "HOLD": 45165,
+      "buy_share_pct": 7.7,
+      "sell_share_pct": 33.6
+    },
+    "kama_issue_filter": {
+      "BUY": 13203,
+      "SELL": 25875,
+      "HOLD": 37896,
+      "buy_share_pct": 17.2,
+      "sell_share_pct": 33.6
+    }
+  },
+  "scenarios": {
+    "baseline": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.838,
+          "cagr_pct": 2.43,
+          "vol_pct": 2.92,
+          "max_drawdown_pct": -6.333,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.358,
+            1.293
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.819,
+          "cagr_pct": 2.101,
+          "vol_pct": 2.583,
+          "max_drawdown_pct": -4.574,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.28,
+            1.42
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.866,
+          "cagr_pct": 2.918,
+          "vol_pct": 3.397,
+          "max_drawdown_pct": -6.333,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.091,
+            1.662
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.549,
+            "alpha_t": 0.96,
+            "alpha_p": 0.336,
+            "beta": 0.067,
+            "r2": 0.335
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.35,
+            "alpha_t": 0.55,
+            "alpha_p": 0.581,
+            "beta": 0.064,
+            "r2": 0.306
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.886,
+            "alpha_t": 0.82,
+            "alpha_p": 0.412,
+            "beta": 0.069,
+            "r2": 0.362
+          }
+        },
+        "mean_exposure_pct": 10.74,
+        "trades_full": {
+          "n_trades": 4111,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.7,
+          "mean_return_pct": 0.561,
+          "median_return_pct": -1.002,
+          "mean_hold_days": 8.8,
+          "exit_reasons": {
+            "signal": 1430,
+            "stop": 1197,
+            "target": 1008,
+            "stop_gap": 247,
+            "target_gap": 229
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1972,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.5,
+          "mean_return_pct": 0.533,
+          "median_return_pct": -1.147,
+          "mean_hold_days": 7.2,
+          "exit_reasons": {
+            "signal": 636,
+            "stop": 601,
+            "target": 509,
+            "stop_gap": 114,
+            "target_gap": 112
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 14359,
+          "max_positions": 3069,
+          "no_prior_close": 0,
+          "under_one_share": 145,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2139,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.8,
+          "mean_return_pct": 0.587,
+          "median_return_pct": -0.823,
+          "mean_hold_days": 10.2,
+          "exit_reasons": {
+            "signal": 794,
+            "stop": 596,
+            "target": 499,
+            "stop_gap": 133,
+            "target_gap": 117
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 9.114
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 11.168
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 201,
+            "win_rate_pct": 49.3,
+            "pnl_pct_of_capital": 5.77
+          },
+          "AMD": {
+            "n_trades": 287,
+            "win_rate_pct": 42.9,
+            "pnl_pct_of_capital": 5.52
+          },
+          "AMZN": {
+            "n_trades": 219,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 3.19
+          },
+          "COIN": {
+            "n_trades": 213,
+            "win_rate_pct": 39.4,
+            "pnl_pct_of_capital": 0.53
+          },
+          "GOOGL": {
+            "n_trades": 207,
+            "win_rate_pct": 48.8,
+            "pnl_pct_of_capital": 4.62
+          },
+          "IWM": {
+            "n_trades": 168,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 3.54
+          },
+          "META": {
+            "n_trades": 198,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 3.33
+          },
+          "MSFT": {
+            "n_trades": 161,
+            "win_rate_pct": 42.2,
+            "pnl_pct_of_capital": 1.26
+          },
+          "NFLX": {
+            "n_trades": 306,
+            "win_rate_pct": 45.1,
+            "pnl_pct_of_capital": 3.5
+          },
+          "NVDA": {
+            "n_trades": 253,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 4.79
+          },
+          "PLTR": {
+            "n_trades": 91,
+            "win_rate_pct": 39.6,
+            "pnl_pct_of_capital": 0.69
+          },
+          "QQQ": {
+            "n_trades": 155,
+            "win_rate_pct": 54.8,
+            "pnl_pct_of_capital": 3.29
+          },
+          "SPXL": {
+            "n_trades": 259,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 5.06
+          },
+          "SPY": {
+            "n_trades": 154,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 1.33
+          },
+          "SQQQ": {
+            "n_trades": 511,
+            "win_rate_pct": 35.2,
+            "pnl_pct_of_capital": -3.95
+          },
+          "TQQQ": {
+            "n_trades": 217,
+            "win_rate_pct": 47.5,
+            "pnl_pct_of_capital": 3.9
+          },
+          "TSLA": {
+            "n_trades": 270,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 3.38
+          },
+          "UPRO": {
+            "n_trades": 160,
+            "win_rate_pct": 53.1,
+            "pnl_pct_of_capital": 3.25
+          },
+          "VTI": {
+            "n_trades": 81,
+            "win_rate_pct": 50.6,
+            "pnl_pct_of_capital": 0.68
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 53.68,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 5.77,
+            "AMD": 5.52,
+            "SPXL": 5.06
+          },
+          "top3_share_of_total": 0.3,
+          "total_without_top1": 47.91,
+          "total_without_top3": 37.33
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.687,
+          "cagr_pct": 1.978,
+          "vol_pct": 2.917,
+          "max_drawdown_pct": -6.928,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.205,
+            1.148
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.673,
+          "cagr_pct": 1.716,
+          "vol_pct": 2.582,
+          "max_drawdown_pct": -4.82,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.128,
+            1.272
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.706,
+          "cagr_pct": 2.356,
+          "vol_pct": 3.39,
+          "max_drawdown_pct": -6.928,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.072,
+            1.502
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.109,
+            "alpha_t": 0.19,
+            "alpha_p": 0.848,
+            "beta": 0.067,
+            "r2": 0.334
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.026,
+            "alpha_t": -0.04,
+            "alpha_p": 0.967,
+            "beta": 0.064,
+            "r2": 0.305
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.342,
+            "alpha_t": 0.32,
+            "alpha_p": 0.752,
+            "beta": 0.069,
+            "r2": 0.362
+          }
+        },
+        "mean_exposure_pct": 10.71,
+        "trades_full": {
+          "n_trades": 4111,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.2,
+          "mean_return_pct": 0.457,
+          "median_return_pct": -1.102,
+          "mean_hold_days": 8.8,
+          "exit_reasons": {
+            "signal": 1427,
+            "stop": 1199,
+            "target": 1008,
+            "stop_gap": 248,
+            "target_gap": 229
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1972,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.0,
+          "mean_return_pct": 0.425,
+          "median_return_pct": -1.264,
+          "mean_hold_days": 7.2,
+          "exit_reasons": {
+            "signal": 633,
+            "stop": 603,
+            "target": 509,
+            "stop_gap": 115,
+            "target_gap": 112
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 14352,
+          "max_positions": 3057,
+          "no_prior_close": 0,
+          "under_one_share": 164,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2139,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.3,
+          "mean_return_pct": 0.487,
+          "median_return_pct": -0.922,
+          "mean_hold_days": 10.2,
+          "exit_reasons": {
+            "signal": 794,
+            "stop": 596,
+            "target": 499,
+            "stop_gap": 133,
+            "target_gap": 117
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 9.055
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 11.142
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 201,
+            "win_rate_pct": 47.8,
+            "pnl_pct_of_capital": 5.12
+          },
+          "AMD": {
+            "n_trades": 287,
+            "win_rate_pct": 42.9,
+            "pnl_pct_of_capital": 4.45
+          },
+          "AMZN": {
+            "n_trades": 217,
+            "win_rate_pct": 43.8,
+            "pnl_pct_of_capital": 2.66
+          },
+          "COIN": {
+            "n_trades": 213,
+            "win_rate_pct": 39.4,
+            "pnl_pct_of_capital": 0.01
+          },
+          "GOOGL": {
+            "n_trades": 203,
+            "win_rate_pct": 47.8,
+            "pnl_pct_of_capital": 4.36
+          },
+          "IWM": {
+            "n_trades": 168,
+            "win_rate_pct": 46.4,
+            "pnl_pct_of_capital": 2.98
+          },
+          "META": {
+            "n_trades": 198,
+            "win_rate_pct": 43.4,
+            "pnl_pct_of_capital": 2.55
+          },
+          "MSFT": {
+            "n_trades": 161,
+            "win_rate_pct": 41.6,
+            "pnl_pct_of_capital": 0.97
+          },
+          "NFLX": {
+            "n_trades": 306,
+            "win_rate_pct": 44.8,
+            "pnl_pct_of_capital": 2.88
+          },
+          "NVDA": {
+            "n_trades": 253,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 3.96
+          },
+          "PLTR": {
+            "n_trades": 94,
+            "win_rate_pct": 39.4,
+            "pnl_pct_of_capital": 0.21
+          },
+          "QQQ": {
+            "n_trades": 155,
+            "win_rate_pct": 52.9,
+            "pnl_pct_of_capital": 2.9
+          },
+          "SPXL": {
+            "n_trades": 259,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 4.32
+          },
+          "SPY": {
+            "n_trades": 154,
+            "win_rate_pct": 48.7,
+            "pnl_pct_of_capital": 1.02
+          },
+          "SQQQ": {
+            "n_trades": 511,
+            "win_rate_pct": 35.2,
+            "pnl_pct_of_capital": -5.08
+          },
+          "TQQQ": {
+            "n_trades": 219,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 3.02
+          },
+          "TSLA": {
+            "n_trades": 270,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 2.58
+          },
+          "UPRO": {
+            "n_trades": 161,
+            "win_rate_pct": 52.2,
+            "pnl_pct_of_capital": 2.69
+          },
+          "VTI": {
+            "n_trades": 81,
+            "win_rate_pct": 49.4,
+            "pnl_pct_of_capital": 0.46
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 42.06,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 5.12,
+            "AMD": 4.45,
+            "GOOGL": 4.36
+          },
+          "top3_share_of_total": 0.33,
+          "total_without_top1": 36.94,
+          "total_without_top3": 28.13
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.522,
+          "cagr_pct": 1.49,
+          "vol_pct": 2.921,
+          "max_drawdown_pct": -7.521,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.034,
+            0.981
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.526,
+          "cagr_pct": 1.334,
+          "vol_pct": 2.585,
+          "max_drawdown_pct": -5.005,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            -0.017,
+            1.127
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.513,
+          "cagr_pct": 1.694,
+          "vol_pct": 3.398,
+          "max_drawdown_pct": -7.521,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.267,
+            1.315
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.375,
+            "alpha_t": -0.65,
+            "alpha_p": 0.515,
+            "beta": 0.067,
+            "r2": 0.335
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.405,
+            "alpha_t": -0.63,
+            "alpha_p": 0.527,
+            "beta": 0.065,
+            "r2": 0.306
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.315,
+            "alpha_t": -0.29,
+            "alpha_p": 0.773,
+            "beta": 0.069,
+            "r2": 0.362
+          }
+        },
+        "mean_exposure_pct": 10.7,
+        "trades_full": {
+          "n_trades": 4112,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.7,
+          "mean_return_pct": 0.354,
+          "median_return_pct": -1.203,
+          "mean_hold_days": 8.7,
+          "exit_reasons": {
+            "signal": 1427,
+            "stop": 1200,
+            "target": 1008,
+            "stop_gap": 248,
+            "target_gap": 229
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1973,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.4,
+          "mean_return_pct": 0.319,
+          "median_return_pct": -1.364,
+          "mean_hold_days": 7.2,
+          "exit_reasons": {
+            "signal": 633,
+            "stop": 604,
+            "target": 509,
+            "stop_gap": 115,
+            "target_gap": 112
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 14352,
+          "max_positions": 3049,
+          "no_prior_close": 0,
+          "under_one_share": 171,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2139,
+          "n_open_at_end": 0,
+          "win_rate_pct": 44.8,
+          "mean_return_pct": 0.386,
+          "median_return_pct": -1.021,
+          "mean_hold_days": 10.2,
+          "exit_reasons": {
+            "signal": 794,
+            "stop": 596,
+            "target": 499,
+            "stop_gap": 133,
+            "target_gap": 117
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 9.013
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 11.14
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 201,
+            "win_rate_pct": 46.8,
+            "pnl_pct_of_capital": 4.46
+          },
+          "AMD": {
+            "n_trades": 287,
+            "win_rate_pct": 42.9,
+            "pnl_pct_of_capital": 3.48
+          },
+          "AMZN": {
+            "n_trades": 218,
+            "win_rate_pct": 43.6,
+            "pnl_pct_of_capital": 2.09
+          },
+          "COIN": {
+            "n_trades": 212,
+            "win_rate_pct": 39.6,
+            "pnl_pct_of_capital": -0.49
+          },
+          "GOOGL": {
+            "n_trades": 202,
+            "win_rate_pct": 46.5,
+            "pnl_pct_of_capital": 3.72
+          },
+          "IWM": {
+            "n_trades": 168,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 2.45
+          },
+          "META": {
+            "n_trades": 199,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 1.95
+          },
+          "MSFT": {
+            "n_trades": 161,
+            "win_rate_pct": 41.0,
+            "pnl_pct_of_capital": 0.51
+          },
+          "NFLX": {
+            "n_trades": 306,
+            "win_rate_pct": 43.1,
+            "pnl_pct_of_capital": 1.93
+          },
+          "NVDA": {
+            "n_trades": 253,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 2.99
+          },
+          "PLTR": {
+            "n_trades": 94,
+            "win_rate_pct": 39.4,
+            "pnl_pct_of_capital": -0.08
+          },
+          "QQQ": {
+            "n_trades": 155,
+            "win_rate_pct": 52.9,
+            "pnl_pct_of_capital": 2.32
+          },
+          "SPXL": {
+            "n_trades": 259,
+            "win_rate_pct": 47.1,
+            "pnl_pct_of_capital": 3.55
+          },
+          "SPY": {
+            "n_trades": 154,
+            "win_rate_pct": 46.8,
+            "pnl_pct_of_capital": 0.72
+          },
+          "SQQQ": {
+            "n_trades": 511,
+            "win_rate_pct": 35.2,
+            "pnl_pct_of_capital": -6.15
+          },
+          "TQQQ": {
+            "n_trades": 219,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 2.44
+          },
+          "TSLA": {
+            "n_trades": 270,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 1.97
+          },
+          "UPRO": {
+            "n_trades": 161,
+            "win_rate_pct": 50.9,
+            "pnl_pct_of_capital": 2.31
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 48.8,
+            "pnl_pct_of_capital": 0.29
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 30.46,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 4.46,
+            "GOOGL": 3.72,
+            "SPXL": 3.55
+          },
+          "top3_share_of_total": 0.39,
+          "total_without_top1": 26.0,
+          "total_without_top3": 18.73
+        }
+      }
+    },
+    "raf_alone": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.888,
+          "cagr_pct": 2.509,
+          "vol_pct": 2.843,
+          "max_drawdown_pct": -6.061,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.446,
+            1.345
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.898,
+          "cagr_pct": 2.362,
+          "vol_pct": 2.64,
+          "max_drawdown_pct": -3.541,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.339,
+            1.507
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.862,
+          "cagr_pct": 2.688,
+          "vol_pct": 3.142,
+          "max_drawdown_pct": -6.061,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.141,
+            1.584
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.568,
+            "alpha_t": 1.07,
+            "alpha_p": 0.286,
+            "beta": 0.069,
+            "r2": 0.374
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.283,
+            "alpha_t": 0.46,
+            "alpha_p": 0.645,
+            "beta": 0.076,
+            "r2": 0.41
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.861,
+            "alpha_t": 0.91,
+            "alpha_p": 0.364,
+            "beta": 0.062,
+            "r2": 0.342
+          }
+        },
+        "mean_exposure_pct": 12.32,
+        "trades_full": {
+          "n_trades": 2809,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.6,
+          "mean_return_pct": 0.84,
+          "median_return_pct": -1.609,
+          "mean_hold_days": 14.6,
+          "exit_reasons": {
+            "stop": 953,
+            "target": 866,
+            "signal": 543,
+            "target_gap": 233,
+            "stop_gap": 214
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1181,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.9,
+          "mean_return_pct": 0.788,
+          "median_return_pct": -2.53,
+          "mean_hold_days": 12.6,
+          "exit_reasons": {
+            "stop": 426,
+            "target": 372,
+            "signal": 175,
+            "stop_gap": 109,
+            "target_gap": 99
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 7870,
+          "max_positions": 2494,
+          "no_prior_close": 0,
+          "under_one_share": 47,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1628,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.1,
+          "mean_return_pct": 0.877,
+          "median_return_pct": -1.308,
+          "mean_hold_days": 16.0,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 494,
+            "signal": 368,
+            "target_gap": 134,
+            "stop_gap": 105
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 6.14
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.71
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 170,
+            "win_rate_pct": 50.6,
+            "pnl_pct_of_capital": 6.38
+          },
+          "AMD": {
+            "n_trades": 259,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 5.18
+          },
+          "AMZN": {
+            "n_trades": 162,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 3.46
+          },
+          "COIN": {
+            "n_trades": 74,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 0.7
+          },
+          "GOOGL": {
+            "n_trades": 155,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 4.78
+          },
+          "IWM": {
+            "n_trades": 134,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 1.09
+          },
+          "META": {
+            "n_trades": 137,
+            "win_rate_pct": 44.5,
+            "pnl_pct_of_capital": 3.51
+          },
+          "MSFT": {
+            "n_trades": 148,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 3.3
+          },
+          "NFLX": {
+            "n_trades": 182,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 5.29
+          },
+          "NVDA": {
+            "n_trades": 208,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 5.36
+          },
+          "PLTR": {
+            "n_trades": 68,
+            "win_rate_pct": 41.2,
+            "pnl_pct_of_capital": 0.78
+          },
+          "QQQ": {
+            "n_trades": 126,
+            "win_rate_pct": 50.8,
+            "pnl_pct_of_capital": 4.19
+          },
+          "SPXL": {
+            "n_trades": 188,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 1.98
+          },
+          "SPY": {
+            "n_trades": 108,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 2.22
+          },
+          "SQQQ": {
+            "n_trades": 176,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -1.69
+          },
+          "TQQQ": {
+            "n_trades": 156,
+            "win_rate_pct": 48.7,
+            "pnl_pct_of_capital": 4.87
+          },
+          "TSLA": {
+            "n_trades": 151,
+            "win_rate_pct": 41.7,
+            "pnl_pct_of_capital": 1.58
+          },
+          "UPRO": {
+            "n_trades": 118,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 0.77
+          },
+          "VTI": {
+            "n_trades": 89,
+            "win_rate_pct": 49.4,
+            "pnl_pct_of_capital": 1.58
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 55.33,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 6.38,
+            "NVDA": 5.36,
+            "NFLX": 5.29
+          },
+          "top3_share_of_total": 0.31,
+          "total_without_top1": 48.95,
+          "total_without_top3": 38.3
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.799,
+          "cagr_pct": 2.252,
+          "vol_pct": 2.844,
+          "max_drawdown_pct": -6.369,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.357,
+            1.261
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.797,
+          "cagr_pct": 2.09,
+          "vol_pct": 2.642,
+          "max_drawdown_pct": -3.679,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.235,
+            1.404
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.79,
+          "cagr_pct": 2.455,
+          "vol_pct": 3.141,
+          "max_drawdown_pct": -6.369,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.05,
+            1.527
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.316,
+            "alpha_t": 0.59,
+            "alpha_p": 0.552,
+            "beta": 0.069,
+            "r2": 0.374
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.015,
+            "alpha_t": 0.02,
+            "alpha_p": 0.981,
+            "beta": 0.076,
+            "r2": 0.41
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.635,
+            "alpha_t": 0.67,
+            "alpha_p": 0.502,
+            "beta": 0.062,
+            "r2": 0.341
+          }
+        },
+        "mean_exposure_pct": 12.31,
+        "trades_full": {
+          "n_trades": 2810,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.6,
+          "mean_return_pct": 0.752,
+          "median_return_pct": -1.681,
+          "mean_hold_days": 14.6,
+          "exit_reasons": {
+            "stop": 951,
+            "target": 870,
+            "signal": 542,
+            "target_gap": 233,
+            "stop_gap": 214
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1182,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.9,
+          "mean_return_pct": 0.72,
+          "median_return_pct": -2.503,
+          "mean_hold_days": 12.6,
+          "exit_reasons": {
+            "stop": 424,
+            "target": 376,
+            "signal": 174,
+            "stop_gap": 109,
+            "target_gap": 99
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 7864,
+          "max_positions": 2484,
+          "no_prior_close": 0,
+          "under_one_share": 62,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1628,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.0,
+          "mean_return_pct": 0.776,
+          "median_return_pct": -1.406,
+          "mean_hold_days": 16.0,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 494,
+            "signal": 368,
+            "target_gap": 134,
+            "stop_gap": 105
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 6.131
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.7
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 170,
+            "win_rate_pct": 50.6,
+            "pnl_pct_of_capital": 6.05
+          },
+          "AMD": {
+            "n_trades": 260,
+            "win_rate_pct": 44.6,
+            "pnl_pct_of_capital": 4.63
+          },
+          "AMZN": {
+            "n_trades": 161,
+            "win_rate_pct": 42.9,
+            "pnl_pct_of_capital": 2.87
+          },
+          "COIN": {
+            "n_trades": 74,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 0.49
+          },
+          "GOOGL": {
+            "n_trades": 152,
+            "win_rate_pct": 42.8,
+            "pnl_pct_of_capital": 4.51
+          },
+          "IWM": {
+            "n_trades": 134,
+            "win_rate_pct": 41.8,
+            "pnl_pct_of_capital": 0.73
+          },
+          "META": {
+            "n_trades": 137,
+            "win_rate_pct": 44.5,
+            "pnl_pct_of_capital": 3.01
+          },
+          "MSFT": {
+            "n_trades": 148,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 2.87
+          },
+          "NFLX": {
+            "n_trades": 182,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 4.67
+          },
+          "NVDA": {
+            "n_trades": 207,
+            "win_rate_pct": 45.4,
+            "pnl_pct_of_capital": 5.2
+          },
+          "PLTR": {
+            "n_trades": 69,
+            "win_rate_pct": 42.0,
+            "pnl_pct_of_capital": 0.78
+          },
+          "QQQ": {
+            "n_trades": 126,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 3.75
+          },
+          "SPXL": {
+            "n_trades": 189,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 1.39
+          },
+          "SPY": {
+            "n_trades": 108,
+            "win_rate_pct": 43.5,
+            "pnl_pct_of_capital": 1.96
+          },
+          "SQQQ": {
+            "n_trades": 176,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -2.08
+          },
+          "TQQQ": {
+            "n_trades": 156,
+            "win_rate_pct": 48.7,
+            "pnl_pct_of_capital": 4.36
+          },
+          "TSLA": {
+            "n_trades": 153,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 1.55
+          },
+          "UPRO": {
+            "n_trades": 118,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 0.47
+          },
+          "VTI": {
+            "n_trades": 90,
+            "win_rate_pct": 47.8,
+            "pnl_pct_of_capital": 1.35
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 48.56,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 6.05,
+            "NVDA": 5.2,
+            "NFLX": 4.67
+          },
+          "top3_share_of_total": 0.33,
+          "total_without_top1": 42.51,
+          "total_without_top3": 32.64
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.693,
+          "cagr_pct": 1.944,
+          "vol_pct": 2.84,
+          "max_drawdown_pct": -6.767,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.254,
+            1.154
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.692,
+          "cagr_pct": 1.809,
+          "vol_pct": 2.644,
+          "max_drawdown_pct": -3.891,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.124,
+            1.292
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.682,
+          "cagr_pct": 2.103,
+          "vol_pct": 3.13,
+          "max_drawdown_pct": -6.767,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.05,
+            1.412
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.017,
+            "alpha_t": 0.03,
+            "alpha_p": 0.975,
+            "beta": 0.069,
+            "r2": 0.374
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.263,
+            "alpha_t": -0.43,
+            "alpha_p": 0.67,
+            "beta": 0.076,
+            "r2": 0.41
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.296,
+            "alpha_t": 0.31,
+            "alpha_p": 0.753,
+            "beta": 0.061,
+            "r2": 0.341
+          }
+        },
+        "mean_exposure_pct": 12.3,
+        "trades_full": {
+          "n_trades": 2810,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.2,
+          "mean_return_pct": 0.652,
+          "median_return_pct": -1.779,
+          "mean_hold_days": 14.6,
+          "exit_reasons": {
+            "stop": 951,
+            "target": 870,
+            "signal": 542,
+            "target_gap": 233,
+            "stop_gap": 214
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1182,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.7,
+          "mean_return_pct": 0.619,
+          "median_return_pct": -2.6,
+          "mean_hold_days": 12.6,
+          "exit_reasons": {
+            "stop": 424,
+            "target": 376,
+            "signal": 174,
+            "stop_gap": 109,
+            "target_gap": 99
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 7864,
+          "max_positions": 2484,
+          "no_prior_close": 0,
+          "under_one_share": 62,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1628,
+          "n_open_at_end": 0,
+          "win_rate_pct": 44.6,
+          "mean_return_pct": 0.675,
+          "median_return_pct": -1.505,
+          "mean_hold_days": 16.0,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 494,
+            "signal": 368,
+            "target_gap": 134,
+            "stop_gap": 105
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 6.119
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.688
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 170,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 5.5
+          },
+          "AMD": {
+            "n_trades": 260,
+            "win_rate_pct": 44.6,
+            "pnl_pct_of_capital": 3.75
+          },
+          "AMZN": {
+            "n_trades": 161,
+            "win_rate_pct": 42.2,
+            "pnl_pct_of_capital": 2.37
+          },
+          "COIN": {
+            "n_trades": 74,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 0.33
+          },
+          "GOOGL": {
+            "n_trades": 152,
+            "win_rate_pct": 42.8,
+            "pnl_pct_of_capital": 4.17
+          },
+          "IWM": {
+            "n_trades": 134,
+            "win_rate_pct": 41.0,
+            "pnl_pct_of_capital": 0.41
+          },
+          "META": {
+            "n_trades": 137,
+            "win_rate_pct": 44.5,
+            "pnl_pct_of_capital": 2.74
+          },
+          "MSFT": {
+            "n_trades": 148,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 2.42
+          },
+          "NFLX": {
+            "n_trades": 182,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 4.22
+          },
+          "NVDA": {
+            "n_trades": 207,
+            "win_rate_pct": 45.4,
+            "pnl_pct_of_capital": 4.6
+          },
+          "PLTR": {
+            "n_trades": 69,
+            "win_rate_pct": 42.0,
+            "pnl_pct_of_capital": 0.58
+          },
+          "QQQ": {
+            "n_trades": 126,
+            "win_rate_pct": 48.4,
+            "pnl_pct_of_capital": 3.38
+          },
+          "SPXL": {
+            "n_trades": 189,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 0.89
+          },
+          "SPY": {
+            "n_trades": 108,
+            "win_rate_pct": 41.7,
+            "pnl_pct_of_capital": 1.7
+          },
+          "SQQQ": {
+            "n_trades": 176,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -2.42
+          },
+          "TQQQ": {
+            "n_trades": 156,
+            "win_rate_pct": 48.7,
+            "pnl_pct_of_capital": 3.9
+          },
+          "TSLA": {
+            "n_trades": 153,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 1.0
+          },
+          "UPRO": {
+            "n_trades": 118,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 0.19
+          },
+          "VTI": {
+            "n_trades": 90,
+            "win_rate_pct": 46.7,
+            "pnl_pct_of_capital": 1.06
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 40.79,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 5.5,
+            "NVDA": 4.6,
+            "NFLX": 4.22
+          },
+          "top3_share_of_total": 0.35,
+          "total_without_top1": 35.29,
+          "total_without_top3": 26.47
+        }
+      }
+    },
+    "raf_third_voter": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.876,
+          "cagr_pct": 2.363,
+          "vol_pct": 2.713,
+          "max_drawdown_pct": -5.272,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.433,
+            1.338
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.886,
+          "cagr_pct": 2.184,
+          "vol_pct": 2.475,
+          "max_drawdown_pct": -3.965,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.29,
+            1.504
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.854,
+          "cagr_pct": 2.588,
+          "vol_pct": 3.056,
+          "max_drawdown_pct": -5.272,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.109,
+            1.591
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.569,
+            "alpha_t": 1.09,
+            "alpha_p": 0.276,
+            "beta": 0.064,
+            "r2": 0.352
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.337,
+            "alpha_t": 0.55,
+            "alpha_p": 0.582,
+            "beta": 0.068,
+            "r2": 0.369
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.826,
+            "alpha_t": 0.9,
+            "alpha_p": 0.37,
+            "beta": 0.06,
+            "r2": 0.336
+          }
+        },
+        "mean_exposure_pct": 11.38,
+        "trades_full": {
+          "n_trades": 2661,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.3,
+          "mean_return_pct": 0.832,
+          "median_return_pct": -1.532,
+          "mean_hold_days": 14.3,
+          "exit_reasons": {
+            "stop": 882,
+            "target": 779,
+            "signal": 556,
+            "stop_gap": 222,
+            "target_gap": 222
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1190,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.4,
+          "mean_return_pct": 0.769,
+          "median_return_pct": -2.218,
+          "mean_hold_days": 12.0,
+          "exit_reasons": {
+            "stop": 415,
+            "target": 358,
+            "signal": 204,
+            "stop_gap": 118,
+            "target_gap": 95
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 6593,
+          "max_positions": 1880,
+          "no_prior_close": 0,
+          "under_one_share": 59,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1471,
+          "n_open_at_end": 0,
+          "win_rate_pct": 46.1,
+          "mean_return_pct": 0.883,
+          "median_return_pct": -1.017,
+          "mean_hold_days": 16.2,
+          "exit_reasons": {
+            "stop": 467,
+            "target": 421,
+            "signal": 352,
+            "target_gap": 127,
+            "stop_gap": 104
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.839
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.751
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 162,
+            "win_rate_pct": 53.1,
+            "pnl_pct_of_capital": 6.38
+          },
+          "AMD": {
+            "n_trades": 152,
+            "win_rate_pct": 50.7,
+            "pnl_pct_of_capital": 6.76
+          },
+          "AMZN": {
+            "n_trades": 163,
+            "win_rate_pct": 47.2,
+            "pnl_pct_of_capital": 3.53
+          },
+          "COIN": {
+            "n_trades": 78,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 1.98
+          },
+          "GOOGL": {
+            "n_trades": 154,
+            "win_rate_pct": 47.4,
+            "pnl_pct_of_capital": 4.57
+          },
+          "IWM": {
+            "n_trades": 127,
+            "win_rate_pct": 40.9,
+            "pnl_pct_of_capital": 0.37
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 2.17
+          },
+          "MSFT": {
+            "n_trades": 136,
+            "win_rate_pct": 40.4,
+            "pnl_pct_of_capital": 1.69
+          },
+          "NFLX": {
+            "n_trades": 200,
+            "win_rate_pct": 47.5,
+            "pnl_pct_of_capital": 4.7
+          },
+          "NVDA": {
+            "n_trades": 187,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 4.68
+          },
+          "PLTR": {
+            "n_trades": 62,
+            "win_rate_pct": 40.3,
+            "pnl_pct_of_capital": 0.55
+          },
+          "QQQ": {
+            "n_trades": 114,
+            "win_rate_pct": 51.8,
+            "pnl_pct_of_capital": 3.81
+          },
+          "SPXL": {
+            "n_trades": 180,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 1.82
+          },
+          "SPY": {
+            "n_trades": 107,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 2.06
+          },
+          "SQQQ": {
+            "n_trades": 190,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -1.89
+          },
+          "TQQQ": {
+            "n_trades": 153,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 4.29
+          },
+          "TSLA": {
+            "n_trades": 158,
+            "win_rate_pct": 43.7,
+            "pnl_pct_of_capital": 2.41
+          },
+          "UPRO": {
+            "n_trades": 125,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 0.43
+          },
+          "VTI": {
+            "n_trades": 81,
+            "win_rate_pct": 42.0,
+            "pnl_pct_of_capital": 1.13
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 51.44,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AMD": 6.76,
+            "AAPL": 6.38,
+            "NFLX": 4.7
+          },
+          "top3_share_of_total": 0.35,
+          "total_without_top1": 44.68,
+          "total_without_top3": 33.6
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.774,
+          "cagr_pct": 2.079,
+          "vol_pct": 2.711,
+          "max_drawdown_pct": -5.407,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.331,
+            1.235
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.786,
+          "cagr_pct": 1.933,
+          "vol_pct": 2.479,
+          "max_drawdown_pct": -4.216,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.189,
+            1.399
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.748,
+          "cagr_pct": 2.252,
+          "vol_pct": 3.049,
+          "max_drawdown_pct": -5.407,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.0,
+            1.472
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.291,
+            "alpha_t": 0.56,
+            "alpha_p": 0.577,
+            "beta": 0.064,
+            "r2": 0.352
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.087,
+            "alpha_t": 0.14,
+            "alpha_p": 0.887,
+            "beta": 0.068,
+            "r2": 0.369
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.501,
+            "alpha_t": 0.55,
+            "alpha_p": 0.585,
+            "beta": 0.059,
+            "r2": 0.336
+          }
+        },
+        "mean_exposure_pct": 11.37,
+        "trades_full": {
+          "n_trades": 2661,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.1,
+          "mean_return_pct": 0.732,
+          "median_return_pct": -1.619,
+          "mean_hold_days": 14.3,
+          "exit_reasons": {
+            "stop": 881,
+            "target": 779,
+            "signal": 557,
+            "stop_gap": 222,
+            "target_gap": 222
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1190,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.3,
+          "mean_return_pct": 0.671,
+          "median_return_pct": -2.269,
+          "mean_hold_days": 12.0,
+          "exit_reasons": {
+            "stop": 414,
+            "target": 358,
+            "signal": 205,
+            "stop_gap": 118,
+            "target_gap": 95
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 6593,
+          "max_positions": 1879,
+          "no_prior_close": 0,
+          "under_one_share": 60,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1471,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.8,
+          "mean_return_pct": 0.782,
+          "median_return_pct": -1.116,
+          "mean_hold_days": 16.2,
+          "exit_reasons": {
+            "stop": 467,
+            "target": 421,
+            "signal": 352,
+            "target_gap": 127,
+            "stop_gap": 104
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.822
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.732
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 162,
+            "win_rate_pct": 53.1,
+            "pnl_pct_of_capital": 5.95
+          },
+          "AMD": {
+            "n_trades": 152,
+            "win_rate_pct": 50.7,
+            "pnl_pct_of_capital": 6.24
+          },
+          "AMZN": {
+            "n_trades": 163,
+            "win_rate_pct": 47.2,
+            "pnl_pct_of_capital": 3.14
+          },
+          "COIN": {
+            "n_trades": 78,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 1.71
+          },
+          "GOOGL": {
+            "n_trades": 153,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 4.53
+          },
+          "IWM": {
+            "n_trades": 127,
+            "win_rate_pct": 40.9,
+            "pnl_pct_of_capital": 0.05
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 1.77
+          },
+          "MSFT": {
+            "n_trades": 136,
+            "win_rate_pct": 40.4,
+            "pnl_pct_of_capital": 1.28
+          },
+          "NFLX": {
+            "n_trades": 200,
+            "win_rate_pct": 47.5,
+            "pnl_pct_of_capital": 4.1
+          },
+          "NVDA": {
+            "n_trades": 187,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 4.08
+          },
+          "PLTR": {
+            "n_trades": 62,
+            "win_rate_pct": 40.3,
+            "pnl_pct_of_capital": 0.36
+          },
+          "QQQ": {
+            "n_trades": 114,
+            "win_rate_pct": 51.8,
+            "pnl_pct_of_capital": 3.34
+          },
+          "SPXL": {
+            "n_trades": 180,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 1.39
+          },
+          "SPY": {
+            "n_trades": 107,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 1.79
+          },
+          "SQQQ": {
+            "n_trades": 190,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -2.29
+          },
+          "TQQQ": {
+            "n_trades": 153,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 3.81
+          },
+          "TSLA": {
+            "n_trades": 158,
+            "win_rate_pct": 43.0,
+            "pnl_pct_of_capital": 1.87
+          },
+          "UPRO": {
+            "n_trades": 125,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 0.15
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 40.2,
+            "pnl_pct_of_capital": 0.85
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 44.12,
+          "symbols_with_profit": 18,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AMD": 6.24,
+            "AAPL": 5.95,
+            "GOOGL": 4.53
+          },
+          "top3_share_of_total": 0.38,
+          "total_without_top1": 37.88,
+          "total_without_top3": 27.4
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.673,
+          "cagr_pct": 1.8,
+          "vol_pct": 2.711,
+          "max_drawdown_pct": -5.588,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.231,
+            1.133
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.688,
+          "cagr_pct": 1.69,
+          "vol_pct": 2.482,
+          "max_drawdown_pct": -4.488,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.087,
+            1.306
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.64,
+          "cagr_pct": 1.914,
+          "vol_pct": 3.045,
+          "max_drawdown_pct": -5.588,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.099,
+            1.351
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.016,
+            "alpha_t": 0.03,
+            "alpha_p": 0.975,
+            "beta": 0.064,
+            "r2": 0.352
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.154,
+            "alpha_t": -0.25,
+            "alpha_p": 0.803,
+            "beta": 0.068,
+            "r2": 0.369
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.17,
+            "alpha_t": 0.19,
+            "alpha_p": 0.853,
+            "beta": 0.059,
+            "r2": 0.337
+          }
+        },
+        "mean_exposure_pct": 11.36,
+        "trades_full": {
+          "n_trades": 2661,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.9,
+          "mean_return_pct": 0.636,
+          "median_return_pct": -1.716,
+          "mean_hold_days": 14.3,
+          "exit_reasons": {
+            "stop": 881,
+            "target": 779,
+            "signal": 558,
+            "target_gap": 222,
+            "stop_gap": 221
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1190,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.1,
+          "mean_return_pct": 0.579,
+          "median_return_pct": -2.337,
+          "mean_hold_days": 12.0,
+          "exit_reasons": {
+            "stop": 414,
+            "target": 358,
+            "signal": 206,
+            "stop_gap": 117,
+            "target_gap": 95
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 6592,
+          "max_positions": 1879,
+          "no_prior_close": 0,
+          "under_one_share": 61,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1471,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.5,
+          "mean_return_pct": 0.681,
+          "median_return_pct": -1.214,
+          "mean_hold_days": 16.2,
+          "exit_reasons": {
+            "stop": 467,
+            "target": 421,
+            "signal": 352,
+            "target_gap": 127,
+            "stop_gap": 104
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.815
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.73
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 162,
+            "win_rate_pct": 53.1,
+            "pnl_pct_of_capital": 5.43
+          },
+          "AMD": {
+            "n_trades": 152,
+            "win_rate_pct": 50.7,
+            "pnl_pct_of_capital": 5.59
+          },
+          "AMZN": {
+            "n_trades": 162,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 2.68
+          },
+          "COIN": {
+            "n_trades": 78,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 1.4
+          },
+          "GOOGL": {
+            "n_trades": 153,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 4.17
+          },
+          "IWM": {
+            "n_trades": 127,
+            "win_rate_pct": 40.9,
+            "pnl_pct_of_capital": -0.25
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 1.39
+          },
+          "MSFT": {
+            "n_trades": 136,
+            "win_rate_pct": 39.0,
+            "pnl_pct_of_capital": 0.93
+          },
+          "NFLX": {
+            "n_trades": 200,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 3.58
+          },
+          "NVDA": {
+            "n_trades": 187,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 3.48
+          },
+          "PLTR": {
+            "n_trades": 62,
+            "win_rate_pct": 40.3,
+            "pnl_pct_of_capital": 0.16
+          },
+          "QQQ": {
+            "n_trades": 114,
+            "win_rate_pct": 50.9,
+            "pnl_pct_of_capital": 3.03
+          },
+          "SPXL": {
+            "n_trades": 180,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 0.94
+          },
+          "SPY": {
+            "n_trades": 107,
+            "win_rate_pct": 43.9,
+            "pnl_pct_of_capital": 1.46
+          },
+          "SQQQ": {
+            "n_trades": 190,
+            "win_rate_pct": 36.3,
+            "pnl_pct_of_capital": -2.31
+          },
+          "TQQQ": {
+            "n_trades": 153,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 3.42
+          },
+          "TSLA": {
+            "n_trades": 159,
+            "win_rate_pct": 43.4,
+            "pnl_pct_of_capital": 1.62
+          },
+          "UPRO": {
+            "n_trades": 125,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": -0.09
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 39.0,
+            "pnl_pct_of_capital": 0.67
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 37.3,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AMD": 5.59,
+            "AAPL": 5.43,
+            "GOOGL": 4.17
+          },
+          "top3_share_of_total": 0.41,
+          "total_without_top1": 31.71,
+          "total_without_top3": 22.11
+        }
+      }
+    },
+    "kama_research_alone": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.754,
+          "cagr_pct": 2.088,
+          "vol_pct": 2.798,
+          "max_drawdown_pct": -5.307,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.308,
+            1.177
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.925,
+          "cagr_pct": 2.449,
+          "vol_pct": 2.656,
+          "max_drawdown_pct": -4.134,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.364,
+            1.504
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.492,
+          "cagr_pct": 1.44,
+          "vol_pct": 3.009,
+          "max_drawdown_pct": -5.307,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.247,
+            1.211
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.236,
+            "alpha_t": 0.44,
+            "alpha_p": 0.659,
+            "beta": 0.066,
+            "r2": 0.355
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.276,
+            "alpha_t": 0.47,
+            "alpha_p": 0.636,
+            "beta": 0.08,
+            "r2": 0.442
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.116,
+            "alpha_t": -0.12,
+            "alpha_p": 0.905,
+            "beta": 0.053,
+            "r2": 0.278
+          }
+        },
+        "mean_exposure_pct": 11.91,
+        "trades_full": {
+          "n_trades": 2232,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.0,
+          "mean_return_pct": 0.883,
+          "median_return_pct": -5.0,
+          "mean_hold_days": 17.6,
+          "exit_reasons": {
+            "stop": 1020,
+            "target": 784,
+            "target_gap": 216,
+            "stop_gap": 195,
+            "signal": 17
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1019,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.4,
+          "mean_return_pct": 0.518,
+          "median_return_pct": -5.0,
+          "mean_hold_days": 13.3,
+          "exit_reasons": {
+            "stop": 493,
+            "target": 335,
+            "target_gap": 95,
+            "stop_gap": 89,
+            "signal": 7
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 18281,
+          "max_positions": 4361,
+          "no_prior_close": 0,
+          "under_one_share": 71,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1213,
+          "n_open_at_end": 0,
+          "win_rate_pct": 47.2,
+          "mean_return_pct": 1.188,
+          "median_return_pct": -5.0,
+          "mean_hold_days": 21.2,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 449,
+            "target_gap": 121,
+            "stop_gap": 106,
+            "signal": 10
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 4.894
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 5.762
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 116,
+            "win_rate_pct": 53.4,
+            "pnl_pct_of_capital": 5.17
+          },
+          "AMD": {
+            "n_trades": 277,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 3.5
+          },
+          "AMZN": {
+            "n_trades": 136,
+            "win_rate_pct": 44.1,
+            "pnl_pct_of_capital": 3.04
+          },
+          "COIN": {
+            "n_trades": 83,
+            "win_rate_pct": 37.3,
+            "pnl_pct_of_capital": -0.75
+          },
+          "GOOGL": {
+            "n_trades": 101,
+            "win_rate_pct": 51.5,
+            "pnl_pct_of_capital": 4.55
+          },
+          "IWM": {
+            "n_trades": 72,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 1.33
+          },
+          "META": {
+            "n_trades": 117,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 3.49
+          },
+          "MSFT": {
+            "n_trades": 91,
+            "win_rate_pct": 50.5,
+            "pnl_pct_of_capital": 3.67
+          },
+          "NFLX": {
+            "n_trades": 207,
+            "win_rate_pct": 43.5,
+            "pnl_pct_of_capital": 2.81
+          },
+          "NVDA": {
+            "n_trades": 216,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 5.32
+          },
+          "PLTR": {
+            "n_trades": 82,
+            "win_rate_pct": 42.7,
+            "pnl_pct_of_capital": 1.53
+          },
+          "QQQ": {
+            "n_trades": 75,
+            "win_rate_pct": 49.3,
+            "pnl_pct_of_capital": 2.61
+          },
+          "SPXL": {
+            "n_trades": 171,
+            "win_rate_pct": 42.7,
+            "pnl_pct_of_capital": 1.63
+          },
+          "SPY": {
+            "n_trades": 52,
+            "win_rate_pct": 51.9,
+            "pnl_pct_of_capital": 2.13
+          },
+          "SQQQ": {
+            "n_trades": 90,
+            "win_rate_pct": 34.4,
+            "pnl_pct_of_capital": -1.48
+          },
+          "TQQQ": {
+            "n_trades": 113,
+            "win_rate_pct": 37.2,
+            "pnl_pct_of_capital": -0.89
+          },
+          "TSLA": {
+            "n_trades": 117,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 3.15
+          },
+          "UPRO": {
+            "n_trades": 81,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 1.85
+          },
+          "VTI": {
+            "n_trades": 35,
+            "win_rate_pct": 54.3,
+            "pnl_pct_of_capital": 1.7
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 44.36,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "NVDA": 5.32,
+            "AAPL": 5.17,
+            "GOOGL": 4.55
+          },
+          "top3_share_of_total": 0.34,
+          "total_without_top1": 39.04,
+          "total_without_top3": 29.32
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.673,
+          "cagr_pct": 1.857,
+          "vol_pct": 2.796,
+          "max_drawdown_pct": -5.536,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.232,
+            1.1
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.85,
+          "cagr_pct": 2.245,
+          "vol_pct": 2.657,
+          "max_drawdown_pct": -4.266,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.291,
+            1.426
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.403,
+          "cagr_pct": 1.169,
+          "vol_pct": 3.006,
+          "max_drawdown_pct": -5.536,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.347,
+            1.122
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.01,
+            "alpha_t": 0.02,
+            "alpha_p": 0.985,
+            "beta": 0.066,
+            "r2": 0.355
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.077,
+            "alpha_t": 0.13,
+            "alpha_p": 0.896,
+            "beta": 0.08,
+            "r2": 0.442
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.382,
+            "alpha_t": -0.39,
+            "alpha_p": 0.696,
+            "beta": 0.053,
+            "r2": 0.278
+          }
+        },
+        "mean_exposure_pct": 11.91,
+        "trades_full": {
+          "n_trades": 2226,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.1,
+          "mean_return_pct": 0.794,
+          "median_return_pct": -5.095,
+          "mean_hold_days": 17.7,
+          "exit_reasons": {
+            "stop": 1016,
+            "target": 783,
+            "target_gap": 216,
+            "stop_gap": 194,
+            "signal": 17
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1013,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.5,
+          "mean_return_pct": 0.442,
+          "median_return_pct": -5.095,
+          "mean_hold_days": 13.4,
+          "exit_reasons": {
+            "stop": 489,
+            "target": 334,
+            "target_gap": 95,
+            "stop_gap": 88,
+            "signal": 7
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 18285,
+          "max_positions": 4363,
+          "no_prior_close": 0,
+          "under_one_share": 71,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1213,
+          "n_open_at_end": 0,
+          "win_rate_pct": 47.2,
+          "mean_return_pct": 1.087,
+          "median_return_pct": -5.095,
+          "mean_hold_days": 21.2,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 449,
+            "target_gap": 121,
+            "stop_gap": 106,
+            "signal": 10
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 4.874
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 5.728
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 116,
+            "win_rate_pct": 53.4,
+            "pnl_pct_of_capital": 4.84
+          },
+          "AMD": {
+            "n_trades": 277,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 2.71
+          },
+          "AMZN": {
+            "n_trades": 135,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 2.88
+          },
+          "COIN": {
+            "n_trades": 81,
+            "win_rate_pct": 37.0,
+            "pnl_pct_of_capital": -1.06
+          },
+          "GOOGL": {
+            "n_trades": 100,
+            "win_rate_pct": 51.0,
+            "pnl_pct_of_capital": 4.02
+          },
+          "IWM": {
+            "n_trades": 72,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 1.15
+          },
+          "META": {
+            "n_trades": 117,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 3.02
+          },
+          "MSFT": {
+            "n_trades": 91,
+            "win_rate_pct": 50.5,
+            "pnl_pct_of_capital": 3.35
+          },
+          "NFLX": {
+            "n_trades": 207,
+            "win_rate_pct": 43.5,
+            "pnl_pct_of_capital": 2.39
+          },
+          "NVDA": {
+            "n_trades": 216,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 4.71
+          },
+          "PLTR": {
+            "n_trades": 82,
+            "win_rate_pct": 42.7,
+            "pnl_pct_of_capital": 1.25
+          },
+          "QQQ": {
+            "n_trades": 75,
+            "win_rate_pct": 49.3,
+            "pnl_pct_of_capital": 2.41
+          },
+          "SPXL": {
+            "n_trades": 169,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 1.45
+          },
+          "SPY": {
+            "n_trades": 53,
+            "win_rate_pct": 52.8,
+            "pnl_pct_of_capital": 2.21
+          },
+          "SQQQ": {
+            "n_trades": 90,
+            "win_rate_pct": 34.4,
+            "pnl_pct_of_capital": -1.7
+          },
+          "TQQQ": {
+            "n_trades": 112,
+            "win_rate_pct": 37.5,
+            "pnl_pct_of_capital": -0.96
+          },
+          "TSLA": {
+            "n_trades": 117,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 2.8
+          },
+          "UPRO": {
+            "n_trades": 81,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 1.65
+          },
+          "VTI": {
+            "n_trades": 35,
+            "win_rate_pct": 54.3,
+            "pnl_pct_of_capital": 1.56
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 38.68,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 4.84,
+            "NVDA": 4.71,
+            "GOOGL": 4.02
+          },
+          "top3_share_of_total": 0.35,
+          "total_without_top1": 33.84,
+          "total_without_top3": 25.11
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.584,
+          "cagr_pct": 1.603,
+          "vol_pct": 2.795,
+          "max_drawdown_pct": -6.016,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.139,
+            1.005
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.768,
+          "cagr_pct": 2.019,
+          "vol_pct": 2.651,
+          "max_drawdown_pct": -4.362,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.212,
+            1.336
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.304,
+          "cagr_pct": 0.87,
+          "vol_pct": 3.012,
+          "max_drawdown_pct": -6.016,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.443,
+            1.015
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.24,
+            "alpha_t": -0.45,
+            "alpha_p": 0.654,
+            "beta": 0.066,
+            "r2": 0.355
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.142,
+            "alpha_t": -0.24,
+            "alpha_p": 0.807,
+            "beta": 0.08,
+            "r2": 0.442
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.682,
+            "alpha_t": -0.69,
+            "alpha_p": 0.487,
+            "beta": 0.053,
+            "r2": 0.278
+          }
+        },
+        "mean_exposure_pct": 11.89,
+        "trades_full": {
+          "n_trades": 2228,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.0,
+          "mean_return_pct": 0.688,
+          "median_return_pct": -5.19,
+          "mean_hold_days": 17.7,
+          "exit_reasons": {
+            "stop": 1018,
+            "target": 783,
+            "target_gap": 216,
+            "stop_gap": 194,
+            "signal": 17
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1015,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.5,
+          "mean_return_pct": 0.331,
+          "median_return_pct": -5.19,
+          "mean_hold_days": 13.4,
+          "exit_reasons": {
+            "stop": 491,
+            "target": 334,
+            "target_gap": 95,
+            "stop_gap": 88,
+            "signal": 7
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 18280,
+          "max_positions": 4356,
+          "no_prior_close": 0,
+          "under_one_share": 81,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1213,
+          "n_open_at_end": 0,
+          "win_rate_pct": 47.2,
+          "mean_return_pct": 0.986,
+          "median_return_pct": -5.19,
+          "mean_hold_days": 21.2,
+          "exit_reasons": {
+            "stop": 527,
+            "target": 449,
+            "target_gap": 121,
+            "stop_gap": 106,
+            "signal": 10
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 4.866
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 5.735
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 116,
+            "win_rate_pct": 53.4,
+            "pnl_pct_of_capital": 4.45
+          },
+          "AMD": {
+            "n_trades": 277,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 1.94
+          },
+          "AMZN": {
+            "n_trades": 134,
+            "win_rate_pct": 44.0,
+            "pnl_pct_of_capital": 2.15
+          },
+          "COIN": {
+            "n_trades": 81,
+            "win_rate_pct": 37.0,
+            "pnl_pct_of_capital": -1.28
+          },
+          "GOOGL": {
+            "n_trades": 100,
+            "win_rate_pct": 51.0,
+            "pnl_pct_of_capital": 3.95
+          },
+          "IWM": {
+            "n_trades": 72,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 0.98
+          },
+          "META": {
+            "n_trades": 117,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 2.77
+          },
+          "MSFT": {
+            "n_trades": 91,
+            "win_rate_pct": 50.5,
+            "pnl_pct_of_capital": 3.06
+          },
+          "NFLX": {
+            "n_trades": 207,
+            "win_rate_pct": 43.5,
+            "pnl_pct_of_capital": 2.11
+          },
+          "NVDA": {
+            "n_trades": 216,
+            "win_rate_pct": 45.8,
+            "pnl_pct_of_capital": 4.14
+          },
+          "PLTR": {
+            "n_trades": 82,
+            "win_rate_pct": 42.7,
+            "pnl_pct_of_capital": 0.96
+          },
+          "QQQ": {
+            "n_trades": 75,
+            "win_rate_pct": 49.3,
+            "pnl_pct_of_capital": 2.1
+          },
+          "SPXL": {
+            "n_trades": 169,
+            "win_rate_pct": 43.2,
+            "pnl_pct_of_capital": 1.06
+          },
+          "SPY": {
+            "n_trades": 53,
+            "win_rate_pct": 52.8,
+            "pnl_pct_of_capital": 2.09
+          },
+          "SQQQ": {
+            "n_trades": 90,
+            "win_rate_pct": 34.4,
+            "pnl_pct_of_capital": -1.85
+          },
+          "TQQQ": {
+            "n_trades": 113,
+            "win_rate_pct": 37.2,
+            "pnl_pct_of_capital": -1.32
+          },
+          "TSLA": {
+            "n_trades": 118,
+            "win_rate_pct": 47.5,
+            "pnl_pct_of_capital": 2.55
+          },
+          "UPRO": {
+            "n_trades": 81,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 1.46
+          },
+          "VTI": {
+            "n_trades": 36,
+            "win_rate_pct": 52.8,
+            "pnl_pct_of_capital": 1.33
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 32.65,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 4.45,
+            "NVDA": 4.14,
+            "GOOGL": 3.95
+          },
+          "top3_share_of_total": 0.38,
+          "total_without_top1": 28.2,
+          "total_without_top3": 20.11
+        }
+      }
+    },
+    "kama_issue_alone": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.914,
+          "cagr_pct": 3.3,
+          "vol_pct": 3.633,
+          "max_drawdown_pct": -8.446,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.448,
+            1.402
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.953,
+          "cagr_pct": 3.257,
+          "vol_pct": 3.429,
+          "max_drawdown_pct": -7.335,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.367,
+            1.567
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.846,
+          "cagr_pct": 3.3,
+          "vol_pct": 3.939,
+          "max_drawdown_pct": -8.446,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.077,
+            1.661
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.371,
+            "alpha_t": 0.63,
+            "alpha_p": 0.53,
+            "beta": 0.104,
+            "r2": 0.521
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.063,
+            "alpha_t": -0.1,
+            "alpha_p": 0.92,
+            "beta": 0.122,
+            "r2": 0.618
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.724,
+            "alpha_t": 0.65,
+            "alpha_p": 0.513,
+            "beta": 0.087,
+            "r2": 0.433
+          }
+        },
+        "mean_exposure_pct": 15.22,
+        "trades_full": {
+          "n_trades": 3944,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.0,
+          "mean_return_pct": 0.783,
+          "median_return_pct": -3.259,
+          "mean_hold_days": 12.9,
+          "exit_reasons": {
+            "stop": 1634,
+            "target": 1304,
+            "signal": 447,
+            "target_gap": 305,
+            "stop_gap": 254
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1811,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.9,
+          "mean_return_pct": 0.63,
+          "median_return_pct": -5.0,
+          "mean_hold_days": 9.9,
+          "exit_reasons": {
+            "stop": 794,
+            "target": 584,
+            "signal": 169,
+            "target_gap": 144,
+            "stop_gap": 120
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 34795,
+          "max_positions": 14432,
+          "no_prior_close": 0,
+          "under_one_share": 169,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2133,
+          "n_open_at_end": 0,
+          "win_rate_pct": 45.0,
+          "mean_return_pct": 0.912,
+          "median_return_pct": -2.261,
+          "mean_hold_days": 15.3,
+          "exit_reasons": {
+            "stop": 840,
+            "target": 720,
+            "signal": 278,
+            "target_gap": 161,
+            "stop_gap": 134
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 8.725
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 10.28
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 231,
+            "win_rate_pct": 50.2,
+            "pnl_pct_of_capital": 8.11
+          },
+          "AMD": {
+            "n_trades": 575,
+            "win_rate_pct": 42.4,
+            "pnl_pct_of_capital": 9.93
+          },
+          "AMZN": {
+            "n_trades": 243,
+            "win_rate_pct": 47.3,
+            "pnl_pct_of_capital": 6.72
+          },
+          "COIN": {
+            "n_trades": 218,
+            "win_rate_pct": 36.2,
+            "pnl_pct_of_capital": -3.07
+          },
+          "GOOGL": {
+            "n_trades": 198,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 4.79
+          },
+          "IWM": {
+            "n_trades": 117,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 2.81
+          },
+          "META": {
+            "n_trades": 197,
+            "win_rate_pct": 50.8,
+            "pnl_pct_of_capital": 8.58
+          },
+          "MSFT": {
+            "n_trades": 177,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 5.11
+          },
+          "NFLX": {
+            "n_trades": 395,
+            "win_rate_pct": 46.1,
+            "pnl_pct_of_capital": 10.31
+          },
+          "NVDA": {
+            "n_trades": 407,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 9.1
+          },
+          "PLTR": {
+            "n_trades": 153,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 2.74
+          },
+          "QQQ": {
+            "n_trades": 112,
+            "win_rate_pct": 52.7,
+            "pnl_pct_of_capital": 5.13
+          },
+          "SPXL": {
+            "n_trades": 257,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 5.21
+          },
+          "SPY": {
+            "n_trades": 66,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 3.01
+          },
+          "SQQQ": {
+            "n_trades": 202,
+            "win_rate_pct": 33.7,
+            "pnl_pct_of_capital": -3.53
+          },
+          "TQQQ": {
+            "n_trades": 155,
+            "win_rate_pct": 41.3,
+            "pnl_pct_of_capital": 1.38
+          },
+          "TSLA": {
+            "n_trades": 140,
+            "win_rate_pct": 35.7,
+            "pnl_pct_of_capital": -0.84
+          },
+          "UPRO": {
+            "n_trades": 68,
+            "win_rate_pct": 45.6,
+            "pnl_pct_of_capital": 1.53
+          },
+          "VTI": {
+            "n_trades": 33,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 1.06
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 78.08,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "NFLX": 10.31,
+            "AMD": 9.93,
+            "NVDA": 9.1
+          },
+          "top3_share_of_total": 0.38,
+          "total_without_top1": 67.77,
+          "total_without_top3": 48.74
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.784,
+          "cagr_pct": 2.812,
+          "vol_pct": 3.63,
+          "max_drawdown_pct": -8.942,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.315,
+            1.269
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.843,
+          "cagr_pct": 2.871,
+          "vol_pct": 3.43,
+          "max_drawdown_pct": -7.923,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.254,
+            1.457
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.686,
+          "cagr_pct": 2.648,
+          "vol_pct": 3.932,
+          "max_drawdown_pct": -8.942,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.082,
+            1.488
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.1,
+            "alpha_t": -0.17,
+            "alpha_p": 0.865,
+            "beta": 0.103,
+            "r2": 0.521
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.439,
+            "alpha_t": -0.69,
+            "alpha_p": 0.488,
+            "beta": 0.122,
+            "r2": 0.618
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.094,
+            "alpha_t": 0.09,
+            "alpha_p": 0.932,
+            "beta": 0.087,
+            "r2": 0.433
+          }
+        },
+        "mean_exposure_pct": 15.18,
+        "trades_full": {
+          "n_trades": 3947,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.9,
+          "mean_return_pct": 0.678,
+          "median_return_pct": -3.4,
+          "mean_hold_days": 12.9,
+          "exit_reasons": {
+            "stop": 1637,
+            "target": 1304,
+            "signal": 447,
+            "target_gap": 305,
+            "stop_gap": 254
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1814,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.8,
+          "mean_return_pct": 0.521,
+          "median_return_pct": -5.095,
+          "mean_hold_days": 9.9,
+          "exit_reasons": {
+            "stop": 797,
+            "target": 584,
+            "signal": 169,
+            "target_gap": 144,
+            "stop_gap": 120
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 34792,
+          "max_positions": 14423,
+          "no_prior_close": 0,
+          "under_one_share": 178,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2133,
+          "n_open_at_end": 0,
+          "win_rate_pct": 44.8,
+          "mean_return_pct": 0.811,
+          "median_return_pct": -2.359,
+          "mean_hold_days": 15.3,
+          "exit_reasons": {
+            "stop": 840,
+            "target": 720,
+            "signal": 278,
+            "target_gap": 161,
+            "stop_gap": 134
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 8.7
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 10.282
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 231,
+            "win_rate_pct": 50.2,
+            "pnl_pct_of_capital": 7.25
+          },
+          "AMD": {
+            "n_trades": 575,
+            "win_rate_pct": 42.4,
+            "pnl_pct_of_capital": 7.82
+          },
+          "AMZN": {
+            "n_trades": 241,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 5.49
+          },
+          "COIN": {
+            "n_trades": 218,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -3.54
+          },
+          "GOOGL": {
+            "n_trades": 198,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 4.06
+          },
+          "IWM": {
+            "n_trades": 118,
+            "win_rate_pct": 41.5,
+            "pnl_pct_of_capital": 2.22
+          },
+          "META": {
+            "n_trades": 197,
+            "win_rate_pct": 50.3,
+            "pnl_pct_of_capital": 7.66
+          },
+          "MSFT": {
+            "n_trades": 177,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 4.41
+          },
+          "NFLX": {
+            "n_trades": 395,
+            "win_rate_pct": 45.6,
+            "pnl_pct_of_capital": 9.13
+          },
+          "NVDA": {
+            "n_trades": 407,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 7.46
+          },
+          "PLTR": {
+            "n_trades": 153,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 2.04
+          },
+          "QQQ": {
+            "n_trades": 114,
+            "win_rate_pct": 51.8,
+            "pnl_pct_of_capital": 4.6
+          },
+          "SPXL": {
+            "n_trades": 259,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 4.53
+          },
+          "SPY": {
+            "n_trades": 66,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 2.67
+          },
+          "SQQQ": {
+            "n_trades": 202,
+            "win_rate_pct": 33.7,
+            "pnl_pct_of_capital": -3.98
+          },
+          "TQQQ": {
+            "n_trades": 155,
+            "win_rate_pct": 41.3,
+            "pnl_pct_of_capital": 0.94
+          },
+          "TSLA": {
+            "n_trades": 140,
+            "win_rate_pct": 35.7,
+            "pnl_pct_of_capital": -1.37
+          },
+          "UPRO": {
+            "n_trades": 68,
+            "win_rate_pct": 45.6,
+            "pnl_pct_of_capital": 1.38
+          },
+          "VTI": {
+            "n_trades": 33,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 0.93
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 63.7,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "NFLX": 9.13,
+            "AMD": 7.82,
+            "META": 7.66
+          },
+          "top3_share_of_total": 0.39,
+          "total_without_top1": 54.57,
+          "total_without_top3": 39.09
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.674,
+          "cagr_pct": 2.413,
+          "vol_pct": 3.642,
+          "max_drawdown_pct": -9.336,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.204,
+            1.159
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.731,
+          "cagr_pct": 2.48,
+          "vol_pct": 3.437,
+          "max_drawdown_pct": -8.58,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.148,
+            1.349
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.582,
+          "cagr_pct": 2.24,
+          "vol_pct": 3.952,
+          "max_drawdown_pct": -9.336,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.185,
+            1.389
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.501,
+            "alpha_t": -0.84,
+            "alpha_p": 0.399,
+            "beta": 0.104,
+            "r2": 0.521
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.828,
+            "alpha_t": -1.3,
+            "alpha_p": 0.194,
+            "beta": 0.122,
+            "r2": 0.619
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.319,
+            "alpha_t": -0.29,
+            "alpha_p": 0.773,
+            "beta": 0.087,
+            "r2": 0.434
+          }
+        },
+        "mean_exposure_pct": 15.22,
+        "trades_full": {
+          "n_trades": 3942,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.9,
+          "mean_return_pct": 0.59,
+          "median_return_pct": -3.395,
+          "mean_hold_days": 12.9,
+          "exit_reasons": {
+            "stop": 1629,
+            "target": 1304,
+            "signal": 449,
+            "target_gap": 306,
+            "stop_gap": 254
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1809,
+          "n_open_at_end": 10,
+          "win_rate_pct": 42.8,
+          "mean_return_pct": 0.448,
+          "median_return_pct": -5.19,
+          "mean_hold_days": 9.9,
+          "exit_reasons": {
+            "stop": 789,
+            "target": 584,
+            "signal": 171,
+            "target_gap": 145,
+            "stop_gap": 120
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 34796,
+          "max_positions": 14406,
+          "no_prior_close": 0,
+          "under_one_share": 196,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 2133,
+          "n_open_at_end": 0,
+          "win_rate_pct": 44.7,
+          "mean_return_pct": 0.71,
+          "median_return_pct": -2.457,
+          "mean_hold_days": 15.3,
+          "exit_reasons": {
+            "stop": 840,
+            "target": 720,
+            "signal": 278,
+            "target_gap": 161,
+            "stop_gap": 134
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 8.672
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 10.247
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 231,
+            "win_rate_pct": 49.8,
+            "pnl_pct_of_capital": 6.39
+          },
+          "AMD": {
+            "n_trades": 575,
+            "win_rate_pct": 42.4,
+            "pnl_pct_of_capital": 6.14
+          },
+          "AMZN": {
+            "n_trades": 239,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 4.85
+          },
+          "COIN": {
+            "n_trades": 218,
+            "win_rate_pct": 35.8,
+            "pnl_pct_of_capital": -4.04
+          },
+          "GOOGL": {
+            "n_trades": 196,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 3.54
+          },
+          "IWM": {
+            "n_trades": 117,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 1.95
+          },
+          "META": {
+            "n_trades": 197,
+            "win_rate_pct": 49.7,
+            "pnl_pct_of_capital": 6.91
+          },
+          "MSFT": {
+            "n_trades": 177,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 3.99
+          },
+          "NFLX": {
+            "n_trades": 395,
+            "win_rate_pct": 45.6,
+            "pnl_pct_of_capital": 7.71
+          },
+          "NVDA": {
+            "n_trades": 407,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 6.21
+          },
+          "PLTR": {
+            "n_trades": 153,
+            "win_rate_pct": 40.5,
+            "pnl_pct_of_capital": 1.5
+          },
+          "QQQ": {
+            "n_trades": 112,
+            "win_rate_pct": 52.7,
+            "pnl_pct_of_capital": 4.49
+          },
+          "SPXL": {
+            "n_trades": 259,
+            "win_rate_pct": 44.4,
+            "pnl_pct_of_capital": 3.77
+          },
+          "SPY": {
+            "n_trades": 66,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 2.56
+          },
+          "SQQQ": {
+            "n_trades": 202,
+            "win_rate_pct": 33.7,
+            "pnl_pct_of_capital": -4.35
+          },
+          "TQQQ": {
+            "n_trades": 157,
+            "win_rate_pct": 42.0,
+            "pnl_pct_of_capital": 0.89
+          },
+          "TSLA": {
+            "n_trades": 140,
+            "win_rate_pct": 35.7,
+            "pnl_pct_of_capital": -1.7
+          },
+          "UPRO": {
+            "n_trades": 68,
+            "win_rate_pct": 45.6,
+            "pnl_pct_of_capital": 1.16
+          },
+          "VTI": {
+            "n_trades": 33,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 0.81
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 52.78,
+          "symbols_with_profit": 16,
+          "n_symbols_traded": 19,
+          "top3": {
+            "NFLX": 7.71,
+            "META": 6.91,
+            "AAPL": 6.39
+          },
+          "top3_share_of_total": 0.4,
+          "total_without_top1": 45.07,
+          "total_without_top3": 31.77
+        }
+      }
+    },
+    "kama_research_filter": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.382,
+          "cagr_pct": 0.525,
+          "vol_pct": 1.398,
+          "max_drawdown_pct": -3.13,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            -0.061,
+            0.837
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.447,
+          "cagr_pct": 0.506,
+          "vol_pct": 1.145,
+          "max_drawdown_pct": -1.971,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            -0.085,
+            0.997
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.298,
+          "cagr_pct": 0.5,
+          "vol_pct": 1.728,
+          "max_drawdown_pct": -3.13,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.486,
+            1.108
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.058,
+            "alpha_t": -0.19,
+            "alpha_p": 0.853,
+            "beta": 0.021,
+            "r2": 0.142
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.066,
+            "alpha_t": -0.22,
+            "alpha_p": 0.829,
+            "beta": 0.021,
+            "r2": 0.167
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.097,
+            "alpha_t": -0.15,
+            "alpha_p": 0.88,
+            "beta": 0.02,
+            "r2": 0.124
+          }
+        },
+        "mean_exposure_pct": 4.3,
+        "trades_full": {
+          "n_trades": 1595,
+          "n_open_at_end": 6,
+          "win_rate_pct": 46.4,
+          "mean_return_pct": 0.329,
+          "median_return_pct": -0.389,
+          "mean_hold_days": 8.9,
+          "exit_reasons": {
+            "signal": 1031,
+            "stop": 251,
+            "target": 215,
+            "target_gap": 54,
+            "stop_gap": 44
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 791,
+          "n_open_at_end": 6,
+          "win_rate_pct": 43.9,
+          "mean_return_pct": 0.258,
+          "median_return_pct": -0.592,
+          "mean_hold_days": 7.8,
+          "exit_reasons": {
+            "signal": 468,
+            "stop": 151,
+            "target": 125,
+            "target_gap": 26,
+            "stop_gap": 21
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 4168,
+          "max_positions": 80,
+          "no_prior_close": 0,
+          "under_one_share": 85,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 804,
+          "n_open_at_end": 0,
+          "win_rate_pct": 48.9,
+          "mean_return_pct": 0.398,
+          "median_return_pct": -0.108,
+          "mean_hold_days": 10.1,
+          "exit_reasons": {
+            "signal": 563,
+            "stop": 100,
+            "target": 90,
+            "target_gap": 28,
+            "stop_gap": 23
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 3.427
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 4.413
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 91,
+            "win_rate_pct": 48.4,
+            "pnl_pct_of_capital": 1.67
+          },
+          "AMD": {
+            "n_trades": 47,
+            "win_rate_pct": 40.4,
+            "pnl_pct_of_capital": -0.02
+          },
+          "AMZN": {
+            "n_trades": 105,
+            "win_rate_pct": 43.8,
+            "pnl_pct_of_capital": 0.26
+          },
+          "COIN": {
+            "n_trades": 36,
+            "win_rate_pct": 36.1,
+            "pnl_pct_of_capital": -0.42
+          },
+          "GOOGL": {
+            "n_trades": 90,
+            "win_rate_pct": 53.3,
+            "pnl_pct_of_capital": 1.58
+          },
+          "IWM": {
+            "n_trades": 83,
+            "win_rate_pct": 34.9,
+            "pnl_pct_of_capital": -0.23
+          },
+          "META": {
+            "n_trades": 86,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 0.74
+          },
+          "MSFT": {
+            "n_trades": 74,
+            "win_rate_pct": 51.4,
+            "pnl_pct_of_capital": 0.67
+          },
+          "NFLX": {
+            "n_trades": 129,
+            "win_rate_pct": 43.4,
+            "pnl_pct_of_capital": 0.02
+          },
+          "NVDA": {
+            "n_trades": 89,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 0.54
+          },
+          "PLTR": {
+            "n_trades": 31,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 0.28
+          },
+          "QQQ": {
+            "n_trades": 92,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 0.37
+          },
+          "SPXL": {
+            "n_trades": 111,
+            "win_rate_pct": 49.5,
+            "pnl_pct_of_capital": 1.1
+          },
+          "SPY": {
+            "n_trades": 105,
+            "win_rate_pct": 50.5,
+            "pnl_pct_of_capital": 0.36
+          },
+          "SQQQ": {
+            "n_trades": 44,
+            "win_rate_pct": 38.6,
+            "pnl_pct_of_capital": -0.06
+          },
+          "TQQQ": {
+            "n_trades": 117,
+            "win_rate_pct": 43.6,
+            "pnl_pct_of_capital": 0.37
+          },
+          "TSLA": {
+            "n_trades": 84,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 1.3
+          },
+          "UPRO": {
+            "n_trades": 99,
+            "win_rate_pct": 53.5,
+            "pnl_pct_of_capital": 1.32
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 48.8,
+            "pnl_pct_of_capital": -0.09
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 9.76,
+          "symbols_with_profit": 14,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 1.67,
+            "GOOGL": 1.58,
+            "UPRO": 1.32
+          },
+          "top3_share_of_total": 0.47,
+          "total_without_top1": 8.09,
+          "total_without_top3": 5.19
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.27,
+          "cagr_pct": 0.367,
+          "vol_pct": 1.397,
+          "max_drawdown_pct": -3.559,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            -0.174,
+            0.721
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.334,
+          "cagr_pct": 0.376,
+          "vol_pct": 1.144,
+          "max_drawdown_pct": -2.015,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            -0.191,
+            0.882
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.181,
+          "cagr_pct": 0.297,
+          "vol_pct": 1.727,
+          "max_drawdown_pct": -3.559,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.606,
+            0.992
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.215,
+            "alpha_t": -0.69,
+            "alpha_p": 0.492,
+            "beta": 0.021,
+            "r2": 0.142
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.195,
+            "alpha_t": -0.63,
+            "alpha_p": 0.526,
+            "beta": 0.021,
+            "r2": 0.167
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.299,
+            "alpha_t": -0.46,
+            "alpha_p": 0.642,
+            "beta": 0.02,
+            "r2": 0.124
+          }
+        },
+        "mean_exposure_pct": 4.29,
+        "trades_full": {
+          "n_trades": 1594,
+          "n_open_at_end": 6,
+          "win_rate_pct": 45.4,
+          "mean_return_pct": 0.228,
+          "median_return_pct": -0.493,
+          "mean_hold_days": 9.0,
+          "exit_reasons": {
+            "signal": 1030,
+            "stop": 251,
+            "target": 215,
+            "target_gap": 54,
+            "stop_gap": 44
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 790,
+          "n_open_at_end": 6,
+          "win_rate_pct": 42.9,
+          "mean_return_pct": 0.156,
+          "median_return_pct": -0.693,
+          "mean_hold_days": 7.8,
+          "exit_reasons": {
+            "signal": 467,
+            "stop": 151,
+            "target": 125,
+            "target_gap": 26,
+            "stop_gap": 21
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 4168,
+          "max_positions": 80,
+          "no_prior_close": 0,
+          "under_one_share": 86,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 804,
+          "n_open_at_end": 0,
+          "win_rate_pct": 47.8,
+          "mean_return_pct": 0.298,
+          "median_return_pct": -0.208,
+          "mean_hold_days": 10.1,
+          "exit_reasons": {
+            "signal": 563,
+            "stop": 100,
+            "target": 90,
+            "target_gap": 28,
+            "stop_gap": 23
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 3.411
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 4.393
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 91,
+            "win_rate_pct": 46.2,
+            "pnl_pct_of_capital": 1.43
+          },
+          "AMD": {
+            "n_trades": 47,
+            "win_rate_pct": 40.4,
+            "pnl_pct_of_capital": -0.1
+          },
+          "AMZN": {
+            "n_trades": 104,
+            "win_rate_pct": 42.3,
+            "pnl_pct_of_capital": 0.09
+          },
+          "COIN": {
+            "n_trades": 36,
+            "win_rate_pct": 36.1,
+            "pnl_pct_of_capital": -0.44
+          },
+          "GOOGL": {
+            "n_trades": 90,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 1.4
+          },
+          "IWM": {
+            "n_trades": 83,
+            "win_rate_pct": 34.9,
+            "pnl_pct_of_capital": -0.43
+          },
+          "META": {
+            "n_trades": 86,
+            "win_rate_pct": 45.3,
+            "pnl_pct_of_capital": 0.53
+          },
+          "MSFT": {
+            "n_trades": 74,
+            "win_rate_pct": 48.6,
+            "pnl_pct_of_capital": 0.55
+          },
+          "NFLX": {
+            "n_trades": 129,
+            "win_rate_pct": 43.4,
+            "pnl_pct_of_capital": -0.27
+          },
+          "NVDA": {
+            "n_trades": 89,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 0.41
+          },
+          "PLTR": {
+            "n_trades": 31,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 0.22
+          },
+          "QQQ": {
+            "n_trades": 92,
+            "win_rate_pct": 47.8,
+            "pnl_pct_of_capital": 0.19
+          },
+          "SPXL": {
+            "n_trades": 111,
+            "win_rate_pct": 49.5,
+            "pnl_pct_of_capital": 0.89
+          },
+          "SPY": {
+            "n_trades": 105,
+            "win_rate_pct": 48.6,
+            "pnl_pct_of_capital": 0.17
+          },
+          "SQQQ": {
+            "n_trades": 44,
+            "win_rate_pct": 38.6,
+            "pnl_pct_of_capital": -0.16
+          },
+          "TQQQ": {
+            "n_trades": 117,
+            "win_rate_pct": 43.6,
+            "pnl_pct_of_capital": 0.2
+          },
+          "TSLA": {
+            "n_trades": 84,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 1.15
+          },
+          "UPRO": {
+            "n_trades": 99,
+            "win_rate_pct": 53.5,
+            "pnl_pct_of_capital": 1.13
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 46.3,
+            "pnl_pct_of_capital": -0.25
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 6.71,
+          "symbols_with_profit": 13,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 1.43,
+            "GOOGL": 1.4,
+            "TSLA": 1.15
+          },
+          "top3_share_of_total": 0.59,
+          "total_without_top1": 5.28,
+          "total_without_top3": 2.73
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.148,
+          "cagr_pct": 0.198,
+          "vol_pct": 1.399,
+          "max_drawdown_pct": -4.11,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            -0.295,
+            0.598
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.218,
+          "cagr_pct": 0.243,
+          "vol_pct": 1.144,
+          "max_drawdown_pct": -2.076,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            -0.303,
+            0.765
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.048,
+          "cagr_pct": 0.068,
+          "vol_pct": 1.73,
+          "max_drawdown_pct": -4.11,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.736,
+            0.849
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": -0.385,
+            "alpha_t": -1.23,
+            "alpha_p": 0.22,
+            "beta": 0.021,
+            "r2": 0.142
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": -0.328,
+            "alpha_t": -1.06,
+            "alpha_p": 0.287,
+            "beta": 0.021,
+            "r2": 0.167
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": -0.529,
+            "alpha_t": -0.82,
+            "alpha_p": 0.413,
+            "beta": 0.02,
+            "r2": 0.124
+          }
+        },
+        "mean_exposure_pct": 4.3,
+        "trades_full": {
+          "n_trades": 1594,
+          "n_open_at_end": 6,
+          "win_rate_pct": 44.2,
+          "mean_return_pct": 0.128,
+          "median_return_pct": -0.592,
+          "mean_hold_days": 9.0,
+          "exit_reasons": {
+            "signal": 1030,
+            "stop": 251,
+            "target": 215,
+            "target_gap": 54,
+            "stop_gap": 44
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 790,
+          "n_open_at_end": 6,
+          "win_rate_pct": 41.4,
+          "mean_return_pct": 0.056,
+          "median_return_pct": -0.792,
+          "mean_hold_days": 7.8,
+          "exit_reasons": {
+            "signal": 467,
+            "stop": 151,
+            "target": 125,
+            "target_gap": 26,
+            "stop_gap": 21
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 4168,
+          "max_positions": 80,
+          "no_prior_close": 0,
+          "under_one_share": 86,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 804,
+          "n_open_at_end": 0,
+          "win_rate_pct": 46.9,
+          "mean_return_pct": 0.198,
+          "median_return_pct": -0.307,
+          "mean_hold_days": 10.1,
+          "exit_reasons": {
+            "signal": 563,
+            "stop": 100,
+            "target": 90,
+            "target_gap": 28,
+            "stop_gap": 23
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 3.408
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 4.398
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 91,
+            "win_rate_pct": 46.2,
+            "pnl_pct_of_capital": 1.26
+          },
+          "AMD": {
+            "n_trades": 47,
+            "win_rate_pct": 40.4,
+            "pnl_pct_of_capital": -0.16
+          },
+          "AMZN": {
+            "n_trades": 104,
+            "win_rate_pct": 42.3,
+            "pnl_pct_of_capital": -0.07
+          },
+          "COIN": {
+            "n_trades": 36,
+            "win_rate_pct": 36.1,
+            "pnl_pct_of_capital": -0.52
+          },
+          "GOOGL": {
+            "n_trades": 90,
+            "win_rate_pct": 47.8,
+            "pnl_pct_of_capital": 1.22
+          },
+          "IWM": {
+            "n_trades": 83,
+            "win_rate_pct": 33.7,
+            "pnl_pct_of_capital": -0.57
+          },
+          "META": {
+            "n_trades": 86,
+            "win_rate_pct": 44.2,
+            "pnl_pct_of_capital": 0.41
+          },
+          "MSFT": {
+            "n_trades": 74,
+            "win_rate_pct": 45.9,
+            "pnl_pct_of_capital": 0.38
+          },
+          "NFLX": {
+            "n_trades": 129,
+            "win_rate_pct": 41.1,
+            "pnl_pct_of_capital": -0.42
+          },
+          "NVDA": {
+            "n_trades": 89,
+            "win_rate_pct": 44.9,
+            "pnl_pct_of_capital": 0.17
+          },
+          "PLTR": {
+            "n_trades": 31,
+            "win_rate_pct": 41.9,
+            "pnl_pct_of_capital": 0.16
+          },
+          "QQQ": {
+            "n_trades": 92,
+            "win_rate_pct": 46.7,
+            "pnl_pct_of_capital": 0.01
+          },
+          "SPXL": {
+            "n_trades": 111,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 0.61
+          },
+          "SPY": {
+            "n_trades": 105,
+            "win_rate_pct": 45.7,
+            "pnl_pct_of_capital": -0.04
+          },
+          "SQQQ": {
+            "n_trades": 44,
+            "win_rate_pct": 38.6,
+            "pnl_pct_of_capital": -0.26
+          },
+          "TQQQ": {
+            "n_trades": 117,
+            "win_rate_pct": 43.6,
+            "pnl_pct_of_capital": -0.08
+          },
+          "TSLA": {
+            "n_trades": 84,
+            "win_rate_pct": 45.2,
+            "pnl_pct_of_capital": 0.95
+          },
+          "UPRO": {
+            "n_trades": 99,
+            "win_rate_pct": 52.5,
+            "pnl_pct_of_capital": 0.92
+          },
+          "VTI": {
+            "n_trades": 82,
+            "win_rate_pct": 42.7,
+            "pnl_pct_of_capital": -0.41
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 3.56,
+          "symbols_with_profit": 10,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 1.26,
+            "GOOGL": 1.22,
+            "TSLA": 0.95
+          },
+          "top3_share_of_total": 0.96,
+          "total_without_top1": 2.3,
+          "total_without_top3": 0.13
+        }
+      }
+    },
+    "kama_issue_filter": {
+      "0bps": {
+        "full": {
+          "sharpe": 0.914,
+          "cagr_pct": 1.993,
+          "vol_pct": 2.189,
+          "max_drawdown_pct": -4.49,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.479,
+            1.343
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.949,
+          "cagr_pct": 1.855,
+          "vol_pct": 1.96,
+          "max_drawdown_pct": -4.408,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.396,
+            1.554
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.865,
+          "cagr_pct": 2.162,
+          "vol_pct": 2.515,
+          "max_drawdown_pct": -4.49,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            0.109,
+            1.616
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.752,
+            "alpha_t": 1.66,
+            "alpha_p": 0.098,
+            "beta": 0.044,
+            "r2": 0.257
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.59,
+            "alpha_t": 1.17,
+            "alpha_p": 0.243,
+            "beta": 0.046,
+            "r2": 0.275
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.934,
+            "alpha_t": 1.1,
+            "alpha_p": 0.273,
+            "beta": 0.042,
+            "r2": 0.241
+          }
+        },
+        "mean_exposure_pct": 8.18,
+        "trades_full": {
+          "n_trades": 2660,
+          "n_open_at_end": 10,
+          "win_rate_pct": 47.2,
+          "mean_return_pct": 0.708,
+          "median_return_pct": -0.454,
+          "mean_hold_days": 10.3,
+          "exit_reasons": {
+            "signal": 1317,
+            "stop": 568,
+            "target": 542,
+            "target_gap": 125,
+            "stop_gap": 108
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1237,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.7,
+          "mean_return_pct": 0.637,
+          "median_return_pct": -0.72,
+          "mean_hold_days": 8.9,
+          "exit_reasons": {
+            "signal": 580,
+            "stop": 287,
+            "target": 266,
+            "target_gap": 57,
+            "stop_gap": 47
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 9464,
+          "max_positions": 929,
+          "no_prior_close": 0,
+          "under_one_share": 140,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1423,
+          "n_open_at_end": 0,
+          "win_rate_pct": 49.4,
+          "mean_return_pct": 0.769,
+          "median_return_pct": -0.093,
+          "mean_hold_days": 11.5,
+          "exit_reasons": {
+            "signal": 737,
+            "stop": 281,
+            "target": 276,
+            "target_gap": 68,
+            "stop_gap": 61
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.818
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.951
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 151,
+            "win_rate_pct": 50.3,
+            "pnl_pct_of_capital": 4.31
+          },
+          "AMD": {
+            "n_trades": 140,
+            "win_rate_pct": 44.3,
+            "pnl_pct_of_capital": 3.77
+          },
+          "AMZN": {
+            "n_trades": 159,
+            "win_rate_pct": 47.2,
+            "pnl_pct_of_capital": 2.4
+          },
+          "COIN": {
+            "n_trades": 79,
+            "win_rate_pct": 39.2,
+            "pnl_pct_of_capital": -0.03
+          },
+          "GOOGL": {
+            "n_trades": 144,
+            "win_rate_pct": 49.3,
+            "pnl_pct_of_capital": 2.36
+          },
+          "IWM": {
+            "n_trades": 123,
+            "win_rate_pct": 45.5,
+            "pnl_pct_of_capital": 1.67
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 3.55
+          },
+          "MSFT": {
+            "n_trades": 120,
+            "win_rate_pct": 45.0,
+            "pnl_pct_of_capital": 1.01
+          },
+          "NFLX": {
+            "n_trades": 196,
+            "win_rate_pct": 49.0,
+            "pnl_pct_of_capital": 3.71
+          },
+          "NVDA": {
+            "n_trades": 178,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 4.2
+          },
+          "PLTR": {
+            "n_trades": 61,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 1.01
+          },
+          "QQQ": {
+            "n_trades": 128,
+            "win_rate_pct": 53.9,
+            "pnl_pct_of_capital": 2.9
+          },
+          "SPXL": {
+            "n_trades": 181,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 1.89
+          },
+          "SPY": {
+            "n_trades": 140,
+            "win_rate_pct": 52.1,
+            "pnl_pct_of_capital": 1.65
+          },
+          "SQQQ": {
+            "n_trades": 96,
+            "win_rate_pct": 35.4,
+            "pnl_pct_of_capital": -0.8
+          },
+          "TQQQ": {
+            "n_trades": 193,
+            "win_rate_pct": 46.6,
+            "pnl_pct_of_capital": 2.44
+          },
+          "TSLA": {
+            "n_trades": 186,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 2.44
+          },
+          "UPRO": {
+            "n_trades": 145,
+            "win_rate_pct": 53.1,
+            "pnl_pct_of_capital": 2.76
+          },
+          "VTI": {
+            "n_trades": 108,
+            "win_rate_pct": 48.1,
+            "pnl_pct_of_capital": 0.73
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 41.97,
+          "symbols_with_profit": 17,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 4.31,
+            "NVDA": 4.2,
+            "AMD": 3.77
+          },
+          "top3_share_of_total": 0.29,
+          "total_without_top1": 37.66,
+          "total_without_top3": 29.69
+        }
+      },
+      "5bps": {
+        "full": {
+          "sharpe": 0.771,
+          "cagr_pct": 1.675,
+          "vol_pct": 2.189,
+          "max_drawdown_pct": -4.839,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.331,
+            1.201
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.821,
+          "cagr_pct": 1.6,
+          "vol_pct": 1.958,
+          "max_drawdown_pct": -4.617,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.271,
+            1.426
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.701,
+          "cagr_pct": 1.742,
+          "vol_pct": 2.517,
+          "max_drawdown_pct": -4.839,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.049,
+            1.455
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.439,
+            "alpha_t": 0.96,
+            "alpha_p": 0.336,
+            "beta": 0.044,
+            "r2": 0.258
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.339,
+            "alpha_t": 0.67,
+            "alpha_p": 0.502,
+            "beta": 0.046,
+            "r2": 0.275
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.518,
+            "alpha_t": 0.61,
+            "alpha_p": 0.545,
+            "beta": 0.042,
+            "r2": 0.242
+          }
+        },
+        "mean_exposure_pct": 8.17,
+        "trades_full": {
+          "n_trades": 2659,
+          "n_open_at_end": 10,
+          "win_rate_pct": 46.4,
+          "mean_return_pct": 0.605,
+          "median_return_pct": -0.555,
+          "mean_hold_days": 10.3,
+          "exit_reasons": {
+            "signal": 1316,
+            "stop": 568,
+            "target": 542,
+            "target_gap": 125,
+            "stop_gap": 108
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1236,
+          "n_open_at_end": 10,
+          "win_rate_pct": 44.0,
+          "mean_return_pct": 0.533,
+          "median_return_pct": -0.82,
+          "mean_hold_days": 8.9,
+          "exit_reasons": {
+            "signal": 579,
+            "stop": 287,
+            "target": 266,
+            "target_gap": 57,
+            "stop_gap": 47
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 9460,
+          "max_positions": 929,
+          "no_prior_close": 0,
+          "under_one_share": 145,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1423,
+          "n_open_at_end": 0,
+          "win_rate_pct": 48.6,
+          "mean_return_pct": 0.668,
+          "median_return_pct": -0.192,
+          "mean_hold_days": 11.5,
+          "exit_reasons": {
+            "signal": 737,
+            "stop": 281,
+            "target": 276,
+            "target_gap": 68,
+            "stop_gap": 61
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.799
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.944
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 151,
+            "win_rate_pct": 48.3,
+            "pnl_pct_of_capital": 3.88
+          },
+          "AMD": {
+            "n_trades": 140,
+            "win_rate_pct": 44.3,
+            "pnl_pct_of_capital": 3.28
+          },
+          "AMZN": {
+            "n_trades": 159,
+            "win_rate_pct": 45.9,
+            "pnl_pct_of_capital": 2.08
+          },
+          "COIN": {
+            "n_trades": 79,
+            "win_rate_pct": 39.2,
+            "pnl_pct_of_capital": -0.25
+          },
+          "GOOGL": {
+            "n_trades": 143,
+            "win_rate_pct": 47.6,
+            "pnl_pct_of_capital": 1.81
+          },
+          "IWM": {
+            "n_trades": 123,
+            "win_rate_pct": 44.7,
+            "pnl_pct_of_capital": 1.31
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 3.17
+          },
+          "MSFT": {
+            "n_trades": 120,
+            "win_rate_pct": 43.3,
+            "pnl_pct_of_capital": 0.72
+          },
+          "NFLX": {
+            "n_trades": 196,
+            "win_rate_pct": 48.5,
+            "pnl_pct_of_capital": 3.05
+          },
+          "NVDA": {
+            "n_trades": 178,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 3.4
+          },
+          "PLTR": {
+            "n_trades": 61,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 0.81
+          },
+          "QQQ": {
+            "n_trades": 128,
+            "win_rate_pct": 51.6,
+            "pnl_pct_of_capital": 2.52
+          },
+          "SPXL": {
+            "n_trades": 181,
+            "win_rate_pct": 47.0,
+            "pnl_pct_of_capital": 1.45
+          },
+          "SPY": {
+            "n_trades": 140,
+            "win_rate_pct": 50.0,
+            "pnl_pct_of_capital": 1.29
+          },
+          "SQQQ": {
+            "n_trades": 96,
+            "win_rate_pct": 35.4,
+            "pnl_pct_of_capital": -1.03
+          },
+          "TQQQ": {
+            "n_trades": 193,
+            "win_rate_pct": 46.6,
+            "pnl_pct_of_capital": 1.98
+          },
+          "TSLA": {
+            "n_trades": 186,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 2.01
+          },
+          "UPRO": {
+            "n_trades": 145,
+            "win_rate_pct": 52.4,
+            "pnl_pct_of_capital": 2.37
+          },
+          "VTI": {
+            "n_trades": 108,
+            "win_rate_pct": 47.2,
+            "pnl_pct_of_capital": 0.47
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 34.32,
+          "symbols_with_profit": 17,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 3.88,
+            "NVDA": 3.4,
+            "AMD": 3.28
+          },
+          "top3_share_of_total": 0.31,
+          "total_without_top1": 30.44,
+          "total_without_top3": 23.76
+        }
+      },
+      "10bps": {
+        "full": {
+          "sharpe": 0.65,
+          "cagr_pct": 1.405,
+          "vol_pct": 2.187,
+          "max_drawdown_pct": -5.08,
+          "n_days": 4469,
+          "sharpe_ci95": [
+            0.209,
+            1.079
+          ]
+        },
+        "in_sample_2009_2019": {
+          "sharpe": 0.701,
+          "cagr_pct": 1.362,
+          "vol_pct": 1.958,
+          "max_drawdown_pct": -4.882,
+          "n_days": 2767,
+          "sharpe_ci95": [
+            0.152,
+            1.31
+          ]
+        },
+        "out_of_sample_2020_on": {
+          "sharpe": 0.575,
+          "cagr_pct": 1.418,
+          "vol_pct": 2.513,
+          "max_drawdown_pct": -5.08,
+          "n_days": 1701,
+          "sharpe_ci95": [
+            -0.181,
+            1.337
+          ]
+        },
+        "alpha_vs_equal_weight": {
+          "full": {
+            "alpha_ann_pct": 0.174,
+            "alpha_t": 0.38,
+            "alpha_p": 0.703,
+            "beta": 0.044,
+            "r2": 0.258
+          },
+          "in_sample_2009_2019": {
+            "alpha_ann_pct": 0.104,
+            "alpha_t": 0.21,
+            "alpha_p": 0.837,
+            "beta": 0.046,
+            "r2": 0.275
+          },
+          "out_of_sample_2020_on": {
+            "alpha_ann_pct": 0.202,
+            "alpha_t": 0.24,
+            "alpha_p": 0.813,
+            "beta": 0.041,
+            "r2": 0.241
+          }
+        },
+        "mean_exposure_pct": 8.15,
+        "trades_full": {
+          "n_trades": 2658,
+          "n_open_at_end": 10,
+          "win_rate_pct": 45.7,
+          "mean_return_pct": 0.505,
+          "median_return_pct": -0.657,
+          "mean_hold_days": 10.3,
+          "exit_reasons": {
+            "signal": 1315,
+            "stop": 568,
+            "target": 542,
+            "target_gap": 125,
+            "stop_gap": 108
+          }
+        },
+        "trades_out_of_sample": {
+          "n_trades": 1235,
+          "n_open_at_end": 10,
+          "win_rate_pct": 43.4,
+          "mean_return_pct": 0.433,
+          "median_return_pct": -0.921,
+          "mean_hold_days": 8.9,
+          "exit_reasons": {
+            "signal": 578,
+            "stop": 287,
+            "target": 266,
+            "target_gap": 57,
+            "stop_gap": 47
+          }
+        },
+        "buys_not_taken": {
+          "in_position": 9459,
+          "max_positions": 929,
+          "no_prior_close": 0,
+          "under_one_share": 147,
+          "exposure": 0,
+          "cash": 0
+        },
+        "trades_in_sample": {
+          "n_trades": 1423,
+          "n_open_at_end": 0,
+          "win_rate_pct": 47.8,
+          "mean_return_pct": 0.568,
+          "median_return_pct": -0.292,
+          "mean_hold_days": 11.5,
+          "exit_reasons": {
+            "signal": 737,
+            "stop": 281,
+            "target": 276,
+            "target_gap": 68,
+            "stop_gap": 61
+          }
+        },
+        "turnover_full": {
+          "annual_turnover_x_equity": 5.779
+        },
+        "turnover_out_of_sample": {
+          "annual_turnover_x_equity": 6.929
+        },
+        "by_symbol": {
+          "AAPL": {
+            "n_trades": 151,
+            "win_rate_pct": 47.7,
+            "pnl_pct_of_capital": 3.51
+          },
+          "AMD": {
+            "n_trades": 140,
+            "win_rate_pct": 44.3,
+            "pnl_pct_of_capital": 2.87
+          },
+          "AMZN": {
+            "n_trades": 159,
+            "win_rate_pct": 45.3,
+            "pnl_pct_of_capital": 1.78
+          },
+          "COIN": {
+            "n_trades": 79,
+            "win_rate_pct": 39.2,
+            "pnl_pct_of_capital": -0.45
+          },
+          "GOOGL": {
+            "n_trades": 142,
+            "win_rate_pct": 46.5,
+            "pnl_pct_of_capital": 1.54
+          },
+          "IWM": {
+            "n_trades": 123,
+            "win_rate_pct": 42.3,
+            "pnl_pct_of_capital": 1.06
+          },
+          "META": {
+            "n_trades": 132,
+            "win_rate_pct": 46.2,
+            "pnl_pct_of_capital": 2.81
+          },
+          "MSFT": {
+            "n_trades": 120,
+            "win_rate_pct": 43.3,
+            "pnl_pct_of_capital": 0.51
+          },
+          "NFLX": {
+            "n_trades": 196,
+            "win_rate_pct": 46.9,
+            "pnl_pct_of_capital": 2.55
+          },
+          "NVDA": {
+            "n_trades": 178,
+            "win_rate_pct": 48.9,
+            "pnl_pct_of_capital": 3.07
+          },
+          "PLTR": {
+            "n_trades": 61,
+            "win_rate_pct": 42.6,
+            "pnl_pct_of_capital": 0.62
+          },
+          "QQQ": {
+            "n_trades": 128,
+            "win_rate_pct": 51.6,
+            "pnl_pct_of_capital": 2.19
+          },
+          "SPXL": {
+            "n_trades": 181,
+            "win_rate_pct": 46.4,
+            "pnl_pct_of_capital": 1.06
+          },
+          "SPY": {
+            "n_trades": 140,
+            "win_rate_pct": 47.9,
+            "pnl_pct_of_capital": 0.95
+          },
+          "SQQQ": {
+            "n_trades": 96,
+            "win_rate_pct": 35.4,
+            "pnl_pct_of_capital": -1.27
+          },
+          "TQQQ": {
+            "n_trades": 193,
+            "win_rate_pct": 46.6,
+            "pnl_pct_of_capital": 1.46
+          },
+          "TSLA": {
+            "n_trades": 186,
+            "win_rate_pct": 42.5,
+            "pnl_pct_of_capital": 1.54
+          },
+          "UPRO": {
+            "n_trades": 145,
+            "win_rate_pct": 51.0,
+            "pnl_pct_of_capital": 2.09
+          },
+          "VTI": {
+            "n_trades": 108,
+            "win_rate_pct": 45.4,
+            "pnl_pct_of_capital": 0.24
+          }
+        },
+        "concentration": {
+          "total_pnl_pct_of_capital": 28.13,
+          "symbols_with_profit": 17,
+          "n_symbols_traded": 19,
+          "top3": {
+            "AAPL": 3.51,
+            "NVDA": 3.07,
+            "AMD": 2.87
+          },
+          "top3_share_of_total": 0.34,
+          "total_without_top1": 24.62,
+          "total_without_top3": 18.68
+        }
+      }
+    }
+  },
+  "paired_tests": [
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.0494,
+      "sharpe_diff_ci95": [
+        -0.2559,
+        0.3897
+      ],
+      "sharpe_diff_bootstrap_p": 0.765,
+      "return_test": {
+        "mean_daily_diff": 3e-06,
+        "t_statistic": 0.15,
+        "p_value": 0.8804,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.08,
+      "sharpe_diff_ci95": [
+        -0.3151,
+        0.4643
+      ],
+      "sharpe_diff_bootstrap_p": 0.692,
+      "return_test": {
+        "mean_daily_diff": 1.02e-05,
+        "t_statistic": 0.471,
+        "p_value": 0.6378,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.0041,
+      "sharpe_diff_ci95": [
+        -0.5588,
+        0.5735
+      ],
+      "sharpe_diff_bootstrap_p": 0.996,
+      "return_test": {
+        "mean_daily_diff": -9.3e-06,
+        "t_statistic": -0.243,
+        "p_value": 0.808,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1116,
+      "sharpe_diff_ci95": [
+        -0.1983,
+        0.4595
+      ],
+      "sharpe_diff_bootstrap_p": 0.489,
+      "return_test": {
+        "mean_daily_diff": 1.06e-05,
+        "t_statistic": 0.532,
+        "p_value": 0.5949,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1245,
+      "sharpe_diff_ci95": [
+        -0.2706,
+        0.5204
+      ],
+      "sharpe_diff_bootstrap_p": 0.532,
+      "return_test": {
+        "mean_daily_diff": 1.47e-05,
+        "t_statistic": 0.671,
+        "p_value": 0.5021,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.0842,
+      "sharpe_diff_ci95": [
+        -0.4821,
+        0.6689
+      ],
+      "sharpe_diff_bootstrap_p": 0.755,
+      "return_test": {
+        "mean_daily_diff": 3.5e-06,
+        "t_statistic": 0.092,
+        "p_value": 0.9264,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1716,
+      "sharpe_diff_ci95": [
+        -0.146,
+        0.5206
+      ],
+      "sharpe_diff_bootstrap_p": 0.289,
+      "return_test": {
+        "mean_daily_diff": 1.77e-05,
+        "t_statistic": 0.883,
+        "p_value": 0.3773,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1657,
+      "sharpe_diff_ci95": [
+        -0.2303,
+        0.5574
+      ],
+      "sharpe_diff_bootstrap_p": 0.424,
+      "return_test": {
+        "mean_daily_diff": 1.86e-05,
+        "t_statistic": 0.852,
+        "p_value": 0.3941,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_alone",
+      "comparison": "raf_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1699,
+      "sharpe_diff_ci95": [
+        -0.4019,
+        0.7571
+      ],
+      "sharpe_diff_bootstrap_p": 0.554,
+      "return_test": {
+        "mean_daily_diff": 1.57e-05,
+        "t_statistic": 0.408,
+        "p_value": 0.683,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.0379,
+      "sharpe_diff_ci95": [
+        -0.2659,
+        0.3496
+      ],
+      "sharpe_diff_bootstrap_p": 0.825,
+      "return_test": {
+        "mean_daily_diff": -2.8e-06,
+        "t_statistic": -0.153,
+        "p_value": 0.8785,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.0678,
+      "sharpe_diff_ci95": [
+        -0.3089,
+        0.4373
+      ],
+      "sharpe_diff_bootstrap_p": 0.732,
+      "return_test": {
+        "mean_daily_diff": 3.2e-06,
+        "t_statistic": 0.158,
+        "p_value": 0.8748,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.0126,
+      "sharpe_diff_ci95": [
+        -0.5666,
+        0.5173
+      ],
+      "sharpe_diff_bootstrap_p": 0.96,
+      "return_test": {
+        "mean_daily_diff": -1.32e-05,
+        "t_statistic": -0.373,
+        "p_value": 0.7095,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.0866,
+      "sharpe_diff_ci95": [
+        -0.2187,
+        0.4003
+      ],
+      "sharpe_diff_bootstrap_p": 0.59,
+      "return_test": {
+        "mean_daily_diff": 3.7e-06,
+        "t_statistic": 0.201,
+        "p_value": 0.8409,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1131,
+      "sharpe_diff_ci95": [
+        -0.2671,
+        0.4825
+      ],
+      "sharpe_diff_bootstrap_p": 0.565,
+      "return_test": {
+        "mean_daily_diff": 8.4e-06,
+        "t_statistic": 0.416,
+        "p_value": 0.6771,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.0418,
+      "sharpe_diff_ci95": [
+        -0.5105,
+        0.5692
+      ],
+      "sharpe_diff_bootstrap_p": 0.878,
+      "return_test": {
+        "mean_daily_diff": -4.5e-06,
+        "t_statistic": -0.127,
+        "p_value": 0.8989,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.151,
+      "sharpe_diff_ci95": [
+        -0.1565,
+        0.4647
+      ],
+      "sharpe_diff_bootstrap_p": 0.361,
+      "return_test": {
+        "mean_daily_diff": 1.19e-05,
+        "t_statistic": 0.64,
+        "p_value": 0.5219,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1621,
+      "sharpe_diff_ci95": [
+        -0.2217,
+        0.5347
+      ],
+      "sharpe_diff_bootstrap_p": 0.42,
+      "return_test": {
+        "mean_daily_diff": 1.38e-05,
+        "t_statistic": 0.685,
+        "p_value": 0.4936,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "raf_third_voter",
+      "comparison": "raf_third_voter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.127,
+      "sharpe_diff_ci95": [
+        -0.4245,
+        0.6604
+      ],
+      "sharpe_diff_bootstrap_p": 0.637,
+      "return_test": {
+        "mean_daily_diff": 8.2e-06,
+        "t_statistic": 0.229,
+        "p_value": 0.8191,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.0841,
+      "sharpe_diff_ci95": [
+        -0.5747,
+        0.4004
+      ],
+      "sharpe_diff_bootstrap_p": 0.702,
+      "return_test": {
+        "mean_daily_diff": -1.34e-05,
+        "t_statistic": -0.465,
+        "p_value": 0.6422,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.1065,
+      "sharpe_diff_ci95": [
+        -0.4701,
+        0.7203
+      ],
+      "sharpe_diff_bootstrap_p": 0.748,
+      "return_test": {
+        "mean_daily_diff": 1.36e-05,
+        "t_statistic": 0.421,
+        "p_value": 0.6734,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.3747,
+      "sharpe_diff_ci95": [
+        -1.1972,
+        0.4533
+      ],
+      "sharpe_diff_bootstrap_p": 0.416,
+      "return_test": {
+        "mean_daily_diff": -5.81e-05,
+        "t_statistic": -1.065,
+        "p_value": 0.287,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.0139,
+      "sharpe_diff_ci95": [
+        -0.5035,
+        0.4781
+      ],
+      "sharpe_diff_bootstrap_p": 0.923,
+      "return_test": {
+        "mean_daily_diff": -4.8e-06,
+        "t_statistic": -0.167,
+        "p_value": 0.8671,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1773,
+      "sharpe_diff_ci95": [
+        -0.3973,
+        0.7947
+      ],
+      "sharpe_diff_bootstrap_p": 0.56,
+      "return_test": {
+        "mean_daily_diff": 2.07e-05,
+        "t_statistic": 0.639,
+        "p_value": 0.5226,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.3029,
+      "sharpe_diff_ci95": [
+        -1.1065,
+        0.5243
+      ],
+      "sharpe_diff_bootstrap_p": 0.5,
+      "return_test": {
+        "mean_daily_diff": -4.69e-05,
+        "t_statistic": -0.86,
+        "p_value": 0.3897,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.0623,
+      "sharpe_diff_ci95": [
+        -0.4256,
+        0.55
+      ],
+      "sharpe_diff_bootstrap_p": 0.812,
+      "return_test": {
+        "mean_daily_diff": 4.3e-06,
+        "t_statistic": 0.149,
+        "p_value": 0.8818,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.2418,
+      "sharpe_diff_ci95": [
+        -0.3293,
+        0.8617
+      ],
+      "sharpe_diff_bootstrap_p": 0.419,
+      "return_test": {
+        "mean_daily_diff": 2.68e-05,
+        "t_statistic": 0.83,
+        "p_value": 0.4063,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_alone",
+      "comparison": "kama_research_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": -0.209,
+      "sharpe_diff_ci95": [
+        -1.0265,
+        0.6316
+      ],
+      "sharpe_diff_bootstrap_p": 0.644,
+      "return_test": {
+        "mean_daily_diff": -3.28e-05,
+        "t_statistic": -0.6,
+        "p_value": 0.5483,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.0752,
+      "sharpe_diff_ci95": [
+        -0.3662,
+        0.5457
+      ],
+      "sharpe_diff_bootstrap_p": 0.722,
+      "return_test": {
+        "mean_daily_diff": 3.45e-05,
+        "t_statistic": 1.123,
+        "p_value": 0.2614,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.1344,
+      "sharpe_diff_ci95": [
+        -0.3822,
+        0.691
+      ],
+      "sharpe_diff_bootstrap_p": 0.629,
+      "return_test": {
+        "mean_daily_diff": 4.58e-05,
+        "t_statistic": 1.306,
+        "p_value": 0.1917,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.0201,
+      "sharpe_diff_ci95": [
+        -0.7732,
+        0.7549
+      ],
+      "sharpe_diff_bootstrap_p": 0.988,
+      "return_test": {
+        "mean_daily_diff": 1.55e-05,
+        "t_statistic": 0.267,
+        "p_value": 0.7891,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.0962,
+      "sharpe_diff_ci95": [
+        -0.35,
+        0.5695
+      ],
+      "sharpe_diff_bootstrap_p": 0.66,
+      "return_test": {
+        "mean_daily_diff": 3.33e-05,
+        "t_statistic": 1.081,
+        "p_value": 0.2795,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1707,
+      "sharpe_diff_ci95": [
+        -0.347,
+        0.7367
+      ],
+      "sharpe_diff_bootstrap_p": 0.548,
+      "return_test": {
+        "mean_daily_diff": 4.59e-05,
+        "t_statistic": 1.305,
+        "p_value": 0.1919,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.0197,
+      "sharpe_diff_ci95": [
+        -0.7703,
+        0.7517
+      ],
+      "sharpe_diff_bootstrap_p": 0.99,
+      "return_test": {
+        "mean_daily_diff": 1.21e-05,
+        "t_statistic": 0.208,
+        "p_value": 0.8349,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1524,
+      "sharpe_diff_ci95": [
+        -0.3005,
+        0.6325
+      ],
+      "sharpe_diff_bootstrap_p": 0.51,
+      "return_test": {
+        "mean_daily_diff": 3.69e-05,
+        "t_statistic": 1.188,
+        "p_value": 0.2348,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.2044,
+      "sharpe_diff_ci95": [
+        -0.317,
+        0.7746
+      ],
+      "sharpe_diff_bootstrap_p": 0.482,
+      "return_test": {
+        "mean_daily_diff": 4.57e-05,
+        "t_statistic": 1.289,
+        "p_value": 0.1973,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_alone",
+      "comparison": "kama_issue_alone - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.0692,
+      "sharpe_diff_ci95": [
+        -0.6913,
+        0.8404
+      ],
+      "sharpe_diff_bootstrap_p": 0.83,
+      "return_test": {
+        "mean_daily_diff": 2.21e-05,
+        "t_statistic": 0.378,
+        "p_value": 0.7057,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.4561,
+      "sharpe_diff_ci95": [
+        -0.9094,
+        0.0065
+      ],
+      "sharpe_diff_bootstrap_p": 0.055,
+      "return_test": {
+        "mean_daily_diff": -7.59e-05,
+        "t_statistic": -3.174,
+        "p_value": 0.0015,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.3714,
+      "sharpe_diff_ci95": [
+        -0.8828,
+        0.1632
+      ],
+      "sharpe_diff_bootstrap_p": 0.167,
+      "return_test": {
+        "mean_daily_diff": -6.36e-05,
+        "t_statistic": -2.544,
+        "p_value": 0.011,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.5682,
+      "sharpe_diff_ci95": [
+        -1.3237,
+        0.2476
+      ],
+      "sharpe_diff_bootstrap_p": 0.152,
+      "return_test": {
+        "mean_daily_diff": -9.63e-05,
+        "t_statistic": -2.044,
+        "p_value": 0.041,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.4176,
+      "sharpe_diff_ci95": [
+        -0.8775,
+        0.0501
+      ],
+      "sharpe_diff_bootstrap_p": 0.074,
+      "return_test": {
+        "mean_daily_diff": -6.46e-05,
+        "t_statistic": -2.696,
+        "p_value": 0.007,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.3381,
+      "sharpe_diff_ci95": [
+        -0.8403,
+        0.1998
+      ],
+      "sharpe_diff_bootstrap_p": 0.213,
+      "return_test": {
+        "mean_daily_diff": -5.37e-05,
+        "t_statistic": -2.145,
+        "p_value": 0.0319,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.5252,
+      "sharpe_diff_ci95": [
+        -1.2809,
+        0.3019
+      ],
+      "sharpe_diff_bootstrap_p": 0.198,
+      "return_test": {
+        "mean_daily_diff": -8.26e-05,
+        "t_statistic": -1.75,
+        "p_value": 0.0801,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": -0.3735,
+      "sharpe_diff_ci95": [
+        -0.8385,
+        0.096
+      ],
+      "sharpe_diff_bootstrap_p": 0.104,
+      "return_test": {
+        "mean_daily_diff": -5.23e-05,
+        "t_statistic": -2.172,
+        "p_value": 0.0298,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": -0.308,
+      "sharpe_diff_ci95": [
+        -0.8142,
+        0.2312
+      ],
+      "sharpe_diff_bootstrap_p": 0.262,
+      "return_test": {
+        "mean_daily_diff": -4.41e-05,
+        "t_statistic": -1.752,
+        "p_value": 0.0797,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_research_filter",
+      "comparison": "kama_research_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": -0.4648,
+      "sharpe_diff_ci95": [
+        -1.2238,
+        0.3534
+      ],
+      "sharpe_diff_bootstrap_p": 0.262,
+      "return_test": {
+        "mean_daily_diff": -6.58e-05,
+        "t_statistic": -1.389,
+        "p_value": 0.1649,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "full",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.0756,
+      "sharpe_diff_ci95": [
+        -0.218,
+        0.3817
+      ],
+      "sharpe_diff_bootstrap_p": 0.638,
+      "return_test": {
+        "mean_daily_diff": -1.78e-05,
+        "t_statistic": -1.006,
+        "p_value": 0.3144,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 0.0,
+      "sharpe_diff": 0.1301,
+      "sharpe_diff_ci95": [
+        -0.2039,
+        0.4886
+      ],
+      "sharpe_diff_bootstrap_p": 0.456,
+      "return_test": {
+        "mean_daily_diff": -1.01e-05,
+        "t_statistic": -0.58,
+        "p_value": 0.5618,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 0.0,
+      "sharpe_diff": -0.0008,
+      "sharpe_diff_ci95": [
+        -0.5153,
+        0.5262
+      ],
+      "sharpe_diff_bootstrap_p": 0.992,
+      "return_test": {
+        "mean_daily_diff": -3.04e-05,
+        "t_statistic": -0.834,
+        "p_value": 0.4041,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "full",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.0839,
+      "sharpe_diff_ci95": [
+        -0.2173,
+        0.3931
+      ],
+      "sharpe_diff_bootstrap_p": 0.605,
+      "return_test": {
+        "mean_daily_diff": -1.26e-05,
+        "t_statistic": -0.71,
+        "p_value": 0.4774,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 5.0,
+      "sharpe_diff": 0.1489,
+      "sharpe_diff_ci95": [
+        -0.1866,
+        0.5096
+      ],
+      "sharpe_diff_bootstrap_p": 0.393,
+      "return_test": {
+        "mean_daily_diff": -5.1e-06,
+        "t_statistic": -0.291,
+        "p_value": 0.7707,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 5.0,
+      "sharpe_diff": -0.0052,
+      "sharpe_diff_ci95": [
+        -0.5327,
+        0.5305
+      ],
+      "sharpe_diff_bootstrap_p": 0.999,
+      "return_test": {
+        "mean_daily_diff": -2.5e-05,
+        "t_statistic": -0.684,
+        "p_value": 0.494,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "full",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1282,
+      "sharpe_diff_ci95": [
+        -0.1747,
+        0.4386
+      ],
+      "sharpe_diff_bootstrap_p": 0.421,
+      "return_test": {
+        "mean_daily_diff": -4.1e-06,
+        "t_statistic": -0.23,
+        "p_value": 0.8183,
+        "n_days": 4469,
+        "maxlags": 9
+      },
+      "n_days": 4469
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "in_sample_2009_2019",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.1751,
+      "sharpe_diff_ci95": [
+        -0.1567,
+        0.535
+      ],
+      "sharpe_diff_bootstrap_p": 0.302,
+      "return_test": {
+        "mean_daily_diff": 5e-07,
+        "t_statistic": 0.03,
+        "p_value": 0.9764,
+        "n_days": 2767,
+        "maxlags": 8
+      },
+      "n_days": 2767
+    },
+    {
+      "candidate": "kama_issue_filter",
+      "comparison": "kama_issue_filter - baseline",
+      "period": "out_of_sample_2020_on",
+      "cost_bps": 10.0,
+      "sharpe_diff": 0.062,
+      "sharpe_diff_ci95": [
+        -0.4705,
+        0.6036
+      ],
+      "sharpe_diff_bootstrap_p": 0.8,
+      "return_test": {
+        "mean_daily_diff": -1.18e-05,
+        "t_statistic": -0.322,
+        "p_value": 0.7475,
+        "n_days": 1701,
+        "maxlags": 7
+      },
+      "n_days": 1701
+    }
+  ],
+  "benchmarks": {
+    "equal_weight": {
+      "full": {
+        "sharpe": 1.124,
+        "cagr_pct": 28.641,
+        "vol_pct": 25.319,
+        "max_drawdown_pct": -47.036,
+        "n_days": 4469,
+        "sharpe_ci95": [
+          0.695,
+          1.618
+        ]
+      },
+      "in_sample_2009_2019": {
+        "sharpe": 1.235,
+        "cagr_pct": 28.243,
+        "vol_pct": 22.157,
+        "max_drawdown_pct": -28.25,
+        "n_days": 2767,
+        "sharpe_ci95": [
+          0.671,
+          1.829
+        ]
+      },
+      "out_of_sample_2020_on": {
+        "sharpe": 1.006,
+        "cagr_pct": 28.939,
+        "vol_pct": 29.757,
+        "max_drawdown_pct": -47.036,
+        "n_days": 1701,
+        "sharpe_ci95": [
+          0.296,
+          1.814
+        ]
+      }
+    },
+    "spy": {
+      "full": {
+        "sharpe": 0.764,
+        "cagr_pct": 12.708,
+        "vol_pct": 17.763,
+        "max_drawdown_pct": -34.105,
+        "n_days": 4469,
+        "sharpe_ci95": [
+          0.317,
+          1.257
+        ]
+      },
+      "in_sample_2009_2019": {
+        "sharpe": 0.78,
+        "cagr_pct": 11.961,
+        "vol_pct": 16.185,
+        "max_drawdown_pct": -27.132,
+        "n_days": 2767,
+        "sharpe_ci95": [
+          0.237,
+          1.355
+        ]
+      },
+      "out_of_sample_2020_on": {
+        "sharpe": 0.746,
+        "cagr_pct": 13.785,
+        "vol_pct": 20.073,
+        "max_drawdown_pct": -34.105,
+        "n_days": 1701,
+        "sharpe_ci95": [
+          0.067,
+          1.538
+        ]
+      }
+    }
+  }
+}

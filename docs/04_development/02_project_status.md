@@ -278,9 +278,9 @@ The project's GEX research contains contradictory findings that must be resolved
 
 - [ ] ~~Integrate GEX as Regime Filter~~
 - [ ] ~~Adopt S² Scaling for GEX~~
-- [ ] **Implement Weekly KAMA as Trend Filter** (Independent of GEX - can proceed)
-  - **Finding**: Weekly KAMA outperforms weekly MACD (avg Sharpe ~0.75).
-  - **Action**: Create a new `TrendFilterAgent` or add KAMA as a voter.
+- [x] ~~**Implement Weekly KAMA as Trend Filter**~~ **Stopped (Nov 2026)**: no detectable edge on the live rules (see [raf_kama_live_rules.md](../08_research/03_strategy_research/raf_kama_live_rules.md)).
+  - **Finding (original)**: Weekly KAMA outperforms weekly MACD (avg Sharpe ~0.75); not reproduced at live timing.
+  - **Action**: none.
 
 #### Critical Research Gaps (Dec 2025)
 

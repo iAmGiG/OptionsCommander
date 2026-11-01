@@ -18,15 +18,15 @@ The 09:20 ET routine raises stops to the trailing level from the broker's price 
 
 | Variant | trailing | trailing_target |
 | ------- | -------- | --------------- |
-| SELL exits off (matches live exits) | -0.141 [-0.288, +0.003] | -0.075 [-0.190, +0.037] |
+| SELL exits off (matches live exits) | -0.141 [-0.291, +0.001] | -0.075 [-0.189, +0.037] |
 | SELL exits kept, moderate sizing | -0.098 [-0.232, +0.028] | -0.091 [-0.185, -0.003] |
-| SELL exits kept, conservative sizing | -0.090 [-0.234, +0.050] | -0.101 [-0.202, -0.009] |
+| SELL exits kept, conservative sizing | -0.090 [-0.234, +0.050] | -0.101 [-0.202, -0.007] |
 
   All 18 full-period comparisons (3 variants, 2 modes, 3 costs) are negative (-0.07 to -0.16); 52 of 54 across periods are. Nine of the 54 intervals exclude zero; the other 45 include it. At 10 bps the losses are slightly larger (-0.10 to -0.16).
 
 - **It is concentrated after 2019.** With SELL exits off, trailing: 2016-2019 +0.010 [-0.18, +0.20]; 2020 on -0.207 [-0.42, -0.01]. trailing_target: -0.015 and -0.099.
 - **How close the open proxy was.** Across the 54 comparisons the proxy (O, open) minus the real price (R) averages +0.03 Sharpe: the proxy slightly understated the loss in 41 of 54, and its error is inside the noise (O - R is -0.001 to +0.064 at 5 bps full period, every interval includes zero). Against E the proxy gave -0.034 to -0.083 (trailing) and -0.069 to -0.081 (trailing_target), against -0.090 to -0.141 and -0.075 to -0.101 for the real price. On the same 2016+ window the proxy reproduces the 2009+ #539 figures (-0.083 and -0.076 against -0.088 and -0.110). The 09:20 price is close to the open as a price: the correlation of the two gaps is 0.983, the median absolute difference is 13 bps (90th percentile 48), and on days the open gaps up more than 0.5% (14,845 symbol-days) the 09:20 price already holds 97% of the gap on average. A small price difference moves some exits across a stop, so the Sharpe effect is noisier than the price match suggests.
-- **Alternatives tested.** Half the gap (H), real price only when the pre-market is liquid (L), real price only when within 2% of the previous close (G2): none beats evening only. H loses about half as much as R (-0.025 to -0.069); L is R (the pre-market is liquid on nearly all days); G2 is no better than R and worse for trailing with SELL exits off (-0.143 [-0.27, -0.03]).
+- **Alternatives tested.** Half the gap (H), real price only when the pre-market is liquid (L), real price only when within 2% of the previous close (G2): none beats evening only. H loses about half as much as R (-0.021 to -0.069); L is R (the pre-market is liquid on nearly all days); G2 is no better than R and worse for trailing with SELL exits off (-0.143 [-0.27, -0.03]).
 - **Multiple testing.** The family is the 216 paired tests of R, H, L and G2 against E. Raw p below 0.05: 32 (10.8 expected by chance). **Holm: 0 rejections; Benjamini-Hochberg: 0.** Pooled with the GEX and #539 families (507 tests): Holm 0, BH 4. The four are trailing G2 - E with SELL exits off (2020 on at 0, 5 and 10 bps, and the full period at 10 bps; raw p 0.0009 to 0.0044), where G2 is the variant that skips big-gap raises and does worse than evening only. Pooling makes BH lenient because the GEX family holds many tiny p-values, and G2 is one of four variants of one idea, so this is a weak signal at most. It says nothing in favour of the morning raise.
 
 ## What this supports (inference)
@@ -34,12 +34,12 @@ The 09:20 ET routine raises stops to the trailing level from the broker's price 
 | Option | In the simulation | Verdict |
 | ------ | ----------------- | ------- |
 | Keep the morning raise from the 09:20 price | Lower Sharpe in 18 of 18 headline comparisons, -0.07 to -0.16; more trail exits (1,436 against 1,231 for trailing) and a lower mean trade return (0.51% against 0.69%); no case of a gain | Not supported by anything measured. Point estimates are consistently negative; intervals mostly include zero. |
-| Raise in the morning only from the previous close | Identical to evening only on daily bars (the evening raise already used the close), so the data cannot tell them apart | Supported as far as evening only is. It keeps a second chance for an evening raise that did not land (see below) at no cost in the simulation. |
+| Raise in the morning only from the previous close | Identical to evening only on daily bars (the evening raise already used the close), so the data cannot tell them apart | Supported as far as evening only is. It would keep a second chance if an evening raise failed, at no cost in the simulation. |
 | Raise in the evening only | The baseline E | Supported by the point estimates; the gain over keeping the raise is -(-0.07 to -0.16) Sharpe and is not significant. |
 
 The data does not say that removing the morning raise helps for certain: no interval is clearly away from zero after correction. It says the raise has no measured benefit and a consistent, mostly small, cost. The cost scales with how much of an overnight gap the 09:20 price carries (97%) and how tightly the tiers lock (75% of the gain above 10% profit, with the stop only 1% below the price at its closest).
 
-The simulation lands every evening raise at once. The live record has a case where it did not (below), and an option that keeps a morning run only as a retry from the previous close keeps that safety net without the gap-up locking. This is a design consideration, not something the simulation measures.
+The simulation lands every evening raise at once. A live one could fail, and an option that keeps a morning run only as a retry from the previous close would keep that safety net without the gap-up locking. The live record so far shows no failed evening raise. This is a design consideration, not something the simulation measures.
 
 ## Method
 
@@ -78,7 +78,7 @@ SELL-signal exits off (the variant that matches live exits), moderate sizing, 5 
 | trailing_target, morning raise at 09:20 (R) | 0.693 [0.072, 1.340] | 2.04% | -8.8% | 3,098 | 42.4% | 8.2 | -0.05% (-0.07) |
 | trailing_target, morning raise at the open (O) | 0.692 [0.075, 1.339] | 2.04% | -8.7% | 3,085 | 42.7% | 8.2 | -0.06% (-0.08) |
 
-The raise adds exits: for trailing, trail exits go from 1,231 to 1,436 and mean trade return from 0.69% to 0.51%. Against the fixed bracket (Sharpe difference, paired): trailing E -0.008 [-0.28, +0.25], trailing R -0.148 [-0.45, +0.14]; trailing_target E -0.118 [-0.34, +0.10], R -0.194 [-0.42, +0.04]. This restates #539's finding on a shorter window: no detectable difference from the bracket without the morning raise; with it, the point estimate leans against the trailing exits.
+The raise adds exits: for trailing, trail exits go from 1,231 to 1,436 and mean trade return from 0.69% to 0.51%. Against the fixed bracket (Sharpe difference, paired): trailing E -0.007 [-0.28, +0.25], trailing R -0.148 [-0.45, +0.14]; trailing_target E -0.118 [-0.34, +0.10], R -0.194 [-0.42, +0.04]. This restates #539's finding on a shorter window: no detectable difference from the bracket without the morning raise; with it, the point estimate leans against the trailing exits.
 
 ### Paired differences (5 bps, Sharpe difference [95% CI])
 
@@ -121,8 +121,8 @@ At 0 bps the full-period R - E runs -0.07 to -0.12 (trailing) and -0.08 to -0.10
 Two positions (QQQ 3 shares, SPY 14), 12 mornings from 2026-10-15 to 2026-10-30, read from `state/user.db` (read-only), `state/scheduler.log` and Alpaca daily bars.
 
 - **Morning raises happened on two days.** 10-15 (the first raise to the tiers: QQQ 585.96 to 694.01, SPY 624.72 to 739.65, from 09:20 prices 719.75 and 767.00) and 10-16 (QQQ 694.01 to 698.65, SPY 739.65 to 744.34, from 725.94 and 773.26). No session low reached either level: the QQQ low on 10-16 was 707.23 against the stop of 698.65, the SPY low 760.64 against 744.34. On the other ten mornings the 09:20 price implied a level no higher than the stop in force, so no raise was due.
-- **The only stop fill is QQQ on 2026-10-30**, 3 shares at 695.9967, 09:32 ET. The stop in force was 698.77, set by the **evening** raise of 10-21 (not by a morning raise). The 09:20 price was 696.99 and the open 697.21, both already below the stop. A morning routine cannot lower a stop, so the morning raise had no part in this exit, and an evening-only policy would have held a stop at or near the same level (700.33 had the 10-15 evening raise landed, see below). The fill was 17 bps below the open and two minutes late; the simulator fills a gap through a stop at the open, so on this one fill it is slightly optimistic.
-- **An evening raise that did not land.** On 10-15 at 15:50 ET both positions were at tier prices (QQQ 728.17: the tiers give 700.33, above the 694.01 in force; SPY 771.71: 743.18 above 739.65) but the log shows no stop adjustment, and the report says "No change". The 10-16 morning routine then raised to 698.65 and 744.34. This is the situation in which a morning run from the previous close is a retry. The cause was not investigated here.
+- **The only stop fill is QQQ on 2026-10-30**, 3 shares at 695.9967, 09:32 ET. The stop in force was 698.77, set by the **evening** raise of 10-21 (not by a morning raise). The 09:20 price was 696.99 and the open 697.21, both already below the stop. A morning routine cannot lower a stop, so the morning raise had no part in this exit, and an evening-only policy would have held a stop at or near the same level (700.33, had the evening raise existed on 10-15, see below). The fill was 17 bps below the open and two minutes late; the simulator fills a gap through a stop at the open, so on this one fill it is slightly optimistic.
+- **No evening raise before 10-20.** On 10-15 at 15:50 ET both positions were at tier prices (QQQ 728.17: the tiers give 700.33, above the 694.01 in force; SPY 771.71: 743.18 above 739.65), and the report says "No change". That is expected: the evening routine had no raise step until #596 merged on 10-19, so the 10-16 morning routine made these raises, to 698.65 and 744.34. It is not a raise that failed, and it says nothing about how often an evening raise fails.
 - The study's pre-market price matches the live routine's: 24 morning rows, the difference between the last pre-market 5-minute bar close and the recorded `current_price` is -2.8 to +3.5 bps.
 
 Twelve mornings and two positions cannot say whether the raise helps. This section describes what the simulation's morning raise looks like in practice; it is not evidence about its value.

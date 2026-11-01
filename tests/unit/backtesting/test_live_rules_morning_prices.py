@@ -87,6 +87,17 @@ def test_no_09_20_price_means_no_morning_raise(missing):
     pd.testing.assert_frame_equal(plain, trades)
 
 
+def test_a_symbol_missing_from_the_morning_prices_gets_no_raise():
+    frame = pd.DataFrame(ROWS, columns=["open", "high", "low", "close"], index=DAYS[:4])
+    signals = pd.DataFrame(
+        [(DAYS[i], "AAA", "BUY" if i == 1 else "HOLD", 1.0) for i in range(4)],
+        columns=["date", "symbol", "action", "position_size"],
+    ).set_index(["date", "symbol"])
+    rules = LiveRules(exit_mode="trailing", morning_raise=True, morning_prices={})
+
+    simulate({"AAA": frame}, signals, rules)  # no KeyError
+
+
 def test_the_previous_close_as_the_morning_price_changes_nothing():
     # the evening raise already used the close, so a morning price equal to it adds nothing
     plain = _run(ROWS)

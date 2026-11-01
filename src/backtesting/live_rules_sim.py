@@ -310,7 +310,7 @@ def simulate(  # noqa: C901
             if bar is None:
                 continue
             if price_field == "morning":  # the supplied 09:20 price; none that day: no raise
-                price = rules.morning_prices[symbol].get(day, float("nan"))
+                price = rules.morning_prices.get(symbol, {}).get(day, float("nan"))
                 if not np.isfinite(price):
                     continue
             else:

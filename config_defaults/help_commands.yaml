@@ -824,8 +824,9 @@ exit:
     \  cancel <id>       - Alias for delete\n\
     \  enable <id>       - Enable a disabled trigger\n\
     \  disable <id>      - Disable a trigger\n\n\
-    Conditions: above, below, gain, loss, trailing\n\
-    GTT triggers persist across sessions and execute when conditions are met."
+    Conditions: above, below (a price); gain, loss, trailing (a percent, 5 = 5%)\n\
+    GTT triggers persist across sessions, and are checked at the morning and evening\
+    \ routines, for symbols you hold."
 
 /watchlist:
   category: Configuration

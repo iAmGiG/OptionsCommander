@@ -284,8 +284,8 @@ def cleanup_orphaned_trailing_stops(
     Delete the trailing-stop state saved for symbols no longer held (#634), so a later
     purchase of the symbol starts afresh. Called by each routine.
 
-    Trailing triggers a user created (/gtt create ... trailing) hold no saved state and
-    stay, as do fired or expired ones for a held symbol, whose row sync reuses.
+    Trailing triggers a user created (/gtt create ... trailing) stay, as do fired or expired
+    ones for a held symbol, whose row sync reuses.
 
     Args:
         active_symbols: Symbols currently held
@@ -299,9 +299,8 @@ def cleanup_orphaned_trailing_stops(
 
     for trigger in gtt_manager.get_triggers(enabled_only=False, active_only=False):
         if (
-            trigger.condition_type == ConditionType.TRAILING_STOP.value
+            _holds_position_state(trigger)
             and trigger.symbol not in active_set
-            and "current_stop" in (trigger.action_config or {})
             and gtt_manager.delete_trigger(trigger.id)
         ):
             logger.info("Removed GTT trailing stop %d for %s: not held", trigger.id, trigger.symbol)
@@ -343,6 +342,17 @@ def get_trailing_stop_status(symbol: str) -> Optional[Dict[str, Any]]:
     }
 
 
+def _holds_position_state(trigger: GTTTrigger) -> bool:
+    """
+    Whether this is a position's saved trailing state, not a trailing trigger a user made.
+    Only the sync above writes entry_price; evaluating any trailing trigger writes its
+    current_stop and highest_price, so those don't tell them apart.
+    """
+    return trigger.condition_type == ConditionType.TRAILING_STOP.value and "entry_price" in (
+        trigger.action_config or {}
+    )
+
+
 def _find_trailing_stop_trigger(symbol: str) -> Optional[GTTTrigger]:
     """Find existing TRAILING_STOP trigger for a symbol."""
     gtt_manager = get_gtt_manager()
@@ -350,7 +360,7 @@ def _find_trailing_stop_trigger(symbol: str) -> Optional[GTTTrigger]:
     triggers = gtt_manager.get_triggers(symbol=symbol.upper(), active_only=False, enabled_only=True)
 
     for trigger in triggers:
-        if trigger.condition_type == ConditionType.TRAILING_STOP.value:
+        if _holds_position_state(trigger):
             return trigger
 
     return None

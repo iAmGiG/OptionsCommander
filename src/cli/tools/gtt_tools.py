@@ -10,7 +10,7 @@ Pattern: Pure function wrappers -> FunctionTool -> Registry
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from agent_framework import FunctionTool
 
@@ -69,10 +69,57 @@ def _get_action_type(action_str: str):
         "alert": ActionType.ALERT,
         "order": ActionType.PLACE_ORDER,
         "place_order": ActionType.PLACE_ORDER,
-        "cancel": ActionType.CANCEL_ORDER,
-        "cancel_order": ActionType.CANCEL_ORDER,
     }
-    return mapping.get(action_str.lower(), ActionType.ALERT)
+    return mapping.get(action_str.lower())
+
+
+def _value_text(condition_type: str, value: float) -> str:
+    """A trigger's value as the user gave it: a percent for gain, loss and trailing."""
+    from src.trading.gtt.gtt_manager import ConditionType
+
+    if condition_type == ConditionType.TRAILING_STOP.value:
+        return f"{value * 100:g}%"  # stored as a fraction
+    if condition_type in (ConditionType.PCT_GAIN.value, ConditionType.PCT_LOSS.value):
+        return f"{value:g}%"
+    return f"{value:g}"
+
+
+def _trigger_details(
+    symbol: str, condition_type, action_type, value, side, quantity
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """
+    The action_config a new trigger needs (#635).
+
+    An order trigger names its order, and a gain or loss trigger the price it's measured
+    from, without which it can never fire.
+
+    Returns:
+        (action_config, None), or (None, what's wrong)
+    """
+    from src.trading.gtt.gtt_manager import ActionType, ConditionType
+
+    is_percent = condition_type in (
+        ConditionType.PCT_GAIN,
+        ConditionType.PCT_LOSS,
+        ConditionType.TRAILING_STOP,
+    )
+    if value <= 0 or (is_percent and value >= 100):
+        return None, f"Invalid value {value:g}: a percent from 0 to 100, or a price above 0"
+
+    config: Dict[str, Any] = {}
+    if action_type == ActionType.PLACE_ORDER:
+        if side not in ("buy", "sell") or not quantity or quantity <= 0:
+            return None, "An order trigger needs a side (buy or sell) and a positive quantity"
+        config.update(order_type="market", side=side, qty=quantity)
+
+    if condition_type in (ConditionType.PCT_GAIN, ConditionType.PCT_LOSS):
+        from src.trading.utils.unified_price_fetcher import get_current_price
+
+        reference_price = get_current_price(symbol)
+        if not reference_price:
+            return None, f"Could not get {symbol}'s price to measure the change from"
+        config["reference_price"] = reference_price
+    return config, None
 
 
 # =============================================================================
@@ -88,21 +135,27 @@ def create_gtt_trigger(
     expiration_days: Optional[int] = None,
     max_triggers: Optional[int] = None,
     notes: Optional[str] = None,
+    side: Optional[Literal["buy", "sell"]] = None,
+    quantity: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Create a new GTT (Good-Till-Triggered) trigger.
 
-    GTT triggers persist across sessions and are checked twice daily
-    (morning 9:20 AM and evening 3:50 PM ET).
+    GTT triggers persist across sessions and are checked twice daily (morning 9:20 AM and
+    evening 3:50 PM ET), for symbols currently held.
 
     Args:
         symbol: Stock ticker symbol (e.g., "SPY", "AAPL")
         condition: Trigger condition - "above", "below", "gain", "loss", "trailing"
-        value: Price or percentage that triggers the action
+        value: A price for above and below; a percent for gain, loss and trailing (5 = 5%).
+            Gain and loss are measured from the price when the trigger is created.
         action: Action to take - "alert" (default), "order"
         expiration_days: Days until trigger expires (None = no expiration)
-        max_triggers: Max times to fire (None = unlimited, 1 = one-time)
+        max_triggers: Max times to fire (None = unlimited, 1 = one-time; an order trigger
+            defaults to 1)
         notes: Optional notes for the trigger
+        side: "buy" or "sell", required for an order
+        quantity: Shares, required for an order
 
     Returns:
         Dict with status and trigger details
@@ -110,9 +163,13 @@ def create_gtt_trigger(
     Examples:
         - "Alert if SPY hits $620": condition="above", value=620
         - "Alert if AAPL drops to $180": condition="below", value=180
-        - "Trailing stop 5%": condition="trailing", value=0.05
+        - "Alert on a 10% gain in TSLA": condition="gain", value=10
+        - "Sell 5 SPY if it drops to $700": condition="below", value=700, action="order",
+          side="sell", quantity=5
     """
     try:
+        from src.trading.gtt.gtt_manager import ActionType, ConditionType
+
         mgr = _get_gtt_manager()
         if not mgr:
             return {"status": "error", "message": "GTT manager not available"}
@@ -125,14 +182,24 @@ def create_gtt_trigger(
             }
 
         action_type = _get_action_type(action)
+        if not action_type:
+            return {"status": "error", "message": f"Unknown action: {action}. Use: alert, order"}
 
+        action_config, problem = _trigger_details(
+            symbol.upper(), condition_type, action_type, value, side, quantity
+        )
+        if problem:
+            return {"status": "error", "message": problem}
+
+        is_order = action_type == ActionType.PLACE_ORDER
         trigger = mgr.create_trigger(
             symbol=symbol,
             condition_type=condition_type,
-            trigger_value=value,
+            trigger_value=value / 100 if condition_type == ConditionType.TRAILING_STOP else value,
             action_type=action_type,
+            action_config=action_config,
             expiration_days=expiration_days,
-            max_triggers=max_triggers,
+            max_triggers=1 if is_order and max_triggers is None else max_triggers,
             notes=notes,
         )
 
@@ -146,7 +213,12 @@ def create_gtt_trigger(
                 "action": trigger.action_type,
                 "expiration": trigger.expiration_date,
                 "max_triggers": trigger.max_triggers or "unlimited",
-                "message": f"GTT trigger created: {trigger.symbol} {trigger.condition_type} @ {trigger.trigger_value}",
+                "message": (
+                    f"GTT trigger created: {trigger.symbol} {trigger.condition_type} "
+                    f"{_value_text(trigger.condition_type, trigger.trigger_value)}"
+                    + (f", then {side} {quantity} at market" if is_order else "")
+                    + f". Checked at the routines while {trigger.symbol} is held."
+                ),
             }
 
         return {"status": "error", "message": "Failed to create trigger"}
@@ -436,7 +508,8 @@ def _trigger_lines(t: Dict[str, Any]) -> List[str]:
 
     # Build line
     lines = [
-        f"[{t['id']}] {t['symbol']} {t['condition_type']} @ {t['trigger_value']}",
+        f"[{t['id']}] {t['symbol']} {t['condition_type']} "
+        f"@ {_value_text(t['condition_type'], t['trigger_value'])}",
         f"     Action: {t['action_type']} | Status: {status}",
     ]
 
@@ -515,8 +588,9 @@ create_gtt_trigger_tool = FunctionTool(
     name="create_gtt_trigger",
     description=(
         "Create a GTT (Good-Till-Triggered) persistent price trigger. "
-        "Triggers are checked twice daily and can alert or place orders "
-        "when conditions are met. Supports: above, below, gain, loss, trailing."
+        "Triggers are checked twice daily, for symbols currently held, and can alert or "
+        "place an order when conditions are met. Supports: above and below (a price), and "
+        "gain, loss and trailing (a percent, 5 = 5%). An order needs a side and a quantity."
     ),
 )
 

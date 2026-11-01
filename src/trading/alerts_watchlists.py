@@ -511,10 +511,12 @@ class AlertsWatchlistsManager:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM watchlists WHERE name = ?", (name,))
+            deleted = cursor.rowcount > 0
             conn.commit()
             conn.close()
-            logger.info(f"Deleted watchlist: {name}")
-            return True
+            if deleted:
+                logger.info(f"Deleted watchlist: {name}")
+            return deleted
         except Exception as e:
             logger.error(f"Failed to delete watchlist: {e}")
             return False

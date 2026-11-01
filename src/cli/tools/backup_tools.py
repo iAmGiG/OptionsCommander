@@ -14,11 +14,11 @@ Pattern: Pure function wrappers → FunctionTool → Registry
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from agent_framework import FunctionTool
 
-from src.utils.date_utils import format_for_filename, get_datetime_now
+from src.utils.date_utils import format_for_filename
 from src.utils.safe_print import get_symbol
 from src.utils.state_paths import get_cache_db_path, get_state_dir, get_user_db_path
 
@@ -400,7 +400,7 @@ def show_backup_info() -> str:
     return output
 
 
-def cleanup_old_backups(days: int = 30) -> str:
+def cleanup_old_backups(days: int = 30, only: Optional[List[str]] = None) -> str:
     """
     Clean up backups older than specified days.
 
@@ -409,6 +409,7 @@ def cleanup_old_backups(days: int = 30) -> str:
 
     Args:
         days: Keep backups newer than this many days (default: 30)
+        only: Remove only these names, as listed by backups_to_clean (default: all that qualify)
 
     Returns:
         Cleanup result with files removed
@@ -418,38 +419,23 @@ def cleanup_old_backups(days: int = 30) -> str:
         'Cleanup complete: Removed 3 backups older than 30 days'
     """
     manager = _get_backup_manager()
+    if not manager:
+        return f"{get_symbol('ERROR')} Backup manager not available: nothing removed"
 
-    if manager:
-        try:
-            removed = manager.cleanup_old_backups(keep_days=days)  # returns a count
-        except Exception as e:
-            return f"{get_symbol('ERROR')} Cleanup failed: {e}"
-        return (
-            f"{get_symbol('SUCCESS')} Cleanup complete: Removed {removed} backup(s) older than "
-            f"{days} days (the 5 newest backups of each database are always kept)"
-        )
+    try:
+        removed = manager.cleanup_old_backups(keep_days=days, only=only)  # returns a count
+    except Exception as e:
+        return f"{get_symbol('ERROR')} Cleanup failed: {e}"
+    return (
+        f"{get_symbol('SUCCESS')} Cleanup complete: Removed {removed} backup(s) older than "
+        f"{days} days (the 5 newest backups of each database are always kept)"
+    )
 
-    # Stub implementation
-    backup_dir = _backup_dir(None)
 
-    if not backup_dir.exists():
-        return f"{get_symbol('MAILBOX')} No backups directory found."
-
-    cutoff = get_datetime_now().timestamp() - (days * 24 * 60 * 60)
-    removed = 0
-
-    for backup in backup_dir.glob("*.db"):
-        if backup.stat().st_mtime < cutoff:
-            try:
-                backup.unlink()
-                removed += 1
-            except Exception:
-                pass
-
-    if removed == 0:
-        return f"{get_symbol('SUCCESS')} No backups older than {days} days to remove."
-
-    return f"{get_symbol('SUCCESS')} Cleanup complete: Removed {removed} backup(s) older than {days} days"
+def backups_to_clean(days: int = 30) -> List[str]:
+    """Names of the backups cleanup_old_backups(days) would remove."""
+    manager = _get_backup_manager()
+    return [backup.name for backup in manager.old_backups(keep_days=days)] if manager else []
 
 
 def get_backup_params() -> Dict[str, Any]:

@@ -658,9 +658,9 @@ class DBBackupManager:
             logger.error(f"Cleanup failed: {e}")
             return results
 
-    def cleanup_old_backups(self, keep_days: int = 7, keep_count: int = 5) -> int:
+    def old_backups(self, keep_days: int = 7, keep_count: int = 5) -> List[Path]:
         """
-        Remove old backup files.
+        The backup files past their retention.
 
         Retention applies per database (the ``user_`` and ``cache_`` backups are counted
         separately), so cleanup can never remove every backup of one database.
@@ -670,25 +670,49 @@ class DBBackupManager:
             keep_count: Always keep at least this many backups of each database
 
         Returns:
-            Number of backups deleted
+            The files to remove, oldest of each database last
         """
         cutoff = (datetime.now() - timedelta(days=keep_days)).timestamp()
-        deleted = 0
 
         groups: Dict[str, List[Path]] = {}
         for backup in self.backup_dir.glob("*.db"):
             groups.setdefault(backup.name.split("_", 1)[0], []).append(backup)
 
+        old: List[Path] = []
         for files in groups.values():
             files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
             for backup in files[keep_count:]:
                 try:
                     if backup.stat().st_mtime < cutoff:
-                        backup.unlink()
-                        deleted += 1
-                        logger.info(f"Deleted old backup: {backup.name}")
+                        old.append(backup)
                 except OSError as e:
-                    logger.warning(f"Could not delete old backup {backup.name}: {e}")
+                    logger.warning(f"Could not check old backup {backup.name}: {e}")
+        return old
+
+    def cleanup_old_backups(
+        self, keep_days: int = 7, keep_count: int = 5, only: Optional[List[str]] = None
+    ) -> int:
+        """
+        Remove old backup files (see old_backups for what goes).
+
+        Args:
+            keep_days: Keep backups modified within this many days
+            keep_count: Always keep at least this many backups of each database
+            only: Remove only these file names (what the user was shown and agreed to)
+
+        Returns:
+            Number of backups deleted
+        """
+        deleted = 0
+        for backup in self.old_backups(keep_days, keep_count):
+            if only is not None and backup.name not in only:
+                continue
+            try:
+                backup.unlink()
+                deleted += 1
+                logger.info(f"Deleted old backup: {backup.name}")
+            except OSError as e:
+                logger.warning(f"Could not delete old backup {backup.name}: {e}")
 
         return deleted
 

@@ -232,6 +232,7 @@ def cmd_backup(session, args: str = None):
         /backup restore NAME    Restore from backup
         /backup export TABLE    Export table to JSON
         /backup status          Show backup system status
+        /backup cleanup [DAYS]  Remove backups older than DAYS (30), after asking
     """
     from src.cli.tools.backup_tools import (
         backup_database,
@@ -266,9 +267,40 @@ def cmd_backup(session, args: str = None):
             safe_print(export_table(subarg))
     elif subcommand == "status":
         safe_print(show_backup_info())
+    elif subcommand == "cleanup":
+        safe_print(_backup_cleanup(subarg))
     else:
         safe_print(f"Unknown subcommand: {subcommand}")
         safe_print("Use /backup for help")
+
+
+def _confirmed(question: str) -> bool:
+    """Ask before removing something: only a typed 'yes' goes ahead."""
+    try:
+        return input(f"{question} Type yes to confirm: ").strip().lower() == "yes"
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+
+def _backup_cleanup(subarg: str | None) -> str:
+    """Handle /backup cleanup: lists what would go, asks, then removes it."""
+    from src.cli.tools.backup_tools import backups_to_clean, cleanup_old_backups
+
+    usage = "Usage: /backup cleanup [days]  (default 30; the 5 newest of each database stay)"
+    try:
+        days = int(subarg) if subarg else 30
+    except ValueError:
+        return usage
+    if not 1 <= days <= 36500:
+        return usage
+
+    names = backups_to_clean(days)
+    if not names:
+        return f"No backups to remove: nothing older than {days} days past the 5 newest of each."
+    safe_print("\n".join([f"Older than {days} days:", *(f"  {name}" for name in names)]))
+    if not _confirmed(f"Remove these {len(names)} backup(s)?"):
+        return "Nothing removed."
+    return cleanup_old_backups(days, only=names)
 
 
 # =============================================================================
@@ -396,6 +428,44 @@ def _gtt_create_trigger(args_str: str) -> str:
     return f"[ERROR] {result.get('message', 'Failed to create trigger')}"
 
 
+def _gtt_create_oco(args_str: str | None) -> str:
+    """Parse and create an OCO pair. Format: SYMBOL above PRICE below PRICE [days]"""
+    from src.cli.tools.gtt_tools import create_gtt_oco_pair
+
+    usage = (
+        "Usage: /gtt oco <symbol> above <price> below <price> [days]\n\n"
+        "Alerts when either price is reached; the first to fire disables the other.\n"
+        "Checked at the morning and evening routines, for symbols you hold."
+    )
+    parts = (args_str or "").split()
+    if len(parts) not in (5, 6):
+        return usage
+    levels = {parts[1].lower(): parts[2], parts[3].lower(): parts[4]}
+    if set(levels) != {"above", "below"}:
+        return usage
+    try:
+        above, below = float(levels["above"]), float(levels["below"])
+        days = int(parts[5]) if len(parts) == 6 else None
+    except ValueError:
+        return usage
+    if not 0 < below < above < float("inf"):
+        return f"[ERROR] The above price must be higher than the below price: {above}, {below}"
+    if days is not None and days < 1:
+        return usage
+
+    result = create_gtt_oco_pair(
+        symbol=parts[0].upper(),
+        condition_a="above",
+        value_a=above,
+        condition_b="below",
+        value_b=below,
+        expiration_days=days,
+    )
+    if result.get("status") == "success":
+        return f"[OK] {result['message']}"
+    return f"[ERROR] {result.get('message', result.get('error', 'Failed to create OCO pair'))}"
+
+
 def _gtt_handle_subcommand(subcommand: str, subarg: str | None) -> str:
     """Handle GTT subcommands. Returns output string."""
     from src.cli.tools.gtt_tools import (
@@ -418,6 +488,8 @@ def _gtt_handle_subcommand(subcommand: str, subarg: str | None) -> str:
         )
     if subcommand == "create":
         return _gtt_create_trigger(subarg)
+    if subcommand == "oco":
+        return _gtt_create_oco(subarg)
     if subcommand in ("delete", "cancel"):
         return (
             "Usage: /gtt delete <trigger_id>"
@@ -437,6 +509,105 @@ def _gtt_handle_subcommand(subcommand: str, subarg: str | None) -> str:
             else _gtt_try_trigger_action(disable_gtt_trigger, subarg, "disabled")
         )
     return f"Unknown subcommand: {subcommand}\nUse /gtt for help"
+
+
+PLAN_USAGE = (
+    "Usage: /plan <symbol> [levels|volume|atr]\n\n"
+    "  /plan SPY         # Entry, stop, target and risk/reward for a buy\n"
+    "  /plan SPY levels  # Support and resistance\n"
+    "  /plan SPY volume  # Volume against its average\n"
+    "  /plan SPY atr     # Average true range\n\n"
+    "These are views: nothing here places an order."
+)
+
+
+def _plan_view(args: str | None) -> str:
+    """The view /plan asked for, or its usage."""
+    from src.cli.tools.entry_planning_tools import (
+        get_atr,
+        get_entry_plan,
+        get_support_resistance,
+        get_volume_analysis,
+    )
+
+    parts = (args or "").split()
+    views = {"levels": get_support_resistance, "volume": get_volume_analysis, "atr": get_atr}
+    if len(parts) == 1:
+        return get_entry_plan(parts[0].upper(), "BUY")
+    if len(parts) == 2 and parts[1].lower() in views:
+        return views[parts[1].lower()](parts[0].upper())
+    return PLAN_USAGE
+
+
+@command("/plan", help_text="Entry plan, levels, volume and ATR for a symbol", has_args=True)
+def cmd_plan(session, args: str = None):
+    """
+    Plan an entry from completed daily bars (read-only, places nothing).
+
+    Usage:
+        /plan SYM          # Entry, stop, target and risk/reward for a buy
+        /plan SYM levels   # Support and resistance
+        /plan SYM volume   # Volume against its average
+        /plan SYM atr      # Average true range
+    """
+    safe_print(_plan_view(args))
+
+
+TRAILING_USAGE = (
+    "Usage: /trailing [explain [rate] | compare | example ENTRY PRICE STOP [rate]]\n\n"
+    "  /trailing                    # Current settings\n"
+    "  /trailing explain fast       # The tiers of a climb rate (slow, medium, fast)\n"
+    "  /trailing compare            # The climb rates side by side\n"
+    "  /trailing example 100 106 95 # Where the routines would put that stop"
+)
+
+
+def _trailing_example(parts: list[str]) -> str:
+    """Handle /trailing example. Format: ENTRY PRICE STOP [rate]"""
+    from src.cli.tools.trailing_stop_tools import calculate_stop_example
+
+    if len(parts) not in (3, 4):
+        return TRAILING_USAGE
+    try:
+        entry, price, stop = (float(part) for part in parts[:3])
+    except ValueError:
+        return TRAILING_USAGE
+    return calculate_stop_example(entry, price, stop, parts[3] if len(parts) == 4 else None)
+
+
+def _trailing_view(args: str | None) -> str:
+    """The view /trailing asked for, or its usage."""
+    from src.cli.tools.trailing_stop_tools import (
+        compare_climb_rates,
+        explain_climb_rate,
+        show_trailing_stop_config,
+    )
+
+    parts = (args or "").split()
+    if not parts:
+        return show_trailing_stop_config()
+    subcommand, rest = parts[0].lower(), parts[1:]
+    if subcommand == "explain" and len(rest) <= 1:
+        return explain_climb_rate(rest[0] if rest else None)
+    if subcommand == "compare" and not rest:
+        return compare_climb_rates()
+    if subcommand == "example":
+        return _trailing_example(rest)
+    return TRAILING_USAGE
+
+
+@command("/trailing", help_text="Trailing stop settings, climb rates, examples", has_args=True)
+def cmd_trailing(session, args: str = None):
+    """
+    Show how trailing stops move (read-only, changes no stop).
+
+    Usage:
+        /trailing                          # Current settings
+        /trailing explain [rate]           # The tiers of a climb rate
+        /trailing compare                  # The climb rates side by side
+        /trailing example ENTRY PRICE STOP [rate]  # Where the routines would put that stop
+    """
+    safe_print(_trailing_view(args))
 
 
 @command("/records", help_text="Daily equity, fills and realized P&L", has_args=True)
@@ -463,6 +634,7 @@ def cmd_gtt(session, args: str = None):
         /gtt                              # Show active GTT triggers
         /gtt list                         # List all triggers
         /gtt create SYM COND VAL [notes]  # Create trigger (above/below/gain/loss/trailing)
+        /gtt oco SYM above P below P [D]  # Two price alerts; the first to fire ends the other
         /gtt summary                      # Show GTT summary
         /gtt status <id>                  # Show trigger details
         /gtt delete <id>                  # Delete a trigger
@@ -599,6 +771,25 @@ def _watchlist_scanner() -> str:
         return f"[ERROR] Failed to load scanner config: {e}"
 
 
+def _watchlist_delete(subarg: str | None) -> str:
+    """Handle /watchlist delete: names what would go, asks, then removes it."""
+    from src.cli.tools.watchlist_tools import delete_watchlist, list_watchlists
+
+    if not subarg:
+        return "Usage: /watchlist delete <name>"
+    name = subarg.strip()
+    watchlists = list_watchlists().get("watchlists", [])
+    match = next((w for w in watchlists if w["name"] == name), None)
+    if match is None:
+        return f"[ERROR] No watchlist named '{name}'. Use /watchlist list to see them."
+    if not _confirmed(f"Delete watchlist '{name}' and its {len(match['symbols'])} symbol(s)?"):
+        return "Nothing removed."
+    result = delete_watchlist(name)
+    if result.get("status") == "success":
+        return f"[OK] {result['message']}"
+    return f"[ERROR] {result.get('message', result.get('error', 'Failed to delete watchlist'))}"
+
+
 def _watchlist_handle_subcommand(subcommand: str, subarg: str | None) -> str:
     """Handle watchlist subcommands. Returns output string."""
     from src.cli.tools.watchlist_tools import show_watchlist, show_watchlists
@@ -609,6 +800,8 @@ def _watchlist_handle_subcommand(subcommand: str, subarg: str | None) -> str:
         return _watchlist_add(subarg)
     if subcommand == "remove":
         return _watchlist_remove(subarg)
+    if subcommand == "delete":
+        return _watchlist_delete(subarg)
     if subcommand in ("show", "view"):
         if not subarg:
             return "Usage: /watchlist show <name>\nUse '/watchlist list' to see all watchlists"
@@ -634,6 +827,7 @@ def cmd_watchlist(session, args: str = None):
         /watchlist remove <sym> [name]  # Remove symbol from watchlist
         /watchlist show <name>          # Show specific watchlist details
         /watchlist create <name> [desc] # Create a new watchlist
+        /watchlist delete <name>        # Delete a watchlist, after asking
         /watchlist limits               # Show watchlist statistics
         /watchlist scanner              # Show scanner tier status
     """

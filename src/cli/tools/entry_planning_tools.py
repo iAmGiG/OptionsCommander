@@ -236,12 +236,12 @@ def get_support_resistance(symbol: str, lookback_days: int = 60) -> str:
         output += "-" * 40 + "\n"
         output += f"  Support:    ${levels['support']:.2f}"
 
-        dist_to_support = ((current_price - levels["support"]) / current_price) * 100
+        dist_to_support = ((levels["support"] - current_price) / current_price) * 100
         output += f" ({dist_to_support:+.1f}% from current)\n"
 
         output += f"  Resistance: ${levels['resistance']:.2f}"
         dist_to_resistance = ((levels["resistance"] - current_price) / current_price) * 100
-        output += f" (+{dist_to_resistance:.1f}% from current)\n"
+        output += f" ({dist_to_resistance:+.1f}% from current)\n"
 
         output += f"  Range:      ${levels['range']:.2f}\n"
 

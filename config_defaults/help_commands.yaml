@@ -763,13 +763,14 @@ exit:
 /backup:
   category: System
   description: Back up and restore the local databases (Issue #490)
-  usage: /backup [list | create | restore NAME | export TABLE | status]
+  usage: /backup [list | create | restore NAME | export TABLE | status | cleanup [DAYS]]
   examples:
   - /backup
   - /backup create
   - /backup list
   - /backup restore user_20261013_143022.db
   - /backup export trading_mode_history
+  - /backup cleanup 60
   aliases:
   - backup
   tags:
@@ -786,10 +787,54 @@ exit:
     \  /backup create         - Back up state/user.db (saved trading mode, alerts, watchlists, GTT orders)\n\
     \  /backup restore NAME   - Restore a backup listed by /backup list (the current database is backed up first)\n\
     \  /backup export TABLE   - Export a table of state/user.db to JSON in state/exports/\n\
-    \  /backup status         - Show backup status\n\n\
+    \  /backup status         - Show backup status\n\
+    \  /backup cleanup [DAYS] - Remove backups older than DAYS (default 30), after listing\
+    \ them and asking; the 5 newest of each database always stay\n\n\
     Backups are stored in state/backups/. Configuration YAML files are not included."
 
 # Slash Commands (Issue #506, #507, #508)
+/plan:
+  category: Configuration
+  description: Entry plan, levels, volume and ATR for a symbol (Issue #331)
+  usage: /plan <symbol> [levels|volume|atr]
+  examples:
+  - /plan SPY
+  - /plan AAPL levels
+  - /plan AAPL volume
+  - /plan AAPL atr
+  aliases:
+  - plan
+  tags:
+  - information
+  - slash-command
+  details: "Plan a buy from completed daily bars. Nothing here places an order.\n\n\
+    \  /plan SYM         - Entry, stop, target and risk/reward (ATR-based)\n\
+    \  /plan SYM levels  - Support and resistance\n\
+    \  /plan SYM volume  - Volume against its average\n\
+    \  /plan SYM atr     - Average true range"
+
+/trailing:
+  category: Configuration
+  description: Trailing stop settings, climb rates, examples (Issue #331)
+  usage: /trailing [explain [rate] | compare | example ENTRY PRICE STOP [rate]]
+  examples:
+  - /trailing
+  - /trailing explain fast
+  - /trailing compare
+  - /trailing example 100 106 95
+  aliases:
+  - trailing
+  tags:
+  - information
+  - slash-command
+  details: "How trailing stops move. Nothing here changes a stop.\n\n\
+    \  /trailing                 - Current settings\n\
+    \  /trailing explain [rate]  - The tiers of a climb rate (slow, medium, fast)\n\
+    \  /trailing compare         - The climb rates side by side\n\
+    \  /trailing example ENTRY PRICE STOP [rate] - Where the routines would put that stop,\
+    \ from their own code\n\n\
+    The evening routine raises stops, while the market is open."
+
 /records:
   category: Configuration
   description: Daily equity, fills and realized P&L (Issue #602)
@@ -809,12 +854,13 @@ exit:
 /gtt:
   category: Configuration
   description: GTT order management (Issue #506)
-  usage: /gtt {list|create|summary|status|delete|cancel|enable|disable} [args]
+  usage: /gtt {list|create|oco|summary|status|delete|cancel|enable|disable} [args]
   examples:
   - /gtt
   - /gtt list
   - /gtt create AAPL above 200
   - /gtt create SPY below 450 breakout watch
+  - /gtt oco SPY above 620 below 580
   - /gtt summary
   - /gtt status <id>
   - /gtt delete <id>
@@ -833,6 +879,8 @@ exit:
   - cancel
   details: "Manage Good-Till-Triggered persistent order triggers.\n\nSubcommands:\n\
     \  create SYM COND VAL [notes] - Create trigger\n\
+    \  oco SYM above P below P [days] - Two price alerts; the first to fire disables the\
+    \ other\n\
     \  list              - Show all GTT triggers\n\
     \  summary           - Show GTT summary with counts\n\
     \  status <id>       - Show trigger details\n\
@@ -847,7 +895,7 @@ exit:
 /watchlist:
   category: Configuration
   description: Watchlist management (Issue #507)
-  usage: /watchlist {list|add|remove|show|create|limits|scanner} [args]
+  usage: /watchlist {list|add|remove|show|create|delete|limits|scanner} [args]
   examples:
   - /watchlist
   - /watchlist list
@@ -856,6 +904,7 @@ exit:
   - /watchlist remove NVDA
   - /watchlist show tech
   - /watchlist create growth High growth stocks
+  - /watchlist delete growth
   - /watchlist limits
   - /watchlist scanner
   aliases:
@@ -874,6 +923,7 @@ exit:
     \  remove <sym> [name] - Remove symbol from watchlist\n\
     \  show <name>       - Show specific watchlist details\n\
     \  create <name> [desc] - Create a new watchlist\n\
+    \  delete <name>    - Delete a watchlist, after asking\n\
     \  limits            - Show watchlist statistics\n\
     \  scanner           - Show scanner tier status\n\n\
     User watchlists are for personal tracking.\n\

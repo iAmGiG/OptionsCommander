@@ -18,9 +18,20 @@ def sanitize_error_message(error: Exception) -> str:
     """
     error_str = str(error).lower()
 
+    # The model service, not the input (#636)
+    if "model service unavailable" in error_str:
+        return (
+            "The language model isn't responding, so typed requests can't be read right now. "
+            "Nothing done. Slash commands still work."
+        )
+
+    if "no symbol given" in error_str:
+        return "Which symbol? For example: how does SPY look? Nothing done."
+
     # API key patterns to sanitize
-    if "api" in error_str and (
-        "key" in error_str or "401" in error_str or "authentication" in error_str
+    if "configuration error" in error_str or (
+        "api" in error_str
+        and ("key" in error_str or "401" in error_str or "authentication" in error_str)
     ):
         return "Configuration error. Nothing done."
 

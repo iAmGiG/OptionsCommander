@@ -23,7 +23,7 @@ morning-routine:
   - monitor
   - evening-summary
   details: "Scans your watchlist for trading opportunities using technical analysis.\nShows buy/sell signals\
-    \ with confidence levels.\nEnters approval mode if execution_mode is set to CONFIRM.\n\nOptions:\n\
+    \ with confidence levels.\n\nOptions:\n\
     \  --approve-all    Auto-approve all pending trades\n  --paper          Run in paper trading mode\
     \ only"
 approve:
@@ -45,7 +45,7 @@ approve:
   - show orders
   details: 'Approves a pending trade for execution.
 
-    After approval, the trade is executed using your current execution mode.
+    After approval, the order is placed.
 
 
     Use ''approve all'' to approve all pending trades at once.'
@@ -135,9 +135,7 @@ buy:
     \ market price.\nRespects risk management rules and position limits.\n\nNEW: Entry Timing Context\
     \ (Issue #344):\n  'at a pullback' or 'on a dip' - Entry 2.5% below current price\n  'at a breakout'\
     \ - Entry 1.5% above current price\n  'now' or immediate - Entry at current market price\n\nExecution\
-    \ depends on current execution_mode:\n  CONFIRM - Asks for approval before executing\n  AUTO    -\
-    \ Executes immediately\n  PAPER   - Simulates the trade without real money\n  DISABLED - Blocks all\
-    \ trading"
+    \ depends on /toggle:\n  CONFIRM - Asks for approval before executing\n  AUTO    - Executes immediately"
 sell:
   category: Trading
   description: Place a manual sell order
@@ -288,40 +286,6 @@ list accounts:
     \ IDs\n  - Account types (paper/live)\n  - Discovery status\n\nUse 'switch account <ID>'\
     \ to change active account.\n\nNote: This is for ACCOUNT MANAGEMENT (switching between\
     \ accounts). To see your current account status/positions, use 'show account' (singular)."
-set execution-mode:
-  category: Configuration
-  description: Set trading execution mode
-  usage: set execution-mode {confirm|auto|paper|disabled}
-  examples:
-  - set execution-mode confirm
-  - set execution-mode auto
-  - set execution-mode paper
-  aliases:
-  - set mode
-  - execution mode
-  tags:
-  - configuration
-  - trading
-  related:
-  - show execution-mode
-  details: "Change how trades are executed:\n\n  CONFIRM  - Ask for approval before each trade (default)\n\
-    \  AUTO     - Execute trades automatically without approval\n  PAPER    - Simulate trades without\
-    \ real money (testing)\n  DISABLED - Block all trading\n\n⚠️  WARNING: Switching from paper to auto/confirm\
-    \ requires confirmation."
-show execution-mode:
-  category: Configuration
-  description: Show current execution mode
-  usage: show execution-mode
-  examples:
-  - show execution-mode
-  aliases:
-  - execution mode
-  tags:
-  - configuration
-  - trading
-  related:
-  - set execution-mode
-  details: Display the current trading execution mode setting.
 change timeframe:
   category: Configuration
   description: 'Change analysis timeframe (Issue #365)'
@@ -426,7 +390,7 @@ timeframe recommendations:
     \ moves)\n\nUse this to find the best timeframe for your trading style."
 mode:
   category: Configuration
-  description: Show current execution mode
+  description: Show the current trading mode
   usage: mode
   examples:
   - mode
@@ -434,12 +398,9 @@ mode:
   - show mode
   tags:
   - configuration
-  related:
-  - set execution-mode
-  - show execution-mode
-  details: 'Display the current trading execution mode.
+  details: 'Display the current trading mode: conservative, moderate or aggressive.
 
-    This determines how your trades are processed.'
+    This determines how your trades are sized and protected.'
 set voter-system:
   category: Configuration
   description: Switch between voter systems
@@ -471,9 +432,8 @@ show config:
   - configuration
   - information
   related:
-  - set execution-mode
   - set voter-system
-  details: "Display current system configuration including:\n  - Execution mode\n  - Risk parameters\n\
+  details: "Display current system configuration including:\n  - Risk parameters\n\
     \  - Indicator parameters\n  - Position limits\n\nUse --all to see all available config options."
 forward-test start:
   category: Testing
@@ -664,9 +624,8 @@ enable scheduler:
   - disable scheduler
   - show scheduler
   details: "Enable the daily automated trading scheduler.\n\nWhen enabled, the scheduler runs:\n  Morning\
-    \ (9:20 AM ET):\n    - Market scan for opportunities\n    - Signal generation\n    - Trade execution\
-    \ (if execution_mode = AUTO)\n\n  Evening (3:50 PM ET):\n    - Position review\n    - Stop loss updates\n\
-    \    - Daily summary report\n\n⚠️  Note: Scheduler respects your execution_mode setting."
+    \ (9:20 AM ET) and Evening (3:50 PM ET):\n    - Position review\n    - Stop loss updates\n\
+    \    - Daily report\n\nIt never opens a trade."
 disable scheduler:
   category: System
   description: Disable daily automated scheduler

@@ -126,6 +126,39 @@ def extract_ticker_from_query(user_input: str) -> Optional[str]:
     return None
 
 
+_SCHEDULER_WORDS = re.compile(
+    r"\b(?:scheduler|schedule|routines?|(?:morning|evening) (?:report|run|summary))\b",
+    re.IGNORECASE,
+)
+_MODE_COMMAND = re.compile(
+    r"\b(?:trading|risk|show|current|set|change|switch|what|which"
+    r"|conservative|moderate|aggressive) mode\b"
+    r"|^mode\b|^(?:use|set|switch to) (?:conservative|moderate|aggressive)$",
+    re.IGNORECASE,
+)
+MODE_NAMES = ("conservative", "moderate", "aggressive")
+
+
+def is_scheduler_request(user_input: str) -> bool:
+    """
+    Whether the input asks about the scheduler. Whole words (#636): "buy 10 AAPL this
+    morning" is a trade, and a word naming a trade wins.
+    """
+    if user_input.strip().lower() in ("morning", "evening"):
+        return True
+    return bool(_SCHEDULER_WORDS.search(user_input)) and detect_user_intent(user_input) is None
+
+
+def is_mode_request(user_input: str) -> bool:
+    """
+    Whether the input is a trading mode command, not a sentence that uses a mode's name
+    (#636): "buy SPY aggressively" is a trade.
+    """
+    if user_input.strip().lower() in MODE_NAMES:
+        return True
+    return bool(_MODE_COMMAND.search(user_input.strip()))
+
+
 _CANCEL_VERB = re.compile(r"\b(cancel|delete|remove)\b", re.IGNORECASE)
 _ORDER_WORD = re.compile(r"\borders?\b", re.IGNORECASE)
 _ALL_WORD = re.compile(r"\ball\b", re.IGNORECASE)
@@ -169,5 +202,8 @@ __all__ = [
     "is_short_request",
     "extract_ticker_from_query",
     "is_cancel_request",
+    "is_mode_request",
+    "is_scheduler_request",
+    "MODE_NAMES",
     "parse_cancel_request",
 ]

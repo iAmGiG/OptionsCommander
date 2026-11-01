@@ -5,6 +5,7 @@ Issue #509: Refactor cli_session.py into modular handlers
 Handles trade request processing, signal conflict resolution, and trade execution.
 """
 
+import copy
 import logging
 from typing import TYPE_CHECKING, Optional
 
@@ -207,7 +208,11 @@ class TradeHandler:
             f"\n📊 Technical Indicators (based on {suggestion.reasoning[0] if suggestion.reasoning else 'MACD+RSI'}):"
         )
 
-        display_suggestion(suggestion, None, override_mode="USER_OVERRIDE_LONG")
+        # Show the order that would be placed: the suggestion's levels are for a sale
+        plan = copy.copy(suggestion)
+        plan.signal = Signal.BUY
+        self._invert_stop_target_for_buy(plan)
+        display_suggestion(plan, None, override_mode="USER_OVERRIDE_LONG")
 
         print("\n💡 Human-in-Loop Decision:")
         print("   → The system recommends SELL, but you want to go LONG")
@@ -222,16 +227,11 @@ class TradeHandler:
             print(f"\n{MSG.EMOJI['info']} ✅ User override confirmed - placing BUY order")
             print("   → Overriding SELL signal from technical analysis")
 
-            # Flip signal to BUY
-            decision.suggestion.signal = Signal.BUY
-            self._invert_stop_target_for_buy(decision.suggestion)
-
-            self._print_adjusted_trade_plan(decision.suggestion, "BUY")
+            decision.suggestion = plan
             return decision
         else:
-            print(f"\n{MSG.EMOJI['info']} Order cancelled. You can review alternatives:")
+            print(f"\n{MSG.EMOJI['info']} Order cancelled.")
             print(f"   • Type 'review {suggestion.ticker}' for detailed analysis")
-            print(f"   • Type 'short {suggestion.ticker}' to follow the SELL signal")
             return None
 
     def _get_approval(self, decision, is_review_only: bool) -> bool:

@@ -582,20 +582,25 @@ def show_position_orders(ticker: str) -> str:  # noqa: C901
             )
             lines.append(f"   {emoji} {label}: ${price:.2f}")
     local_state = result.get("local_state", {})
-    if local_state.get("stop_price") or local_state.get("target_price"):
-        if not open_orders:
-            lines.extend(["", f"{get_symbol('YELLOW')} Exit Orders (from local state)"])
-        if local_state.get("stop_price"):
+    # Saved levels only where the broker shows no order: the broker's order is the truth
+    open_types = {order.get("type") for order in open_orders}
+    local_stop = (
+        None if open_types.intersection(_STOP_ORDER_TYPES) else local_state.get("stop_price")
+    )
+    local_target = None if "limit" in open_types else local_state.get("target_price")
+    if local_stop or local_target:
+        lines.extend(["", f"{get_symbol('YELLOW')} Exit Orders (from local state)"])
+        if local_stop:
             lines.extend(
                 [
-                    f"   {get_symbol('RED')} STOP LOSS: ${local_state['stop_price']:.2f}",
+                    f"   {get_symbol('RED')} STOP LOSS: ${local_stop:.2f}",
                     "      * Verify on broker",
                 ]
             )
-        if local_state.get("target_price"):
+        if local_target:
             lines.extend(
                 [
-                    f"   {get_symbol('GREEN')} TAKE PROFIT: ${local_state['target_price']:.2f}",
+                    f"   {get_symbol('GREEN')} TAKE PROFIT: ${local_target:.2f}",
                     "      * Verify on broker",
                 ]
             )

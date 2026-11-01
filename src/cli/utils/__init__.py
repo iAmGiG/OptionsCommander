@@ -7,7 +7,7 @@ and other CLI components.
 Modules:
 - ticker_completer: Tab completion for ticker symbols (readline integration)
 - faq: FAQ with features, how-to, and resources sections
-- about_page: Status dashboard (AgentEdge branding)
+- about_page: Status dashboard
 - help_system: Help command handling and documentation
 - suggestion_display: Display formatting for trade suggestions (Issue #436)
 - input_parser: User intent detection and ticker extraction (Issue #436)

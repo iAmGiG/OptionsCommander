@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AutoGen-TradingSystem Main Runner
+OptionsCommander Main Runner
 Unified entry point for all trading system operations.
 
 Usage:
@@ -334,7 +334,7 @@ def _run_daemon_mode() -> None:
 def _create_argument_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser for main()."""
     parser = argparse.ArgumentParser(
-        description="OptionsCommander - Multi-Agent Trading Platform (AutoGen)",
+        description="OptionsCommander - Paper Trading Platform",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_load_cli_help(),
     )

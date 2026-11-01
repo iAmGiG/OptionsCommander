@@ -36,9 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_unified_market_data(
-    symbol: str = "AAPL",
-    start_date: str = "2024-01-01",
-    end_date: str = "2024-12-31",
+    symbol: str,
+    start_date: str,
+    end_date: str,
     source: str = "auto",
     timeframe: str = "1Day",
 ) -> pd.DataFrame:

@@ -398,23 +398,29 @@ def show_portfolio(
 # =============================================================================
 
 
-def _show_portfolio_tool(ticker: Optional[str] = None) -> str:  # noqa: ARG001
+def _show_portfolio_from_broker(ticker: Optional[str] = None) -> str:
+    """Show the portfolio from a fresh paper trade cycle: what an agent has to go on."""
+    try:
+        from src.trading.scheduling.trading_cycle import CostEfficientTradeCycle
+
+        cycle = CostEfficientTradeCycle()
+        return show_portfolio(cycle.account_monitor, cycle, specific_ticker=ticker)
+    except Exception as e:
+        logger.error(f"Could not show the portfolio: {e}", exc_info=True)
+        return f"Could not read the portfolio: {type(e).__name__}"
+
+
+def _show_portfolio_tool(ticker: Optional[str] = None) -> str:
     """
     FunctionTool wrapper for portfolio display.
 
-    Note: This requires runtime injection of account_monitor and trading_cycle.
-    In practice, the CLI session will call show_portfolio() directly with
-    its instances. This wrapper exists for future agent integration.
-
     Args:
-        ticker: Optional specific ticker to show details for (currently unused)
+        ticker: Optional specific ticker to show details for
 
     Returns:
         Portfolio display string or error message
     """
-    # This is a placeholder - actual implementation requires injected dependencies
-    # ticker parameter is accepted but unused until dependency injection is implemented
-    return "Portfolio tools require initialized account_monitor. Use CLI session."
+    return _show_portfolio_from_broker(ticker)
 
 
 def _get_position_tool(ticker: str) -> str:
@@ -427,7 +433,7 @@ def _get_position_tool(ticker: str) -> str:
     Returns:
         Position details or not found message
     """
-    return f"Position lookup for {ticker} requires initialized account_monitor."
+    return _show_portfolio_from_broker(ticker.upper())
 
 
 # =============================================================================

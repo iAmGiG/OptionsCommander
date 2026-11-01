@@ -13,7 +13,7 @@ Pattern: Pure function wrappers → FunctionTool → Registry
 
 from agent_framework import FunctionTool
 
-from config_defaults.trading_config import ClimbRate, TrailingStopConfig
+from config_defaults.trading_config import ClimbRate, TradingConfig
 
 from src.utils.safe_print import get_symbol
 
@@ -39,7 +39,8 @@ def show_trailing_stop_config() -> str:
         Volatility Aware: No
         Profit Zone Start: 2.0%'
     """
-    config = TrailingStopConfig()
+    # What the routines' TrailingStopManager reads, not the dataclass's defaults (#637)
+    config = TradingConfig().get_trailing_stop_config()
 
     output = f"{get_symbol('GEAR')} Trailing Stop Configuration\n"
     output += "=" * 50 + "\n"
@@ -139,9 +140,10 @@ def explain_climb_rate(rate: str = "medium") -> str:
     output += f"  Style: {desc['style']}\n"
     output += "-" * 50 + "\n"
     output += "  Gain Lock Schedule:\n"
-    output += f"    Zone 1 (+2-4%): Lock {gain_locks[1] * 100:.0f}% of gains\n"
-    output += f"    Zone 2 (+4-6%): Lock {gain_locks[2] * 100:.0f}% of gains\n"
-    output += f"    Zone 3 (+6%+):  Lock {gain_locks[3] * 100:.0f}% of gains\n"
+    output += "    +2-4%:  Move the stop to breakeven\n"
+    output += f"    +4-6%:  Lock {gain_locks[1] * 100:.0f}% of gains\n"
+    output += f"    +6-10%: Lock {gain_locks[2] * 100:.0f}% of gains\n"
+    output += f"    +10%+:  Lock {gain_locks[3] * 100:.0f}% of gains\n"
     output += "-" * 50 + "\n"
     output += f"  Best For: {desc['best_for']}\n"
     output += f"  Trade-off: {desc['risk']}\n"
@@ -177,12 +179,12 @@ def compare_climb_rates() -> str:
     output += f"{'Profit Level':<20} {'Slow':>10} {'Medium':>10} {'Fast':>10}\n"
     output += "-" * 60 + "\n"
 
-    # Zone data
+    # The share of the gain each tier locks; the first moves the stop to breakeven
+    output += f"{'+2-4%':<20} {'breakeven':>10} {'breakeven':>10} {'breakeven':>10}\n"
     zones = [
-        ("At Breakeven", 0),
-        ("+2-4% (Zone 1)", 1),
-        ("+4-6% (Zone 2)", 2),
-        ("+6%+ (Zone 3)", 3),
+        ("+4-6%", 1),
+        ("+6-10%", 2),
+        ("+10%+", 3),
     ]
 
     for zone_name, idx in zones:

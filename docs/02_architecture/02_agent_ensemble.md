@@ -2,7 +2,7 @@
 
 **Foundation**: Microsoft Agent Framework (AutoGen until #606)
 **Approach**: Democratic voting with specialized agent roles
-**Status**: VoterAgent in use on paper, ensemble expansion in development
+**Status**: VoterAgent is what the CLI uses. The scanner, risk and executor agents, the orchestrators and the factory described below were never reachable from a command and were removed (#331), so this page is partly historical; git history has the code.
 
 ## Evolution from V0-V4 to Ensemble System
 

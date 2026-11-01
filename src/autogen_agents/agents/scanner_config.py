@@ -1,7 +1,7 @@
 """
 Scanner Agent Configuration Module.
 
-Issue #512: Extracted from scanner_agent.py for modularity.
+Issue #512: Extracted from the scanner agent, since removed (#331); /watchlist scanner reads it.
 Contains configuration classes, dataclasses, and YAML loaders.
 """
 

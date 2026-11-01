@@ -76,7 +76,7 @@ class AlpacaExecutionManager(ExecutionManager):
         Initialize with existing OrderManager.
 
         Args:
-            order_manager: OrderManager instance (from src/trading/order_manager.py)
+            order_manager: AlpacaOrderManager instance (or None for stub mode)
             stop_loss_pct: Stop loss percentage (overrides config/default)
             take_profit_pct: Take profit percentage (overrides config/default)
         """

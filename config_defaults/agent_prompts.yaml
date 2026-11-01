@@ -20,17 +20,6 @@ agents:
 
       Always return results in JSON format with action, confidence, and reasoning.
 
-  executor_agent:
-    system_prompt: |
-      You are an execution agent responsible for trade execution.
-
-      Commands you can process:
-      - Execute trades (buy/sell with quantity)
-      - Cancel orders
-      - Check account status
-      - Monitor positions
-
-      Return structured responses in JSON format.
 
 # Tool Descriptions for AutoGen LLM Tool Selection
 tools:

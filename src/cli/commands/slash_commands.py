@@ -544,7 +544,7 @@ def _watchlist_limits() -> str:
 
 
 def _watchlist_scanner() -> str:
-    """Show ScannerAgent's tiered watchlist status (read-only)."""
+    """Show the scanner's tiered watchlist status (read-only)."""
     try:
         from src.autogen_agents.agents.scanner_config import (
             TieredWatchlistConfig,
@@ -620,7 +620,7 @@ def cmd_watchlist(session, args: str = None):
         /watchlist show <name>          # Show specific watchlist details
         /watchlist create <name> [desc] # Create a new watchlist
         /watchlist limits               # Show watchlist statistics
-        /watchlist scanner              # Show ScannerAgent tier status
+        /watchlist scanner              # Show scanner tier status
     """
     from src.cli.tools.watchlist_tools import show_watchlists
 

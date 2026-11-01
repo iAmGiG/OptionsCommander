@@ -222,17 +222,27 @@ class ActionExecutor:
 
         action_config expected keys:
             - order_type: "market" or "limit" (default: "market")
-            - side: "buy" or "sell" (default: "buy")
-            - qty: int quantity (default: 1)
+            - side: "buy" or "sell" (required)
+            - qty: int quantity (required)
             - limit_price: float for limit orders
             - simulate_only: bool to force simulation mode (default: False)
         """
         config = trigger.action_config or {}
 
         order_type = config.get("order_type", "market")
-        side = config.get("side", "buy")
-        qty = config.get("qty", 1)
+        side = config.get("side")
+        qty = config.get("qty")
         limit_price = config.get("limit_price")
+
+        # Never guess an order: this used to default to buying 1 share (#635)
+        if side not in ("buy", "sell") or not isinstance(qty, (int, float)) or qty <= 0:
+            return ActionResult(
+                trigger_id=trigger.id,
+                success=False,
+                action_type=ActionType.PLACE_ORDER.value,
+                message=f"{trigger.symbol}: no order placed, its trigger has no side or quantity",
+                details={"symbol": trigger.symbol},
+            )
         simulate_only = config.get("simulate_only", False)
 
         # Build order description

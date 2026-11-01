@@ -733,7 +733,7 @@ def _watchlist_limits() -> str:
 def _watchlist_scanner() -> str:
     """Show the scanner's tiered watchlist status (read-only)."""
     try:
-        from src.autogen_agents.agents.scanner_config import (
+        from src.trading.instruments.scanner_config import (
             TieredWatchlistConfig,
             load_discovery_tickers,
         )

@@ -23,7 +23,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def _import_in(cwd, env):
-    code = "import src.trading, src.cli.cli_session, src.autogen_agents"
+    code = "import src.trading, src.cli.cli_session"
     result = subprocess.run(
         [sys.executable, "-c", code], cwd=cwd, env=env, capture_output=True, text=True
     )

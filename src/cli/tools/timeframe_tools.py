@@ -15,8 +15,8 @@ from typing import Dict, Optional
 
 from agent_framework import FunctionTool
 
-from src.autogen_agents.agents.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
 from src.cli.commands.timeframe_commands import get_timeframe_commands
+from src.trading.instruments.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
 from src.utils.safe_print import get_symbol
 
 # Get singleton instance for all tool functions

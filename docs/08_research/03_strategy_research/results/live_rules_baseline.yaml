@@ -3,7 +3,7 @@ issue: '#574'
 description: Live CLI rules backtested with live timing (replaces the 0.856 Sharpe
   claim)
 methodology:
-  signal: VoterAgent.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI
+  signal: VotingSignal.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI
     14 at 30/70), 90-calendar-day window rescaled to the prior day's raw price level
   timing: signal from bars through d-1; fills at day d open
   entries: BUY with no position at the start of the day; whole shares (at the raw

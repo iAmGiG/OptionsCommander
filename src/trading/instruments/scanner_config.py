@@ -1,5 +1,5 @@
 """
-Scanner Agent Configuration Module.
+Scanner Configuration Module.
 
 Issue #512: Extracted from the scanner agent, since removed (#331); /watchlist scanner reads it.
 Contains configuration classes, dataclasses, and YAML loaders.

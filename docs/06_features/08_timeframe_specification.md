@@ -290,16 +290,16 @@ recs = agent.call_function("get_timeframe_recommendations")
 
 ### 3. VoterAgent Integration
 
-The VoterAgent already has partial timeframe support. To use it:
+VotingSignal takes a timeframe. To use it:
 
 ```python
-from src.autogen_agents.voter_agent import VoterAgent
+from src.trading.instruments.voting_signal import VotingSignal
 
-# Create agent with custom timeframe
-agent = VoterAgent(timeframe="4h")  # Instead of default "1d"
+# With a custom timeframe
+signal = VotingSignal(timeframe="4h")  # Instead of default "1d"
 
-# Or use config-based default
-agent = VoterAgent()  # Uses "1d" from config
+# Or use the config-based default
+signal = VotingSignal()  # Uses "1d" from config
 ```
 
 ### 4. Indicator Functions

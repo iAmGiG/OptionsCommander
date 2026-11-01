@@ -2,7 +2,7 @@
 Live-rules baseline for paper validation (#574, stage A).
 
 Backtests the rules the live CLI actually runs (see src/backtesting/live_rules_sim.py):
-the live VoterAgent.evaluate_ranked_voting signal on a 90-day window, decided on the
+the live VotingSignal.evaluate_ranked_voting signal on a 90-day window, decided on the
 previous close and filled at the next open, with the risk manager's sizing and limits
 and the 5% / 8% market brackets. It replaces the 0.856 Sharpe claim (experiment 293:
 in-sample AAPL 2024, MACD 12/26/9, filled at the signal's own close, no costs).
@@ -85,7 +85,7 @@ def load_prices(symbols: list):
 
 def live_signal_fn():
     """
-    The live CLI's signal: VoterAgent.evaluate_ranked_voting, computed by VotingSignal
+    The live CLI's signal: VotingSignal.evaluate_ranked_voting, computed by VotingSignal
     (no LLM agent or client, no events; #606).
     """
     from src.trading.instruments.voting_signal import VotingSignal
@@ -248,7 +248,7 @@ def main():  # noqa: C901
         "issue": "#574",
         "description": "Live CLI rules backtested with live timing (replaces the 0.856 Sharpe claim)",
         "methodology": {
-            "signal": "VoterAgent.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI 14 at 30/70), 90-calendar-day window rescaled to the prior day's raw price level",
+            "signal": "VotingSignal.evaluate_ranked_voting (MACD 13/34/8 hist beyond +/-0.1, RSI 14 at 30/70), 90-calendar-day window rescaled to the prior day's raw price level",
             "timing": "signal from bars through d-1; fills at day d open",
             "entries": "BUY with no position at the start of the day; whole shares (at the raw price) of position_pct x prior equity at the prior close; max 10 positions and 80% exposure counted before the open; cash",
             "initial_capital": LiveRules().initial_capital,

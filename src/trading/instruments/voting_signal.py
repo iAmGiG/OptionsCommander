@@ -1,10 +1,9 @@
 """
 MACD+RSI voting signal, free of any agent framework.
 
-The signal maths behind VoterAgent (evaluate_voting, evaluate_ranked_voting), moved
-here unchanged so research and backtests can use the live rules without building an
-LLM agent or client (#606). VoterAgent wraps this class and adds the agent parts
-(LLM replies, publishing results to the agent bus).
+The signal maths (evaluate_voting, evaluate_ranked_voting), used by the CLI's
+RealVoterStrategy and by research and backtests. It was VoterAgent's until that agent
+was retired (#606, #331).
 """
 
 import copy

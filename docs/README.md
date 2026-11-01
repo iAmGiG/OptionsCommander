@@ -13,7 +13,7 @@ Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/O
 ### 🏗️ **02 - Architecture** (Technical Design)
 
 - **[01. Core Architecture](02_architecture/01_core_architecture.md)** - Layer separation, directory structure, design principles
-- **[02. Agent Ensemble](02_architecture/02_agent_ensemble.md)** - Multi-agent system with VoterAgent, Scanner, Risk, Executor
+- **[02. Agent Ensemble](02_architecture/02_agent_ensemble.md)** - Retired (#331): what runs instead, and the history
 - **[03. Voting System](02_architecture/03_voting_system.md)** - Multi-indicator voting structure and implementation
 - **[04. Cache System](02_architecture/04_cache_system.md)** - SQLite-based caching (8-10x performance improvement)
 - **[05. Integration APIs](02_architecture/05_integration_apis.md)** - Alpaca market data and order management
@@ -56,52 +56,13 @@ Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/O
 
 ## Key Features
 
-### ✅ **Multi-Agent System**
+### ✅ **Signal**
 
-- **VoterAgent**: MACD+RSI voting, the live CLI's signal (no backtested edge over buy-and-hold; see the [live-rules baseline](08_research/03_strategy_research/live_rules_baseline.md))
-- **Agent Architecture**: Microsoft Agent Framework for LLM calls and tool calling (AutoGen was removed in #606)
-- **Multi-Agent Trading**: Scanner, Risk, Executor, and Orchestrator agents (in development)
-- **Tool Integration**: Market data and trading tools accessible to all agents
-
-### ✅ **Professional Architecture**
-
-- **Agent Communication**: Structured message passing between agents
-- **Unified Tools**: Single source of truth accessible to all agents
-- **Error Handling**: Comprehensive error recovery and logging
-- **State Management**: Persistent trade state across restarts and agent coordination
-
-### ✅ **Trading Infrastructure**
-
-- **Paper Trading**: Safe testing environment (the scheduler runs on a paper account)
-- **Live Trading**: Alpaca live accounts are supported
-- **Fill Monitoring**: Automatic order fill detection
-- **Market Hours**: Smart handling of market open/close
-
-## Quick Navigation
-
-### 🚀 **Getting Started**
-
-1. Read [System Overview](01_overview/01_system_overview.md) to understand what the system does
-2. Review [Phases of Operation](01_overview/02_phases_of_operation.md) to see how it works
-3. Check [System Context](01_overview/03_system_context.md) for design philosophy
-
-### 🔧 **Developers & Technical**
-
-1. Study [Core Architecture](02_architecture/01_core_architecture.md) for system design
-2. Understand [Agent Ensemble](02_architecture/02_agent_ensemble.md) for multi-agent coordination
-3. Review [Voting System](02_architecture/03_voting_system.md) for trading logic
-
-### 📊 **Performance & Validation**
-
-1. See the [live-rules baseline](08_research/03_strategy_research/live_rules_baseline.md) for backtested performance (experiment 293's 0.856 Sharpe is superseded)
-2. Review the [research summary](08_research/README.md) for what was tested and stopped, and the archived [research foundation](archived/presentations/research_foundation.md) for the academic background
-3. Check [Troubleshooting](03_reference/04_troubleshooting.md) for common issues
-
-## Current Status
+- **VotingSignal**: MACD+RSI voting, the live CLI's signal (no backtested edge over buy-and-hold; see the [live-rules baseline](08_research/03_strategy_research/live_rules_baseline.md))
 
 ### ✅ **Components in Use**
 
-- **VoterAgent**: MACD+RSI voting (the rules live in `VotingSignal`, `src/trading/instruments/voting_signal.py`)
+- **VotingSignal**: MACD+RSI voting (`src/trading/instruments/voting_signal.py`)
 - **CLI Trade Assistant** (#308): Human-in-loop interactive trading interface ✅ NEW
   - Natural language parsing with OpenAI (gpt-4o-mini + o4-mini)
   - Real MACD+RSI analysis with market data fetching
@@ -135,7 +96,7 @@ For academic research and citations informing the system architecture:
 
 - **[Research Foundation](archived/presentations/research_foundation.md)** (archived) - Academic foundation with abstract, introduction, and citations
 - **[Research Documentation](08_research/README.md)** - Research status, methods and results
-- **[Agent Ensemble](02_architecture/02_agent_ensemble.md)** - Evolution from V0-V4 to current multi-agent system
+- **[Agent Ensemble](02_architecture/02_agent_ensemble.md)** - Evolution from V0-V4 to the retirement of the agents
 - **[Voting System](02_architecture/03_voting_system.md)** - Multi-indicator voting architecture
 - **[Validation Results](03_reference/01_validation_results.md)** - Experiment #293 (in-sample, superseded by the [live-rules baseline](08_research/03_strategy_research/live_rules_baseline.md))
 

@@ -4,14 +4,6 @@ This directory contains general-purpose utility modules used throughout the Auto
 
 ## Modules
 
-### `agent_utils.py`
-
-General utilities for agent operations:
-
-- `load_agent_config()` - Load agent configuration from JSON
-- `QueryParser` - Parse natural language queries
-- `DataProcessor` - Process and format data for agents
-
 ### `date_utils.py`
 
 Centralized date and time utilities for consistent timezone handling across the trading system:
@@ -51,7 +43,6 @@ Output management for organized test results:
 ```python
 # Import utilities as needed
 from src.utils.date_utils import process_date_param
-from src.utils.agent_utils import load_agent_config
 from src.utils.output_manager import OutputManager
 ```
 

@@ -58,7 +58,7 @@ class VoterStrategy(StrategyAnalyzer):
 
         Full implementation will:
         1. Fetch price data via market data service
-        2. Run VoterAgent.evaluate_voting()
+        2. Run VotingSignal.evaluate_voting()
         3. Convert results to AnalysisResult
 
         Args:

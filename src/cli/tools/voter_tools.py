@@ -10,7 +10,7 @@ Includes:
 - Configuration display (show_voter_config, explain_* functions)
 - Ranked voting management (list_voters, apply_preset, promote/demote)
 
-Original Implementation: src/autogen_agents/agents/voter_agent.py
+Original Implementation: src/trading/instruments/voting_signal.py
 Pattern: Pure function wrappers → FunctionTool → Registry
 """
 

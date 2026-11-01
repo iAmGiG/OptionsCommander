@@ -117,7 +117,7 @@ from src.market_data.alpaca_market_data import create_alpaca_market_data_tool
 # Create tool for agents (SDK-powered)
 tool = create_alpaca_market_data_tool()
 
-# Use in VoterAgent, Scanner, Risk, or Executor agents
+# Use from the CLI or your own script
 result = tool.get_bars(["SPY"], "2024-01-25", "2024-01-31", "1Day", feed="iex")
 bars_data = result['bars']  # List of OHLCV records
 count = result['count']     # Number of bars retrieved
@@ -386,36 +386,9 @@ python tests/test_alpaca_advanced_orders.py
 
 ---
 
-## Integration with Agents
+## Natural-Language Parsing
 
-Agents (`src/autogen_agents/`) run on Microsoft Agent Framework (AutoGen until #606). Tools are `FunctionTool`s; `BaseAgent` gets the market tools by default and passes its tools to an Agent Framework `Agent` when it makes an LLM call (`process_with_tools`).
-
-**Market Data Tools** (all agents, `src/autogen_agents/tools/market_tools.py`):
-
-```python
-from src.autogen_agents.tools import ALL_TOOLS
-
-print([tool.name for tool in ALL_TOOLS])
-# fetch_unified_market_data (cache, then Alpaca, then Alpha Vantage), fetch_vxx_volatility_data,
-# fetch_market_context_data
-```
-
-**Account and Order Tools** (the CLI, `src/cli/tools/`): read-only tools run without asking; tools that change state (orders, stops, account switch) require approval.
-
-### Agent Integration Pattern
-
-```python
-from src.autogen_agents.core.base_agent import BaseAgent
-
-
-class MyAgent(BaseAgent):
-    def generate_reply(self, messages, context=None) -> str:
-        # Plain Python first; call the LLM (with the agent's tools) only for free text
-        return self.process_with_tools(messages[-1]["content"], system_prompt="You review trades.")
-
-
-agent = MyAgent(name="reviewer")  # the OpenAI client is created on the first LLM call
-```
+`src/parsers/llm_parser.py` is the one LLM call: it turns typed requests into a `TradeRequest` through a forced tool call on Microsoft Agent Framework's OpenAI client. Everything else (signals, orders, stops) is plain Python. The agents that used to wrap these were retired (#331).
 
 ---
 

@@ -9,13 +9,6 @@
 ```bash
 OptionsCommander/                     # repository root
 ├── src/                              # Core implementation
-│   ├── autogen_agents/              # Agents (Microsoft Agent Framework; AutoGen until #606)
-│   │   ├── core/base_agent.py       # Base agent: tools, LLM tool calling
-│   │   ├── agents/voter_agent.py    # ✅ In use (the live signal)
-│   │   ├── agents/scanner_agent.py  # 🚧 In development
-│   │   ├── agents/risk_agent.py     # 🚧 In development
-│   │   ├── agents/executor_agent.py # 🚧 In development
-│   │   └── orchestration/trading_orchestrator.py  # 🚧 In development
 │   │
 │   ├── execution/                   # Order execution layer
 │   │   └── alpaca_execution_manager.py # AlpacaExecutionManager (plugin architecture)
@@ -119,20 +112,6 @@ OptionsCommander/                     # repository root
 ```
 
 ## Directory Responsibilities
-
-### src/autogen_agents/ - Multi-Agent System
-
-**Purpose**: Agent implementations for trading decisions, on Microsoft Agent Framework (AutoGen until #606; the directory keeps its name)
-
-**Files**:
-
-- `core/base_agent.py`: Foundation class; `process_with_tools()` runs an Agent Framework `Agent` with the agent's tools (OpenAI client created on first use)
-- `tools/market_tools.py`: Market data `FunctionTool`s every agent gets by default
-- `agents/voter_agent.py`: MACD+RSI voting agent, in use on the paper account
-- `scanner_agent.py`: Market scanning (in development)
-- `risk_agent.py`: Risk management (in development)
-- `executor_agent.py`: Trade execution (in development)
-- `trading_orchestrator.py`: Multi-agent coordination (in development)
 
 ### src/trading/ - Unified Trading Domain
 
@@ -240,21 +219,9 @@ python main.py paper-trade [SYMBOL]    # Full trading cycle check
 python main.py analysis                 # Generate analysis reports
 ```
 
-### src/autogen_agents/agents/voter_agent.py
+### src/trading/instruments/voting_signal.py
 
-**Agent in use** (backtested performance below):
-
-**Configuration**:
-
-- MACD: 13/34/8 (Fibonacci periods)
-- RSI: 14/30/70 (period/oversold/overbought)
-- Voting: Strong/weak/conflicting consensus
-
-**Performance**:
-
-- Sharpe Ratio: 0.69 at 5 bps a side, live rules, 2009 to 2026-10-09 (no edge over buy-and-hold; [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
-- Win Rate: 44.2%
-- Max Drawdown: -6.9%
+The MACD+RSI vote the CLI's `RealVoterStrategy` runs. Plain Python, no LLM.
 
 ### src/trading/broker/alpaca_trading_client.py
 

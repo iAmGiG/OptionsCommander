@@ -11,12 +11,29 @@ This module provides input parsing functions for:
 import re
 from typing import Dict, Optional
 
+# Whole words only (#632): "buyback", "belong" and "how long" say nothing about a trade
+_QUESTION = re.compile(
+    r"^(?:how|what|why|when|should|is|are|do|does)\b|\?\s*$"
+    r"|\b(?:should i|what about|how is|is it good|analy[sz]e|analysis|review|check|look at)\b"
+)
+_BUY_INTENT = re.compile(
+    r"^long\b|\bto long\b|\b(?:buy|buying|go long|going long|bullish|bet it goes up"
+    r"|think it will rise|upside|acquire|purchase|pick up|grab)\b"
+)
+_SELL_INTENT = re.compile(
+    r"^short\b|\bto short\b|(?<!the )(?<!at )\b(?:close|closing)\b"
+    r"|\b(?:sell|selling|shorting|go short|going short|exit|get out|get me out|dump|liquidate"
+    r"|cash out|bet against|profit from decline|make money when it falls)\b"
+)
+
 
 def detect_user_intent(user_input: str) -> Optional[str]:
     """
     Detect explicit user intent from input.
 
     Issue #347: Respects user intent when signals disagree.
+    Issue #632: A question or analysis request states no intent, and neither does input
+    naming both sides.
 
     Args:
         user_input: User's natural language input
@@ -29,66 +46,19 @@ def detect_user_intent(user_input: str) -> Optional[str]:
     Example:
         >>> detect_user_intent("buy some AAPL")
         'buy'
-        >>> detect_user_intent("should I sell TSLA?")
-        None
+        >>> detect_user_intent("should I get out of TSLA?")
         >>> detect_user_intent("short NVDA")
         'sell'
     """
-    input_lower = user_input.lower()
+    input_lower = user_input.lower().strip()
+    if _QUESTION.search(input_lower):
+        return None
 
-    # Buy/long indicators
-    buy_indicators = [
-        "buy",
-        "long",
-        "go long",
-        "going long",
-        "bullish",
-        "bet it goes up",
-        "think it will rise",
-        "upside",
-        "get ",  # Note: space to avoid 'target', 'forget'
-        "acquire",
-        "purchase",
-        "pick up",
-        "grab",
-    ]
-    if any(indicator in input_lower for indicator in buy_indicators):
-        return "buy"
-
-    # Sell/close indicators
-    sell_indicators = [
-        "sell",
-        "short",
-        "shorting",
-        "go short",
-        "exit",
-        "close",
-        "get out",
-        "dump",
-        "liquidate",
-        "cash out",
-        "bet against",
-        "profit from decline",
-    ]
-    if any(indicator in input_lower for indicator in sell_indicators):
-        return "sell"
-
-    # Review/analyze indicators (no explicit action)
-    review_indicators = [
-        "analyze",
-        "analysis",
-        "review",
-        "check",
-        "look at",
-        "what about",
-        "how is",
-        "should i",
-        "is it good",
-    ]
-    if any(indicator in input_lower for indicator in review_indicators):
-        return None  # Just querying, no explicit intent
-
-    return None  # Default: no explicit intent
+    wants_buy = bool(_BUY_INTENT.search(input_lower))
+    wants_sell = bool(_SELL_INTENT.search(input_lower))
+    if wants_buy == wants_sell:
+        return None
+    return "buy" if wants_buy else "sell"
 
 
 # Common words that look like tickers in a query; "$NOW" still means the ticker
@@ -176,45 +146,9 @@ def parse_cancel_request(user_input: str) -> Dict[str, str]:
     return {}
 
 
-# Buy/sell indicators exported for use by other modules
-BUY_INDICATORS = [
-    "buy",
-    "long",
-    "go long",
-    "going long",
-    "bullish",
-    "bet it goes up",
-    "think it will rise",
-    "upside",
-    "get ",
-    "acquire",
-    "purchase",
-    "pick up",
-    "grab",
-]
-
-SELL_INDICATORS = [
-    "sell",
-    "short",
-    "shorting",
-    "go short",
-    "exit",
-    "close",
-    "get out",
-    "dump",
-    "liquidate",
-    "cash out",
-    "bet against",
-    "profit from decline",
-    "make money when it falls",
-]
-
-
 __all__ = [
     "detect_user_intent",
     "extract_ticker_from_query",
     "is_cancel_request",
     "parse_cancel_request",
-    "BUY_INDICATORS",
-    "SELL_INDICATORS",
 ]

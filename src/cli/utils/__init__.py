@@ -18,8 +18,6 @@ from src.cli.utils.about_page import display_about, show_about
 from src.cli.utils.faq import display_faq, get_available_sections, load_faq, show_faq
 from src.cli.utils.help_system import HelpSystem
 from src.cli.utils.input_parser import (
-    BUY_INDICATORS,
-    SELL_INDICATORS,
     detect_user_intent,
     extract_ticker_from_query,
 )
@@ -77,6 +75,4 @@ __all__ = [
     # Input parser
     "detect_user_intent",
     "extract_ticker_from_query",
-    "BUY_INDICATORS",
-    "SELL_INDICATORS",
 ]

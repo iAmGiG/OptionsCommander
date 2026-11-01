@@ -563,10 +563,10 @@ class CLISession:
                 else:
                     # Parser said status_query but no keywords matched
                     # Likely just a ticker (e.g., "ibm") - treat as trade request
-                    await self._handle_trade_request(user_input)
+                    await self._handle_trade_request(user_input, request)
             else:
                 # Trade request → process through orchestrator
-                await self._handle_trade_request(user_input)
+                await self._handle_trade_request(user_input, request)
 
         except (ValueError, OSError, RuntimeError, AttributeError) as e:
             logger.error(f"Error routing request: {e}", exc_info=True)
@@ -574,20 +574,19 @@ class CLISession:
             sanitized_msg = sanitize_error_message(e)
             print(f"\n{error_prefix} {sanitized_msg}")
 
-    async def _handle_trade_request(self, user_input: str):
+    async def _handle_trade_request(self, user_input: str, request=None):
         """
         Process user trade request via orchestrator.
 
         Issue #509: Delegates to TradeHandler for modular processing.
-        Issue #347: Respects user intent - when user says "buy", we show "BUY (as requested)"
-        and treat signals as context, not override.
 
         Args:
             user_input: User's natural language input
+            request: The input already parsed, so it isn't parsed again (#632)
         """
         # Sync autonomy mode in case it changed
         self.trade_handler.set_autonomy_mode(self.autonomy_mode)
-        await self.trade_handler.handle_trade_request(user_input)
+        await self.trade_handler.handle_trade_request(user_input, request)
 
     def _get_stop_loss_pct(self) -> float:
         """

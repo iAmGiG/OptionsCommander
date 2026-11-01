@@ -288,9 +288,9 @@ def test_cli_review_request_reports_the_block_without_trading(monkeypatch):
 
 
 def test_cli_resolves_signal_conflicts_before_refusing(monkeypatch):
-    # e.g. a SELL signal with no position first offers buy / short / review
+    # e.g. a SELL signal with no position first asks whether to buy anyway
     handler, orchestrator = _refused_trade_handler(monkeypatch)
-    conflicts = AsyncMock(return_value=None)  # the user picks "review"
+    conflicts = AsyncMock(return_value=None)  # the user says no
     monkeypatch.setattr(handler, "_handle_signal_conflicts", conflicts)
 
     asyncio.run(handler.handle_trade_request("buy 50 SPY"))

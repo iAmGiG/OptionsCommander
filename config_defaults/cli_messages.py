@@ -161,7 +161,7 @@ Tip: Just type naturally - the LLM will understand!
     # ========================================================================
     # CONFIRMATION
     # ========================================================================
-    CONFIRM_PROMPT = "\nContinue? [yes/no]: "
+    CONFIRM_PROMPT = "\nPlace this order? [yes/no]: "
     CONFIRM_INVALID = "Please enter 'yes' or 'no'"
 
     # ========================================================================

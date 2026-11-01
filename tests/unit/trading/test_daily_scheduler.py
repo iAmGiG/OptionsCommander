@@ -115,14 +115,10 @@ def test_saved_flags_override_the_config_file(make_scheduler):
     assert disabled_in_file.should_run_task(morning, now=_et(2026, 10, 15, 9, 20))
 
 
-def test_toggling_one_routine_keeps_the_config_files_other_flags(make_scheduler, monkeypatch):
-    from src.cli.tools import scheduler_tools
-
+def test_toggling_one_routine_keeps_the_config_files_other_flags(make_scheduler):
     scheduler = make_scheduler(enabled=True, evening_routine_enabled=False)
-    monkeypatch.setattr(scheduler_tools, "load_scheduler_config", lambda: scheduler.config)
-    monkeypatch.setattr(scheduler_tools, "_get_state_manager", lambda: scheduler.state_manager)
 
-    assert scheduler_tools.set_routine_enabled("evening", True)["status"] == "success"
+    assert scheduler.save_flags(evening=True)
     assert scheduler.effective_settings() == {
         "enabled": True,  # from the config file, not the stored default (disabled)
         "morning": True,

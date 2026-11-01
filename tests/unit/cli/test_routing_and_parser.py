@@ -4,6 +4,7 @@ parser reports what actually went wrong, with a fake model server standing in fo
 """
 
 import asyncio
+import importlib.util
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx2
@@ -154,10 +155,7 @@ def test_a_mode_command_sets_the_mode(monkeypatch, typed, mode):
 
 
 def test_the_execution_mode_tools_are_gone():
-    from src.cli import tools
-
-    names = {tool.name for tool in tools.get_all_cli_tools()}
-    assert not names & {"show_execution_mode", "get_execution_mode", "set_execution_mode"}
+    assert importlib.util.find_spec("src.cli.tools.execution_mode_tools") is None
 
 
 # The parser

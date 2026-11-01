@@ -1,18 +1,14 @@
 """
-GTT CLI Tools - FunctionTool wrappers for GTT triggers.
+GTT CLI Tools for GTT triggers.
 
 Issue #340: CLI integration for Good-Till-Triggered persistent triggers.
 
-This module wraps the GTT module functions as FunctionTool instances
-for integration with the AutoGen agent architecture.
+This module wraps the GTT module functions for the CLI.
 
-Pattern: Pure function wrappers -> FunctionTool -> Registry
 """
 
 import logging
 from typing import Any, Dict, List, Literal, Optional, Tuple
-
-from agent_framework import FunctionTool
 
 logger = logging.getLogger(__name__)
 
@@ -120,11 +116,6 @@ def _trigger_details(
             return None, f"Could not get {symbol}'s price to measure the change from"
         config["reference_price"] = reference_price
     return config, None
-
-
-# =============================================================================
-# FunctionTool Wrapper Functions
-# =============================================================================
 
 
 def create_gtt_trigger(
@@ -579,87 +570,11 @@ def show_gtt_summary() -> str:
 
 
 # =============================================================================
-# FunctionTool Registration
-# =============================================================================
-
-
-create_gtt_trigger_tool = FunctionTool(
-    func=create_gtt_trigger,
-    name="create_gtt_trigger",
-    description=(
-        "Create a GTT (Good-Till-Triggered) persistent price trigger. "
-        "Triggers are checked twice daily, for symbols currently held, and can alert or "
-        "place an order when conditions are met. Supports: above and below (a price), and "
-        "gain, loss and trailing (a percent, 5 = 5%). An order needs a side and a quantity."
-    ),
-)
-
-create_gtt_oco_tool = FunctionTool(
-    func=create_gtt_oco_pair,
-    name="create_gtt_oco_pair",
-    description=(
-        "Create an OCO (One-Cancels-Other) trigger pair. "
-        "When one trigger fires, both are disabled. "
-        "Useful for breakout/breakdown strategies."
-    ),
-)
-
-list_gtt_triggers_tool = FunctionTool(
-    func=list_gtt_triggers,
-    name="list_gtt_triggers",
-    description="List GTT triggers, optionally filtered by symbol.",
-)
-
-delete_gtt_trigger_tool = FunctionTool(
-    func=delete_gtt_trigger,
-    name="delete_gtt_trigger",
-    description="Delete a GTT trigger by ID.",
-)
-
-disable_gtt_trigger_tool = FunctionTool(
-    func=disable_gtt_trigger,
-    name="disable_gtt_trigger",
-    description="Disable a GTT trigger (can be re-enabled later).",
-)
-
-enable_gtt_trigger_tool = FunctionTool(
-    func=enable_gtt_trigger,
-    name="enable_gtt_trigger",
-    description="Enable a previously disabled GTT trigger.",
-)
-
-show_gtt_triggers_tool = FunctionTool(
-    func=show_gtt_triggers,
-    name="show_gtt_triggers",
-    description="Display GTT triggers with formatted output.",
-)
-
-show_gtt_summary_tool = FunctionTool(
-    func=show_gtt_summary,
-    name="show_gtt_summary",
-    description="Display summary of GTT triggers.",
-)
-
-
-# =============================================================================
 # Export
 # =============================================================================
 
 
-CLI_GTT_TOOLS = [
-    create_gtt_trigger_tool,
-    create_gtt_oco_tool,
-    list_gtt_triggers_tool,
-    delete_gtt_trigger_tool,
-    disable_gtt_trigger_tool,
-    enable_gtt_trigger_tool,
-    show_gtt_triggers_tool,
-    show_gtt_summary_tool,
-]
-
-
 __all__ = [
-    # Functions
     "create_gtt_trigger",
     "create_gtt_oco_pair",
     "list_gtt_triggers",
@@ -668,14 +583,4 @@ __all__ = [
     "enable_gtt_trigger",
     "show_gtt_triggers",
     "show_gtt_summary",
-    # Tools
-    "CLI_GTT_TOOLS",
-    "create_gtt_trigger_tool",
-    "create_gtt_oco_tool",
-    "list_gtt_triggers_tool",
-    "delete_gtt_trigger_tool",
-    "disable_gtt_trigger_tool",
-    "enable_gtt_trigger_tool",
-    "show_gtt_triggers_tool",
-    "show_gtt_summary_tool",
 ]

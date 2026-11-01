@@ -1,19 +1,15 @@
 """
-Trading Mode CLI Tools - FunctionTool wrappers for trading mode management.
+Trading Mode CLI Tools for trading mode management.
 
 Issue #456: Extract mode tools from cli_session.py.
 Issue #400: Trading Modes Configuration System (already implemented).
 
-This module wraps the existing TradingModeManager functions as FunctionTool
-instances for integration with the AutoGen agent architecture.
+This module wraps the existing TradingModeManager functions for the CLI.
 
 Original Implementation: src/core/trading_modes.py
-Pattern: Pure function wrappers → FunctionTool → Registry
 """
 
 from typing import Any, Dict
-
-from agent_framework import FunctionTool
 
 from src.core.trading_modes import (
     TradingMode,
@@ -27,8 +23,7 @@ from src.utils.safe_print import get_symbol
 # ============================================================================
 # Pure Function Wrappers
 # ============================================================================
-# These functions wrap the trading_modes module functions to provide a
-# functional interface that works well with FunctionTool
+# These functions wrap the trading_modes module functions
 
 
 def list_trading_modes() -> str:
@@ -241,75 +236,14 @@ def validate_mode(mode: str) -> str:
         return f"{get_symbol('ERROR')} {str(e)}"
 
 
-# ============================================================================
-# FunctionTool Instances
-# ============================================================================
-# Each function is wrapped in a FunctionTool for AutoGen integration
-
-
-list_trading_modes_tool = FunctionTool(
-    func=list_trading_modes,
-    name="list_trading_modes",
-    description="List all available trading modes with descriptions and key parameters",
-)
-
-set_mode_tool = FunctionTool(
-    func=set_mode,
-    name="set_trading_mode",
-    description="Change the active trading mode (conservative, moderate, aggressive)",
-)
-
-show_current_mode_tool = FunctionTool(
-    func=show_current_mode,
-    name="show_current_mode",
-    description="Show the currently active trading mode with full details",
-)
-
-show_mode_comparison_tool = FunctionTool(
-    func=show_mode_comparison,
-    name="show_mode_comparison",
-    description="Show side-by-side comparison of all trading modes",
-)
-
-get_mode_parameters_tool = FunctionTool(
-    func=get_mode_parameters_dict,
-    name="get_mode_parameters",
-    description="Get structured trading mode parameters for programmatic use by agents",
-)
-
-validate_mode_tool = FunctionTool(
-    func=validate_mode,
-    name="validate_trading_mode",
-    description="Validate a trading mode name and show information about it",
-)
-
-
 # Export tools for direct import (registered via __init__.py auto-discovery)
-CLI_MODE_TOOLS = [
-    list_trading_modes_tool,
-    set_mode_tool,
-    show_current_mode_tool,
-    show_mode_comparison_tool,
-    get_mode_parameters_tool,
-    validate_mode_tool,
-]
 
 
 __all__ = [
-    # Functions
     "list_trading_modes",
     "set_mode",
     "show_current_mode",
     "show_mode_comparison",
     "get_mode_parameters_dict",
     "validate_mode",
-    # Tools
-    "list_trading_modes_tool",
-    "set_mode_tool",
-    "show_current_mode_tool",
-    "show_mode_comparison_tool",
-    "get_mode_parameters_tool",
-    "validate_mode_tool",
-    # Collections
-    "CLI_MODE_TOOLS",
 ]

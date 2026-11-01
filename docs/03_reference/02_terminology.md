@@ -27,7 +27,6 @@
 - **Microsoft Agent Framework** = Microsoft's agent framework (`agent-framework-core`), the successor to AutoGen; the agents moved to it in #606
 - **AutoGen** = The earlier framework (archived; removed from this project in #606)
 - **Agent** = Agent Framework's class that runs an LLM conversation with tools
-- **FunctionTool** = Agent Framework wrapper for external functions/APIs; `approval_mode` marks tools that need approval before an agent runs them
 - **BaseAgent** = Custom parent class for all trading agents with tool integration
 
 ### Trading Infrastructure

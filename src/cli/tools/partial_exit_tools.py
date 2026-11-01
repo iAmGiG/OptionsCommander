@@ -1,20 +1,16 @@
 """
-Partial Exit CLI Tools - FunctionTool wrappers for partial exit management.
+Partial Exit CLI Tools for partial exit management.
 
 Issue #508: CLI integration for multi-target position exits.
 
-This module wraps the PartialExitManager functions as FunctionTool instances
-for integration with the AutoGen agent architecture and CLI. Plans are read from
+This module wraps the PartialExitManager functions for the CLI. Plans are read from
 the saved state (state/partial_exits.json), so these tools see plans registered by
 other processes (#524, #584).
 
-Pattern: Pure function wrappers -> FunctionTool -> Registry
 """
 
 import logging
 from typing import List
-
-from agent_framework import FunctionTool
 
 logger = logging.getLogger(__name__)
 
@@ -79,11 +75,6 @@ def _error(action: str, error: Exception) -> str:
     """An [ERROR] reply for a view that failed (e.g. a malformed saved plan)."""
     logger.error(f"Failed to {action}: {error}")
     return f"[ERROR] Failed to {action}: {error}"
-
-
-# =============================================================================
-# FunctionTool Wrapper Functions
-# =============================================================================
 
 
 def show_all_partial_exits() -> str:
@@ -259,75 +250,11 @@ def modify_exit_target(symbol: str, target_number: int, new_price: float) -> str
     return f"[OK] {message}" if changed else f"[ERROR] {message}"
 
 
-# =============================================================================
-# FunctionTool Definitions
-# =============================================================================
-
-show_all_partial_exits_tool = FunctionTool(
-    func=show_all_partial_exits,
-    name="show_all_partial_exits",
-    description=("Show all registered partial exit plans with target details."),
-)
-
-show_partial_exit_plan_tool = FunctionTool(
-    func=show_partial_exit_plan,
-    name="show_partial_exit_plan",
-    description=("Show partial exit plan for a specific symbol with all target details."),
-)
-
-show_exit_targets_tool = FunctionTool(
-    func=show_exit_targets,
-    name="show_exit_targets",
-    description=("Show exit target levels and types for a position."),
-)
-
-list_active_exits_tool = FunctionTool(
-    func=list_active_exits,
-    name="list_active_exits",
-    description=("List only active (unfilled) exit targets across all positions."),
-)
-
-get_exit_summary_tool = FunctionTool(
-    func=get_exit_summary,
-    name="get_exit_summary",
-    description=("Get summary statistics of all partial exit positions."),
-)
-
-modify_exit_target_tool = FunctionTool(
-    func=modify_exit_target,
-    name="modify_exit_target",
-    description=("Modify the exit price of a partial exit target."),
-)
-
-
-# =============================================================================
-# Tool Collection for Registry
-# =============================================================================
-
-CLI_PARTIAL_EXIT_TOOLS = [
-    show_all_partial_exits_tool,
-    show_partial_exit_plan_tool,
-    show_exit_targets_tool,
-    list_active_exits_tool,
-    get_exit_summary_tool,
-    modify_exit_target_tool,
-]
-
 __all__ = [
-    # Functions
     "show_all_partial_exits",
     "show_partial_exit_plan",
     "show_exit_targets",
     "list_active_exits",
     "get_exit_summary",
     "modify_exit_target",
-    # Tools
-    "show_all_partial_exits_tool",
-    "show_partial_exit_plan_tool",
-    "show_exit_targets_tool",
-    "list_active_exits_tool",
-    "get_exit_summary_tool",
-    "modify_exit_target_tool",
-    # Collection
-    "CLI_PARTIAL_EXIT_TOOLS",
 ]

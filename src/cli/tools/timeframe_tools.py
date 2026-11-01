@@ -1,19 +1,15 @@
 """
-Timeframe CLI Tools - FunctionTool wrappers for timeframe management.
+Timeframe CLI Tools for timeframe management.
 
 Issue #456: Extract timeframe tools from cli_session.py.
 Issue #365: Natural language timeframe commands (already implemented).
 
-This module wraps the existing TimeframeCommands class methods as FunctionTool
-instances for integration with the AutoGen agent architecture.
+This module wraps the existing TimeframeCommands class methods for the CLI.
 
 Original Implementation: src/cli/timeframe_commands.py
-Pattern: Pure function wrappers → FunctionTool → Registry
 """
 
 from typing import Dict, Optional
-
-from agent_framework import FunctionTool
 
 from src.cli.commands.timeframe_commands import get_timeframe_commands
 from src.trading.instruments.multi_timeframe_voter import MULTI_TIMEFRAME_PRESETS
@@ -26,8 +22,7 @@ _tf_commands = get_timeframe_commands()
 # ============================================================================
 # Pure Function Wrappers
 # ============================================================================
-# These functions wrap the TimeframeCommands methods to provide a functional
-# interface that works well with FunctionTool
+# These functions wrap the TimeframeCommands methods
 
 
 def list_timeframes(verbose: bool = False) -> str:
@@ -454,136 +449,24 @@ def get_multi_timeframe_params() -> Dict:
         }
 
 
-# ============================================================================
-# FunctionTool Instances
-# ============================================================================
-# Each function is wrapped in a FunctionTool for AutoGen integration
-
-
-list_timeframes_tool = FunctionTool(
-    func=list_timeframes,
-    name="list_timeframes",
-    description="List all available trading timeframes with optional descriptions",
-)
-
-set_timeframe_tool = FunctionTool(
-    func=set_timeframe,
-    name="set_timeframe",
-    description="Change the active trading timeframe (e.g., '1d', '1h', '5m')",
-)
-
-show_current_timeframe_tool = FunctionTool(
-    func=show_current_timeframe,
-    name="show_current_timeframe",
-    description="Show the currently active trading timeframe",
-)
-
-show_timeframe_recommendations_tool = FunctionTool(
-    func=show_timeframe_recommendations,
-    name="show_timeframe_recommendations",
-    description="Show timeframe recommendations for different trading styles",
-)
-
-validate_timeframe_tool = FunctionTool(
-    func=validate_and_info,
-    name="validate_timeframe",
-    description="Validate a timeframe and show detailed information about it",
-)
-
-get_timeframe_for_agent_tool = FunctionTool(
-    func=get_timeframe_for_agent,
-    name="get_timeframe_for_agent",
-    description="Get structured timeframe data for programmatic use by agents",
-)
-
 # Enhanced timeframe tools (Issue #489)
-list_multi_timeframe_presets_tool = FunctionTool(
-    func=list_multi_timeframe_presets,
-    name="list_multi_timeframe_presets",
-    description="List available multi-timeframe voting presets with weights",
-)
-
-set_multi_timeframe_preset_tool = FunctionTool(
-    func=set_multi_timeframe_preset,
-    name="set_multi_timeframe_preset",
-    description="Switch to multi-timeframe mode with a preset (trend_following, intraday, etc.)",
-)
-
-set_single_timeframe_tool = FunctionTool(
-    func=set_single_timeframe,
-    name="set_single_timeframe",
-    description="Switch to single timeframe mode with a specific timeframe",
-)
-
-show_timeframe_mode_tool = FunctionTool(
-    func=show_timeframe_mode,
-    name="show_timeframe_mode",
-    description="Show current timeframe mode (single or multi) and configuration",
-)
-
-validate_custom_timeframe_tool = FunctionTool(
-    func=validate_custom_timeframe,
-    name="validate_custom_timeframe",
-    description="Validate standard and custom timeframe notations (65m, 1.5h, 2d)",
-)
-
-get_multi_timeframe_params_tool = FunctionTool(
-    func=get_multi_timeframe_params,
-    name="get_multi_timeframe_params",
-    description="Get multi-timeframe parameters as structured data for agents",
-)
 
 
 # Export tools for direct import (registered via __init__.py auto-discovery)
-CLI_TIMEFRAME_TOOLS = [
-    # Original timeframe tools
-    list_timeframes_tool,
-    set_timeframe_tool,
-    show_current_timeframe_tool,
-    show_timeframe_recommendations_tool,
-    validate_timeframe_tool,
-    get_timeframe_for_agent_tool,
-    # Enhanced timeframe tools (Issue #489)
-    list_multi_timeframe_presets_tool,
-    set_multi_timeframe_preset_tool,
-    set_single_timeframe_tool,
-    show_timeframe_mode_tool,
-    validate_custom_timeframe_tool,
-    get_multi_timeframe_params_tool,
-]
 
 
 __all__ = [
-    # Functions (original)
     "list_timeframes",
     "set_timeframe",
     "show_current_timeframe",
     "show_timeframe_recommendations",
     "validate_and_info",
     "get_timeframe_for_agent",
-    # Functions (enhanced - Issue #489)
     "list_multi_timeframe_presets",
     "set_multi_timeframe_preset",
     "set_single_timeframe",
     "show_timeframe_mode",
     "validate_custom_timeframe",
     "get_multi_timeframe_params",
-    # Tools (original)
-    "list_timeframes_tool",
-    "set_timeframe_tool",
-    "show_current_timeframe_tool",
-    "show_timeframe_recommendations_tool",
-    "validate_timeframe_tool",
-    "get_timeframe_for_agent_tool",
-    # Tools (enhanced - Issue #489)
-    "list_multi_timeframe_presets_tool",
-    "set_multi_timeframe_preset_tool",
-    "set_single_timeframe_tool",
-    "show_timeframe_mode_tool",
-    "validate_custom_timeframe_tool",
-    "get_multi_timeframe_params_tool",
-    # Collections
-    "CLI_TIMEFRAME_TOOLS",
-    # Constants
     "MULTI_TF_PRESETS",
 ]

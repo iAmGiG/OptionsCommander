@@ -4,14 +4,13 @@ CLI Commands - Command handlers and registry.
 This module contains:
 - CommandRegistry: Self-registering slash command pattern (#468)
 - Slash commands: /about, /faq, /help, /toggle, /schedule, /exit
-- Natural language handlers: account, timeframe, trailing stop, voter
+- Natural language handlers: account, timeframe, voter
 
 Modules:
 - registry: Command registration and dispatch
 - slash_commands: All / commands (auto-registered on import)
 - account_commands: Account management commands (list, switch, refresh)
 - timeframe_commands: Timeframe selection and display
-- trailing_stop_commands: Trailing stop management (future integration)
 - voter_commands: Voter ranking management (#488)
 """
 

@@ -16,14 +16,9 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 
 ### "OpenAI API key not found"
 
-- **Issue**: An agent made an LLM call (`process_with_tools`) without a key
+- **Issue**: A typed request reached the parser (`LLMParser`) without a key
 - **Solution**: Set `OPEN_AI_KEY` in the environment or in `config/config.json`
-- **Note**: Agents build their OpenAI client on first use, so voting, scanning and risk checks need no key
-
-### `FunctionTool.__init__() takes 1 positional argument`
-
-- **Issue**: Agent Framework's `FunctionTool` takes keyword arguments only
-- **Solution**: `FunctionTool(func=..., name="...", description="...")`
+- **Note**: Slash commands, voting and the routines need no key
 
 ### VotingSignal MACD/RSI Calculation Errors
 

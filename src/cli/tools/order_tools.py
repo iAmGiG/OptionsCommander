@@ -1,5 +1,5 @@
 """
-Order Display Tools - FunctionTool wrappers for order management.
+Order Display Tools for order management.
 
 Issue #433/#458: Extract order display commands from cli_session.py.
 
@@ -16,8 +16,6 @@ import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-from agent_framework import FunctionTool
 
 from src.utils.safe_print import get_symbol
 
@@ -130,11 +128,6 @@ def _normalize_order(order: Dict[str, Any]) -> Dict[str, Any]:
         "submitted_at": str(order.get("submitted_at", "")),
         "order_class": str(order.get("order_class", "simple")),
     }
-
-
-# =============================================================================
-# FunctionTool Wrapper Functions
-# =============================================================================
 
 
 def list_orders(
@@ -419,35 +412,6 @@ def cancel_all_orders() -> Dict[str, Any]:
     return cancel_orders_by_id([o["id"] for o in found["orders"]])
 
 
-def cancel_symbol_orders(symbol: str) -> Dict[str, Any]:
-    """
-    Cancel all open orders for a specific symbol.
-
-    Args:
-        symbol: Stock ticker symbol
-
-    Returns:
-        Dict with:
-        - status: "success" (all cancelled, or none open), "partial" (some) or "error" (none)
-        - symbol: The symbol
-        - cancelled_count: Number of orders cancelled
-        - failed_count: Number of cancellations that failed
-    """
-    symbol_upper = symbol.upper()
-    found = find_orders_to_cancel(symbol=symbol_upper)
-    if found["status"] != "success":
-        return {"symbol": symbol_upper, **found}
-    if not found["orders"]:
-        return {
-            "status": "success",
-            "symbol": symbol_upper,
-            "cancelled_count": 0,
-            "failed_count": 0,
-            "message": f"No open orders for {symbol_upper}",
-        }
-    return {"symbol": symbol_upper, **cancel_orders_by_id([o["id"] for o in found["orders"]])}
-
-
 # =============================================================================
 # Display Functions (Issue #459 - formatted output for CLI)
 # =============================================================================
@@ -607,86 +571,15 @@ def show_position_orders(ticker: str) -> str:  # noqa: C901
     return "\n".join(lines)
 
 
-# =============================================================================
-# FunctionTool Registration
-# =============================================================================
-
-
-show_orders_tool = FunctionTool(
-    func=show_orders,
-    name="show_orders",
-    description="Display all open orders with hierarchical formatting.",
-)
-
-show_position_orders_tool = FunctionTool(
-    func=show_position_orders,
-    name="show_position_orders",
-    description="Display detailed orders for a specific ticker.",
-)
-
-list_orders_tool = FunctionTool(
-    func=list_orders,
-    name="list_orders",
-    description="List open, closed, or all orders with optional symbol filtering.",
-)
-
-get_position_orders_tool = FunctionTool(
-    func=get_position_orders,
-    name="get_position_orders",
-    description="Get detailed orders for a specific ticker including entry, stop, and target orders.",
-)
-
-cancel_order_tool = FunctionTool(
-    func=cancel_order,
-    name="cancel_order",
-    description="Cancel a specific order by ID (supports partial ID matching).",
-)
-
-cancel_all_orders_tool = FunctionTool(
-    func=cancel_all_orders,
-    name="cancel_all_orders",
-    description="Cancel all open orders across all symbols.",
-)
-
-cancel_symbol_orders_tool = FunctionTool(
-    func=cancel_symbol_orders,
-    name="cancel_symbol_orders",
-    description="Cancel all open orders for a specific symbol.",
-)
-
-
-# Export list for CLI tools registry
-CLI_ORDER_TOOLS = [
-    show_orders_tool,
-    show_position_orders_tool,
-    list_orders_tool,
-    get_position_orders_tool,
-    cancel_order_tool,
-    cancel_all_orders_tool,
-    cancel_symbol_orders_tool,
-]
-
 __all__ = [
-    # Display Functions
     "show_orders",
     "show_position_orders",
-    # Data Functions
     "list_orders",
     "get_position_orders",
     "cancel_order",
     "cancel_all_orders",
-    "cancel_symbol_orders",
     "find_orders_to_cancel",
     "cancel_orders_by_id",
     "format_cancel_preview",
     "format_cancel_result",
-    # FunctionTools
-    "CLI_ORDER_TOOLS",
-    "show_orders_tool",
-    "show_position_orders_tool",
-    "list_orders_tool",
-    "get_position_orders_tool",
-    "cancel_order_tool",
-    "cancel_all_orders_tool",
-    "cancel_symbol_orders_tool",
 ]

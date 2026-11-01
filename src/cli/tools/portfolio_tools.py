@@ -1,5 +1,5 @@
 """
-Portfolio and Position Display Tools - FunctionTool implementations.
+Portfolio and Position Display Tools.
 
 Issue #433/#457: Extract portfolio display commands from cli_session.py.
 
@@ -12,14 +12,11 @@ These tools handle:
 Architecture:
 - Pure functions for easy testing
 - Type hints for auto-generated schemas
-- Reusable by both CLI and AutoGen agents
 """
 
 import logging
 from dataclasses import dataclass
 from typing import Any, List, Optional
-
-from agent_framework import FunctionTool
 
 from config_defaults.message_loader import CLIMessages as MSG  # noqa: N814
 from config_defaults.message_loader import get_pl_emoji
@@ -393,89 +390,15 @@ def show_portfolio(
     return "\n".join(lines)
 
 
-# =============================================================================
-# FunctionTool Wrappers for AutoGen Integration
-# =============================================================================
-
-
-def _show_portfolio_from_broker(ticker: Optional[str] = None) -> str:
-    """Show the portfolio from a fresh paper trade cycle: what an agent has to go on."""
-    try:
-        from src.trading.scheduling.trading_cycle import CostEfficientTradeCycle
-
-        cycle = CostEfficientTradeCycle()
-        return show_portfolio(cycle.account_monitor, cycle, specific_ticker=ticker)
-    except Exception as e:
-        logger.error(f"Could not show the portfolio: {e}", exc_info=True)
-        return f"Could not read the portfolio: {type(e).__name__}"
-
-
-def _show_portfolio_tool(ticker: Optional[str] = None) -> str:
-    """
-    FunctionTool wrapper for portfolio display.
-
-    Args:
-        ticker: Optional specific ticker to show details for
-
-    Returns:
-        Portfolio display string or error message
-    """
-    return _show_portfolio_from_broker(ticker)
-
-
-def _get_position_tool(ticker: str) -> str:
-    """
-    FunctionTool wrapper for position lookup.
-
-    Args:
-        ticker: Stock ticker symbol
-
-    Returns:
-        Position details or not found message
-    """
-    return _show_portfolio_from_broker(ticker.upper())
-
-
-# =============================================================================
-# Tool Registration
-# =============================================================================
-
-
-# Create FunctionTool instances for AutoGen integration
-show_portfolio_func_tool = FunctionTool(
-    func=_show_portfolio_tool,
-    name="show_portfolio",
-    description="Display current portfolio status including account equity, cash, buying power, and all positions with P/L.",
-)
-
-get_position_func_tool = FunctionTool(
-    func=_get_position_tool,
-    name="get_position",
-    description="Get detailed information about a specific position including entry price, current price, P/L, and stop/target levels.",
-)
-
-# Export list for CLI tools registry
-CLI_PORTFOLIO_TOOLS = [
-    show_portfolio_func_tool,
-    get_position_func_tool,
-]
-
 __all__ = [
-    # Data classes
     "PositionInfo",
     "AccountInfo",
     "PortfolioSummary",
-    # Core functions
     "get_account_status",
     "get_positions_list",
     "get_position_details",
-    # Display functions
     "format_account_display",
     "format_position_item",
     "format_position_details",
     "show_portfolio",
-    # FunctionTools
-    "CLI_PORTFOLIO_TOOLS",
-    "show_portfolio_func_tool",
-    "get_position_func_tool",
 ]

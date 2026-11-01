@@ -368,7 +368,3 @@ If request_type is "status_query":
 - action: "review" (default)
 
 Use the parse_trade_request function."""
-
-
-# The name before #606 (AutoGen); kept so existing imports work
-AutoGenLLMParser = LLMParser

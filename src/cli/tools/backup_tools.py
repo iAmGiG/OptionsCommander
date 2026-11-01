@@ -1,22 +1,19 @@
 """
-Database Backup CLI Tools - FunctionTool wrappers for DB backup/restore.
+Database Backup CLI Tools for DB backup/restore.
 
 Issue #490: /backup command group for database management.
 Issue #483: DB Backup/Migration (core implementation).
 
-This module provides FunctionTool wrappers for database backup, restore,
+This module provides database backup, restore,
 and export operations. When DBBackupManager is available, these tools
 will integrate with it. Until then, they provide helpful stubs.
 
 Original Implementation: src/utils/db_backup.py (when available)
-Pattern: Pure function wrappers → FunctionTool → Registry
 """
 
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-from agent_framework import FunctionTool
 
 from src.utils.date_utils import format_for_filename
 from src.utils.safe_print import get_symbol
@@ -482,84 +479,7 @@ def get_backup_params() -> Dict[str, Any]:
     }
 
 
-# ============================================================================
-# FunctionTool Definitions
-# ============================================================================
-
-backup_database_tool = FunctionTool(
-    func=backup_database,
-    name="backup_database",
-    description=(
-        "Create a backup of a database ('user' = state/user.db, default; 'cache'). "
-        "Backups are stored with timestamps in state/backups/."
-    ),
-)
-
-list_backups_tool = FunctionTool(
-    func=list_backups,
-    name="list_backups",
-    description=("List all available database backups with their dates and sizes."),
-)
-
-restore_backup_tool = FunctionTool(
-    func=restore_backup,
-    name="restore_backup",
-    description=(
-        "Restore a database from a backup file listed by list_backups. The database is "
-        "chosen from the backup name; the current one is backed up first. "
-        "WARNING: This will overwrite the current database."
-    ),
-)
-
-export_table_tool = FunctionTool(
-    func=export_table,
-    name="export_table",
-    description=(
-        "Export a database table to JSON for backup or analysis. "
-        "Specify table name and optional output path."
-    ),
-)
-
-show_backup_info_tool = FunctionTool(
-    func=show_backup_info,
-    name="show_backup_info",
-    description=(
-        "Show backup system information including database sizes, "
-        "backup counts, and latest backup details."
-    ),
-)
-
-cleanup_old_backups_tool = FunctionTool(
-    func=cleanup_old_backups,
-    name="cleanup_old_backups",
-    description=(
-        "Clean up backups older than specified days to free disk space. Default is 30 days."
-    ),
-)
-
-get_backup_params_tool = FunctionTool(
-    func=get_backup_params,
-    name="get_backup_params",
-    description=("Get backup configuration and status as structured data for agents."),
-)
-
-
-# ============================================================================
-# Tool Collection for Registry
-# ============================================================================
-
-CLI_BACKUP_TOOLS = [
-    backup_database_tool,
-    list_backups_tool,
-    restore_backup_tool,
-    export_table_tool,
-    show_backup_info_tool,
-    cleanup_old_backups_tool,
-    get_backup_params_tool,
-]
-
 __all__ = [
-    # Functions
     "backup_database",
     "list_backups",
     "restore_backup",
@@ -567,14 +487,4 @@ __all__ = [
     "show_backup_info",
     "cleanup_old_backups",
     "get_backup_params",
-    # Tools
-    "backup_database_tool",
-    "list_backups_tool",
-    "restore_backup_tool",
-    "export_table_tool",
-    "show_backup_info_tool",
-    "cleanup_old_backups_tool",
-    "get_backup_params_tool",
-    # Collection
-    "CLI_BACKUP_TOOLS",
 ]

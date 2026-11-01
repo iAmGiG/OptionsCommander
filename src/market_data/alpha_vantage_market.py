@@ -8,6 +8,7 @@ separates different types of financial data.
 
 import logging
 import os
+import re
 from typing import Any, Dict, Optional
 
 import pandas as pd
@@ -23,6 +24,13 @@ from src.utils.date_utils import (
     parse_date_string,
 )
 from src.utils.http_timeouts import DEFAULT_TIMEOUT
+
+_API_KEY_IN_URL = re.compile(r"(apikey=)[^&\s'\"]+", re.IGNORECASE)
+
+
+def _safe_error(error: Exception) -> str:
+    """An exception's text without the API key: a requests error includes the whole URL (#638)."""
+    return _API_KEY_IN_URL.sub(r"\1<hidden>", str(error))
 
 
 class AlphaVantageMarketTool:
@@ -154,7 +162,7 @@ class AlphaVantageMarketTool:
             return df
 
         except Exception as e:
-            self.logger.debug(f"Error fetching Alpha Vantage data: {e}")
+            self.logger.debug(f"Error fetching Alpha Vantage data: {_safe_error(e)}")
             return pd.DataFrame()
 
     def fetch_company_overview(self, symbol: str) -> Dict[str, Any]:
@@ -188,7 +196,7 @@ class AlphaVantageMarketTool:
             return data
 
         except Exception as e:
-            self.logger.error(f"Error fetching company overview: {e}")
+            self.logger.error(f"Error fetching company overview: {_safe_error(e)}")
             return {}
 
     def fetch_intraday_data(self, symbol: str, interval: str = "15min") -> pd.DataFrame:
@@ -262,7 +270,7 @@ class AlphaVantageMarketTool:
             return df
 
         except Exception as e:
-            self.logger.error(f"Error fetching intraday data: {e}")
+            self.logger.error(f"Error fetching intraday data: {_safe_error(e)}")
             return pd.DataFrame()
 
     def fetch_fx_data(self, from_currency: str, to_currency: str) -> pd.DataFrame:
@@ -314,5 +322,5 @@ class AlphaVantageMarketTool:
             return df
 
         except Exception as e:
-            self.logger.error(f"Error fetching exchange rate data: {e}")
+            self.logger.error(f"Error fetching exchange rate data: {_safe_error(e)}")
             return pd.DataFrame()

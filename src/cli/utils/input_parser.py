@@ -27,6 +27,23 @@ _SELL_INTENT = re.compile(
 )
 
 
+# Opening a short, which isn't supported; these also count as sell intent above
+_SHORT_INTENT = re.compile(
+    r"^short\b|\bto short\b|\b(?:shorting|go short|going short|bet against"
+    r"|profit from decline|make money when it falls)\b"
+)
+
+
+def is_question(user_input: str) -> bool:
+    """Whether the input asks about a trade, rather than asking for one."""
+    return bool(_QUESTION.search(user_input.lower().strip()))
+
+
+def is_short_request(user_input: str) -> bool:
+    """Whether the input asks to open a short, as opposed to selling what's held."""
+    return bool(_SHORT_INTENT.search(user_input.lower().strip()))
+
+
 def detect_user_intent(user_input: str) -> Optional[str]:
     """
     Detect explicit user intent from input.
@@ -50,10 +67,10 @@ def detect_user_intent(user_input: str) -> Optional[str]:
         >>> detect_user_intent("short NVDA")
         'sell'
     """
-    input_lower = user_input.lower().strip()
-    if _QUESTION.search(input_lower):
+    if is_question(user_input):
         return None
 
+    input_lower = user_input.lower().strip()
     wants_buy = bool(_BUY_INTENT.search(input_lower))
     wants_sell = bool(_SELL_INTENT.search(input_lower))
     if wants_buy == wants_sell:
@@ -148,6 +165,8 @@ def parse_cancel_request(user_input: str) -> Dict[str, str]:
 
 __all__ = [
     "detect_user_intent",
+    "is_question",
+    "is_short_request",
     "extract_ticker_from_query",
     "is_cancel_request",
     "parse_cancel_request",

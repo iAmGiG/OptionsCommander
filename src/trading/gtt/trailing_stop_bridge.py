@@ -12,7 +12,7 @@ Functions:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
 from src.trading.gtt.gtt_manager import ActionType, ConditionType, GTTTrigger, get_gtt_manager
 
@@ -278,43 +278,36 @@ def sync_all_trailing_stops(
 
 
 def cleanup_orphaned_trailing_stops(
-    active_symbols: List[str],
+    active_symbols: Iterable[str],
 ) -> Dict[str, Any]:
     """
-    Disable GTT trailing stops for symbols no longer held.
+    Delete the trailing-stop state saved for symbols no longer held (#634), so a later
+    purchase of the symbol starts afresh. Called by each routine.
 
-    Called when positions are closed to clean up orphaned triggers.
+    Trailing triggers a user created (/gtt create ... trailing) hold no saved state and
+    stay, as do fired or expired ones for a held symbol, whose row sync reuses.
 
     Args:
-        active_symbols: List of symbols currently held
+        active_symbols: Symbols currently held
 
     Returns:
-        Dict with cleanup summary
+        Dict with how many triggers were removed
     """
     gtt_manager = get_gtt_manager()
-    disabled = 0
-
-    all_triggers = gtt_manager.get_triggers(active_only=True)
-    trailing_triggers = [
-        t for t in all_triggers if t.condition_type == ConditionType.TRAILING_STOP.value
-    ]
-
     active_set = {s.upper() for s in active_symbols}
+    removed = 0
 
-    for trigger in trailing_triggers:
-        if trigger.symbol not in active_set:
-            logger.info(
-                "Disabling orphaned GTT trailing stop %d for %s",
-                trigger.id,
-                trigger.symbol,
-            )
-            gtt_manager.disable_trigger(trigger.id)
-            disabled += 1
+    for trigger in gtt_manager.get_triggers(enabled_only=False, active_only=False):
+        if (
+            trigger.condition_type == ConditionType.TRAILING_STOP.value
+            and trigger.symbol not in active_set
+            and "current_stop" in (trigger.action_config or {})
+            and gtt_manager.delete_trigger(trigger.id)
+        ):
+            logger.info("Removed GTT trailing stop %d for %s: not held", trigger.id, trigger.symbol)
+            removed += 1
 
-    return {
-        "disabled": disabled,
-        "active_trailing_stops": len(trailing_triggers) - disabled,
-    }
+    return {"removed": removed}
 
 
 def get_trailing_stop_status(symbol: str) -> Optional[Dict[str, Any]]:

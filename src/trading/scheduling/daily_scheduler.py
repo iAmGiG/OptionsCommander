@@ -935,7 +935,8 @@ class DailyScheduler:
         """
         Notices for what the latest routine found: positions through their stop or target
         while still open, and positions left without a protective stop. A completed run
-        that finds a position protected again clears its "unprotected" notice.
+        that finds a position protected again clears its "unprotected" notice, and one
+        that finds a position gone clears its breach notices (#634).
         """
         cycle = self._trading_cycle
         report_path = _text_or_none(getattr(cycle, "last_report_path", None))
@@ -960,6 +961,10 @@ class DailyScheduler:
             )
         if run_completed:
             self.notice_store.resolve_cleared(UNPROTECTED, unprotected)
+            open_symbols = getattr(cycle, "last_open_symbols", None)
+            if isinstance(open_symbols, frozenset):
+                for kind in (STOP_BREACH, TARGET_BREACH):
+                    self.notice_store.resolve_cleared(kind, open_symbols)
 
     def _notice_breach(self, alert, market_date: str, report_path: Optional[str]) -> None:
         """A notice for a CRITICAL alert: the price is through the stop or target, position open."""

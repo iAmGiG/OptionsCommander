@@ -19,7 +19,7 @@ import copy
 import logging
 import os
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
@@ -53,6 +53,7 @@ from src.utils.market_hours import is_market_hours
 try:
     from src.trading.gtt.action_executor import ActionResult, get_action_executor
     from src.trading.gtt.trailing_stop_bridge import (
+        cleanup_orphaned_trailing_stops,
         restore_trailing_stops_from_gtt,
         sync_all_trailing_stops,
     )
@@ -74,6 +75,9 @@ __all__ = [
 
 # Discrepancy types of protective-stop repairs (StopRepair.kind)
 STOP_REPAIR_TYPES = ("MISSING_STOP", "STOP_EXPIRING")
+# A position's average entry moved this far from its trailing state's: it was sold and bought
+# again, or added to (#634). Wide enough for the state's rounded copy of the entry.
+ENTRY_CHANGE_TOLERANCE = 0.001
 
 # Discrepancy action of a stop repair a dry run did not send (#601)
 DRY_RUN_ACTION = "DRY_RUN_NOT_SENT"
@@ -353,6 +357,8 @@ class CostEfficientTradeCycle:
         self.last_alerts = ()
         self.last_discrepancies = ()
         self.last_report_path = None
+        self.last_open_symbols = None
+        self._new_fills = []
 
     # -------------------------------------------------------------------------
     # Backward-compatible property accessors
@@ -795,11 +801,81 @@ class CostEfficientTradeCycle:
                 closed += self.account_monitor.get_orders(
                     status="closed", limit=500, symbols=symbols
                 )
-            records.record_fills(closed)
+            self._new_fills = records.record_fills(closed)
             return records.summary_lines(market_date, routine)
         except Exception as e:
             logger.warning(f"Daily records not saved: {e}", exc_info=True)
             return ["", f"⚠️ Daily records not saved: {e}"]
+
+    def _settle_closed_positions(
+        self, broker_state: Dict[str, Any], discrepancies: List[Discrepancy]
+    ) -> List[Discrepancy]:
+        """
+        After the reconcile: name normal exits, and drop the trailing state of positions
+        that closed (#634). Without this it outlives them, and a later purchase of the
+        symbol inherits the old entry and high, and the GTT trigger that could sell it.
+
+        A moved average entry means the position was sold and bought again, or added to,
+        so its state starts afresh too; that can't lower a stop, as a raise only goes up.
+
+        Errors are logged, never raised: this doesn't protect a position.
+
+        Returns:
+            The discrepancies, a position sold by a fill in this run's records named as
+            closed rather than as a ghost
+        """
+        positions = broker_state["positions"]
+        self.last_open_symbols = frozenset(positions)
+        settled = discrepancies
+        try:
+            settled = [self._closed_by_fill(d) for d in discrepancies]
+            manager = self.trailing_stop_manager
+            if self._dry_run_active or manager is None:
+                return settled
+
+            stale = set()
+            for symbol, state in manager.stop_states.items():
+                position = positions.get(symbol)
+                if position is None or (
+                    abs(position["entry_price"] - state.entry_price)
+                    > ENTRY_CHANGE_TOLERANCE * state.entry_price
+                ):
+                    stale.add(symbol)
+                else:
+                    state.quantity = position["quantity"]
+            for symbol in stale:
+                manager.unregister_position(symbol)
+            if GTT_AVAILABLE:
+                cleanup_orphaned_trailing_stops(set(positions) - stale)
+        except Exception as e:
+            logger.warning(f"Closed positions not settled: {e}", exc_info=True)
+        return settled
+
+    def _closed_by_fill(self, discrepancy: Discrepancy) -> Discrepancy:
+        """A position gone from the broker that a new sell fill explains is a normal exit."""
+        if discrepancy.type != "GHOST_POSITION":
+            return discrepancy
+        sale = next(
+            (
+                fill
+                for fill in reversed(self._new_fills)
+                if fill.get("symbol") == discrepancy.symbol
+                and "sell" in str(fill.get("side", "")).lower()
+            ),
+            None,
+        )
+        if sale is None:
+            return discrepancy
+        return replace(
+            discrepancy,
+            type="POSITION_CLOSED",
+            severity="LOW",
+            details={
+                **discrepancy.details,
+                "order_type": sale.get("order_type"),
+                "fill_price": float(sale["filled_avg_price"]),
+            },
+        )
 
     def _sync_trailing_stops_to_gtt(self) -> None:
         """Save the trailing stops' state to GTT for the next run (not in a dry run)."""
@@ -937,6 +1013,7 @@ class CostEfficientTradeCycle:
 
             # Step 2: Reconcile with local JSON (no API calls)
             discrepancies = self.reconcile_state(broker_state)
+            discrepancies = self._settle_closed_positions(broker_state, discrepancies)
 
             # Step 2.5: Re-place missing stops, renew aging GTC ones (Issue #586)
             stop_discrepancies = self.check_and_repair_stops(broker_state)
@@ -998,6 +1075,7 @@ class CostEfficientTradeCycle:
             broker_state = self.fetch_broker_state()
             record_lines = self.record_daily("evening", broker_state)  # Issue #574
             discrepancies = self.reconcile_state(broker_state)
+            discrepancies = self._settle_closed_positions(broker_state, discrepancies)
 
             # Re-place missing stops, renew aging GTC ones (Issue #586)
             stop_discrepancies = self.check_and_repair_stops(broker_state)

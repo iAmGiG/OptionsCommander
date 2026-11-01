@@ -207,6 +207,11 @@ class ReportGenerator:
                     qty = disc.details["broker_quantity"]
                     entry = disc.details["broker_entry"]
                     report_lines.append(f"   {qty} shares at ${entry:.2f} - {disc.action}")
+                elif disc.type == "POSITION_CLOSED":
+                    qty = disc.details["local_quantity"]
+                    how = disc.details["order_type"] or "order"
+                    price = disc.details["fill_price"]
+                    report_lines.append(f"   {qty} shares sold @ ${price:.2f} ({how})")
                 elif disc.type == "GHOST_POSITION":
                     qty = disc.details["local_quantity"]
                     report_lines.append(f"   Phantom {qty} shares - {disc.action}")

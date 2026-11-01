@@ -251,6 +251,22 @@ class StateReconciler:
                     # Fix quantity
                     positions[symbol]["quantity"] = broker_qty
 
+                # The broker's average entry is the truth: it moves on an add-on, or when
+                # a position is sold and bought again (#619)
+                broker_entry = broker_state["positions"][symbol].get("entry_price")
+                local_entry = positions[symbol].get("entry_price")
+                if broker_entry and (not local_entry or abs(broker_entry - local_entry) >= 0.01):
+                    discrepancies.append(
+                        Discrepancy(
+                            type="ENTRY_PRICE_CHANGED",
+                            symbol=symbol,
+                            details={"broker_entry": broker_entry, "local_entry": local_entry},
+                            action="AUTO_FIXED",
+                            severity="LOW",
+                        )
+                    )
+                    positions[symbol]["entry_price"] = broker_entry
+
         # Sync stop/target prices from broker orders for all positions
         for symbol in broker_state["positions"]:
             if symbol in positions:

@@ -1,6 +1,6 @@
 # OptionsCommander Documentation
 
-Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/OptionsCommander`, formerly AutoTrader-AgentEdge), a trading platform built on Microsoft Agent Framework (AutoGen until #606), with a MACD+RSI voting strategy and a multi-agent architecture.
+Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/OptionsCommander`, formerly AutoTrader-AgentEdge), a trading platform on Alpaca with a MACD+RSI voting signal. It runs on a paper account; scheduled routines manage stops and keep records, and the CLI places orders on request. The agents were retired in #331; Microsoft Agent Framework is used only by the natural-language parser.
 
 ## Documentation Structure
 
@@ -36,7 +36,7 @@ Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/O
 
 ### 🧭 **05 - Decisions**
 
-- **[Architecture Decision Records](05_decisions/README.md)** - Code organization, error handling, caching, agent patterns
+- **[Architecture Decision Records](05_decisions/README.md)** - Code organization, error handling, caching, agent patterns (retired with the agents, #331)
 
 ### 🧰 **06 - Features** (User Manual)
 
@@ -69,8 +69,8 @@ Documentation for OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/O
   - Portfolio % risk management and position sizing
   - Interactive REPL with confirm/auto autonomy modes
   - Usage: `python main.py`
-- **Position Manager**: Unified position and account tracking accessible to agents
-- **Order Manager**: Complete order placement and monitoring via the CLI's Agent Framework tools
+- **Position Manager**: Unified position and account tracking accessible to the CLI and the routines
+- **Order Manager**: Complete order placement and monitoring via the CLI's plain-function tools
 - **Trading Cycle**: Comprehensive position monitoring and stop management
 - **Daily Scheduler**: Morning and evening routines run from cron ([quick start](06_features/02_gtc_scheduler_quickstart.md))
 
@@ -102,6 +102,6 @@ For academic research and citations informing the system architecture:
 
 ---
 
-*Documentation follows professional standards with clear organization, consistent naming, and comprehensive coverage of all agents and system components.*
+*Documentation follows professional standards with clear organization, consistent naming, and comprehensive coverage of the system components.*
 
 Last updated: October 2026 (performance figures from #574; scheduler, naming and links corrected).

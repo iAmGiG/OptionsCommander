@@ -3,7 +3,8 @@
 ## Agent Architecture
 
 - **VotingSignal** = MACD+RSI voting, the live signal (no backtested edge; see the [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
-- **BaseAgent** = Parent class for all trading agents with tool integration
+- **RealVoterStrategy** = Runs `VotingSignal` for CLI requests (`src/strategies/real_voter_strategy.py`)
+- **Retired agents** = The voter, scanner, risk and executor agents, the orchestrators, `BaseAgent` and the agent bus were retired in #331
 
 ## Legacy Agent Acronyms (Deprecated V0-V4 System)
 
@@ -24,10 +25,9 @@
 
 ### Agent Framework
 
-- **Microsoft Agent Framework** = Microsoft's agent framework (`agent-framework-core`), the successor to AutoGen; the agents moved to it in #606
+- **Microsoft Agent Framework** = Microsoft's agent framework (`agent-framework-core`), the successor to AutoGen; used only by the natural-language parser, `src/parsers/llm_parser.py` (`LLMParser`)
 - **AutoGen** = The earlier framework (archived; removed from this project in #606)
-- **Agent** = Agent Framework's class that runs an LLM conversation with tools
-- **BaseAgent** = Custom parent class for all trading agents with tool integration
+- **Agent** = Agent Framework's class that runs an LLM conversation; the parser is its only use here
 
 ### Trading Infrastructure
 

@@ -1,5 +1,7 @@
 # CLI Integration Status - New Features (#364, #395, #407, #483, #405)
 
+> **Historical status (2025-12-22).** It names the voter agent, the scanner agent and `TradingOrchestrator` paths that were retired in #331 (`src/autogen_agents/` is gone). The signal is `VotingSignal` (`src/trading/instruments/voting_signal.py`); `MultiTimeframeVoter` and `scanner_config` are in `src/trading/instruments/`. Current commands are in [the command reference](../03_reference/03_commands.md).
+
 **Last Updated**: 2025-12-22
 **Scope**: Analysis of how new trading features integrate with CLI session
 **Status**: CLI commands added, pipeline wiring in progress
@@ -511,8 +513,8 @@ To complete Phase 1 integration:
 
 ## See Also
 
-- [VoterAgent Implementation](../../src/autogen_agents/agents/voter_agent.py)
+- VoterAgent Implementation
 - [Ranked Voter Config](../../src/core/ranked_voter_config.py)
-- [Multi-Timeframe Voter](../../src/autogen_agents/agents/multi_timeframe_voter.py)
+- Multi-Timeframe Voter
 - [Custom Timeframe Builder](../../src/trading/instruments/custom_timeframe.py)
 - [DB Backup Manager](../../src/utils/db_backup.py)

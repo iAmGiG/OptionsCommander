@@ -1,5 +1,7 @@
 # Configuration & Schema Review - New Features
 
+> **Historical review (2025-12-15).** Where it names `ScannerAgent` or `VoterAgent`, those were retired in #331; the configs are read by `VotingSignal` and the watchlist and scanner tools. See [the codebase structure](01_codebase_structure.md).
+
 **Date**: 2025-12-15
 **Scope**: YAML configs and DB schemas for #364, #395, #407, #483, #405
 **Status**: ✅ All configs complete and properly structured

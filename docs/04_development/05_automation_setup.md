@@ -1,4 +1,4 @@
-# Automation Setup Guide - AutoGen-Trader
+# Automation Setup Guide - OptionsCommander
 
 **Last Updated**: November 24, 2025
 

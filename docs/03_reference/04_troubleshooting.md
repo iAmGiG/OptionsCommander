@@ -2,7 +2,7 @@
 
 ## Agent Framework Issues
 
-The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-framework-openai`). AutoGen was removed in #606 and is no longer a dependency.
+Only the natural-language parser (`src/parsers/llm_parser.py`) runs on Microsoft Agent Framework (`agent-framework-core`, `agent-framework-openai`). AutoGen was removed in #606 and is no longer a dependency; the agents were retired in #331.
 
 ### `ImportError` for `agent_framework`
 
@@ -85,25 +85,25 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 ### Missing Dependencies
 
 - **Install**: `pip install -e .` installs all dependencies, including `agent-framework-core` and `agent-framework-openai` (which brings `openai`)
-- **Verify**: `python -c "from agent_framework import Agent, FunctionTool; print('Agent Framework working')"`
+- **Verify**: `python -c "from agent_framework import FunctionTool, Message; print('Agent Framework working')"`
 
 ## Tool-Specific Issues
 
-### Agent Market Data Sources
+### Market Data Sources
 
 - **Primary**: Alpaca Markets (official SDK, real-time and historical)
 - **Fallback**: Alpha Vantage (25 calls/day limit). Polygon.io was removed in Oct 2026 (#607)
 - **Cache**: TradingCacheManager (SQLite) reduces API calls by 90%+ with 8-10x query performance
 
-### Agent Date/Time Issues
+### Date/Time Issues
 
 - **VotingSignal**: Ensure proper date range formatting for market data requests
-- **General**: Use consistent YYYY-MM-DD format across all agents
+- **General**: Use consistent YYYY-MM-DD format across the code
 - **Timezone**: Market data cache handles timezone conversion automatically
 
 ## Performance Issues
 
-### Agent Performance
+### Performance
 
 - **VotingSignal**: Optimized MACD+RSI calculations with SQLite caching
 - **Cache Hit Rate**: Should achieve 90%+ with TradingCacheManager (8-10x faster than file-based)
@@ -113,10 +113,9 @@ The agents run on Microsoft Agent Framework (`agent-framework-core`, `agent-fram
 
 - **Alpaca API**: 200 requests/minute (for live trading integration)
 - **Cache Strategy**: Intelligent caching reduces API usage by 90%+
-- **Solution**: Use cache-first approach in all agents
+- **Solution**: Use cache-first approach everywhere
 
-### Agent Memory Usage
+### Memory Usage
 
 - **VotingSignal**: Lightweight, only loads necessary market data
-- **BaseAgent**: Efficient tool registration and memory management
-- **Monitoring**: Use `python -m memory_profiler` for agent performance testing
+- **Monitoring**: Use `python -m memory_profiler` for performance testing

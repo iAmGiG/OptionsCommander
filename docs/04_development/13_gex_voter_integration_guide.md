@@ -1,5 +1,7 @@
 # GEX VoterAgent Integration Guide - Issue #419
 
+> **Historical plan.** This predates the removal of the agents (#331). `VoterAgent` is now `VotingSignal` (`src/trading/instruments/voting_signal.py`), `src/autogen_agents/` no longer exists, and GEX overlays were tested and rejected ([re-validation](../08_research/02_gex_research/regime_lookahead_revalidation.md)).
+
 ## Overview
 
 This guide provides implementation details for **Issue #419**: Adding Gamma Exposure (GEX) as a third voter signal to the VoterAgent, creating a triple-voting system: **MACD+RSI+GEX**.

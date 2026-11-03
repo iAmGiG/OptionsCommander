@@ -172,7 +172,7 @@ trade_data = {
     'exit_reason': 'take_profit',
     'realized_pnl': 185.0,
     'realized_pnl_pct': 3.68,
-    'strategy_name': 'VoterAgent',
+    'strategy_name': 'VotingSignal',
     'signal_strength': 'BULLISH',
     'signal_confidence': 0.85
 }
@@ -206,11 +206,11 @@ print(f"Total trades: {len(trades)}")
 print(f"Win rate: {(trades['realized_pnl'] > 0).sum() / len(trades) * 100:.1f}%")
 print(f"Total P&L: ${trades['realized_pnl'].sum():.2f}")
 
-# Get VoterAgent trades from last month
+# Get VotingSignal trades from last month
 import datetime
 last_month = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
 voter_trades = cache.get_trade_history(
-    strategy="VoterAgent",
+    strategy="VotingSignal",
     start_date=last_month
 )
 ```
@@ -250,9 +250,9 @@ print(f"  Avg Win: ${stats['avg_win']:.2f}")
 print(f"  Avg Loss: ${stats['avg_loss']:.2f}")
 print(f"  Avg Hold: {stats['avg_holding_hours']:.1f} hours")
 
-# VoterAgent specific stats
-voter_stats = cache.get_trade_stats(strategy="VoterAgent")
-print(f"\nVoterAgent Performance:")
+# VotingSignal specific stats
+voter_stats = cache.get_trade_stats(strategy="VotingSignal")
+print(f"\nVotingSignal Performance:")
 print(f"  Total Trades: {voter_stats['total_trades']}")
 print(f"  Win Rate: {voter_stats['win_rate_pct']:.1f}%")
 ```
@@ -363,7 +363,7 @@ Link an analysis record to an executed trade.
 **Example**:
 
 ```python
-# ExecutorAgent would call this when a trade executes
+# Whatever records a trade's analysis calls this when the trade executes
 manager.link_analysis_to_trade(
     analysis_id=123,
     trade_id=456  # From trade_history.id
@@ -430,7 +430,7 @@ plt.show()
 
 ```python
 # Compare strategies
-strategies = ['VoterAgent', 'TradeCycle', 'MACD+RSI']
+strategies = ['VotingSignal', 'TradeCycle', 'MACD+RSI']
 comparison = []
 
 for strategy in strategies:

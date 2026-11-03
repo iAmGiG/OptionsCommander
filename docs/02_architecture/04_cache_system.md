@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AutoGen Trading System uses a **SQLite-based cache system** for unified data storage and retrieval across multiple data sources. As of November 2025, the system has been completely rebuilt from file-based caching to SQLite, achieving **8-10x performance improvements** and production-grade reliability.
+OptionsCommander uses a **SQLite-based cache system** for unified data storage and retrieval across multiple data sources. As of November 2025, the system has been completely rebuilt from file-based caching to SQLite, achieving **8-10x performance improvements** and production-grade reliability.
 
 ## Architecture
 
@@ -254,14 +254,14 @@ cache.set("AAPL", df, source="alpaca", ttl_hours=48)
 - **Read Concurrency**: SQLite handles multiple concurrent reads
 
 ```python
-# Safe for concurrent access by multiple agents
-def agent_task(symbol):
+# Safe for concurrent access by multiple threads
+def worker_task(symbol):
     cache = TradingCacheManager()
     df = cache.get(symbol, "2025-01-01", "2025-01-31")
     # ... process data
 
 # Multiple threads/processes can safely read
-threads = [Thread(target=agent_task, args=(sym,)) for sym in ["SPY", "QQQ", "AAPL"]]
+threads = [Thread(target=worker_task, args=(sym,)) for sym in ["SPY", "QQQ", "AAPL"]]
 ```
 
 ### 3. Efficient Range Queries

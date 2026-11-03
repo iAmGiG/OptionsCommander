@@ -272,9 +272,9 @@ tail -f state/scheduler.log
 sudo systemctl status autogen-trading-scheduler
 ```
 
-### Integration with VoterAgent
+### Integration with VotingSignal
 
-Automated entries from VoterAgent signals are deferred (#574): the routines manage existing positions only.
+Automated entries from `VotingSignal` signals are deferred (#574): the routines manage existing positions only.
 
 ## Monitoring
 

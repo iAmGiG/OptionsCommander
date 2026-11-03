@@ -1,5 +1,7 @@
 # Multi-Indicator Voting System Architecture
 
+> **Historical design.** The V0-V4 agent ensemble and the `src/agents/` layout below were never built in this form, and the agents were retired in #331. The voting that runs is `VotingSignal` (`src/trading/instruments/voting_signal.py`); see [the agent ensemble note](02_agent_ensemble.md).
+
 **Target**: Transform single MACD system to 90% accuracy ensemble  
 **Implementation**: Issues #250, #277-289  
 **Status**: Simplified Design - Create directories as needed

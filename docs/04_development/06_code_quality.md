@@ -172,7 +172,7 @@ def _handle_scheduler_commands(args) -> None
 
 **Phase 1 Assessment - Core Trading Logic**:
 
-- ✅ [voter_agent.py](../../src/autogen_agents/agents/voter_agent.py) - 90% covered (only missing: generate_reply,_fetch_and_evaluate)
+- ✅ `voter_agent.py` (retired in #331; `VotingSignal` in [voting_signal.py](../../src/trading/instruments/voting_signal.py) took over) - 90% covered when assessed
 - ✅ [position_manager.py](../../src/trading/positions/position_manager.py) - 95% covered (all public methods typed)
 - ✅ [account_manager.py](../../src/trading/accounts/account_manager.py) - 100% covered (full dataclass typing)
 - ✅ [trailing_stop_manager.py](../../src/trading/orders/trailing_stop_manager.py) - 90% covered (core methods typed)
@@ -418,10 +418,9 @@ import json
 
 # Third-party
 import pandas as pd
-from agent_framework import FunctionTool
 
 # Local
-from src.trading.position_manager import PositionManager
+from src.trading.positions.position_manager import PositionManager
 from src.utils.date_utils import get_datetime_now
 ```
 
@@ -498,7 +497,7 @@ ruff format --diff src/
 mypy src/ --ignore-missing-imports
 
 # Strict mode
-mypy src/autogen_agents/voter_agent.py --strict
+mypy src/trading/instruments/voting_signal.py --strict
 ```
 
 ---

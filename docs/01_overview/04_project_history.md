@@ -92,7 +92,7 @@ Instead of sentiment-weighted signals, implement pure consensus voting:
 
 ### Architecture
 
-- **File**: [`src/autogen_agents/agents/voter_agent.py`](../../src/autogen_agents/agents/voter_agent.py)
+- **File**: `src/autogen_agents/agents/voter_agent.py` (removed in #331; now [`VotingSignal`](../../src/trading/instruments/voting_signal.py))
 - **Status**: ✅ In use (paper account)
 - **Validation**: [`docs/archived/experiments/experiment_293_validation/`](../archived/experiments/experiment_293_validation/)
 

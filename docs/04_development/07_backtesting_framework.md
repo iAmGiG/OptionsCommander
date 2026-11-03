@@ -12,7 +12,7 @@ Lightweight, in-house backtesting framework for validating trading strategies. B
 
 **Key Features**:
 
-- Works with existing VoterAgent
+- Works with `VotingSignal`
 - Multi-symbol support
 - Commission modeling (Alpaca-compatible)
 - Extensible signal generator architecture
@@ -24,10 +24,10 @@ Lightweight, in-house backtesting framework for validating trading strategies. B
 
 ```python
 from src.backtesting import BacktestEngine
-from src.autogen_agents.voter_agent import VoterAgent
+from src.trading.instruments.voting_signal import VotingSignal
 
 # Run backtest
-voter = VoterAgent()
+voter = VotingSignal()
 engine = BacktestEngine(initial_capital=10000)
 
 results = engine.run(
@@ -70,7 +70,7 @@ All signal generators must return:
 
 **Compatible Generators**:
 
-- `VoterAgent.evaluate_voting()` - MACD+RSI voting
+- `VotingSignal.evaluate_voting()` - MACD+RSI voting
 - `TSMOMSignalGenerator.generate_signal()` - Time series momentum
 - Custom generators (implement contract)
 
@@ -99,7 +99,7 @@ python main.py backtest
 
    ```python
    STRATEGY_REGISTRY = {
-       "voter": VoterAgent().evaluate_voting,
+       "voter": VotingSignal().evaluate_voting,
        "tsmom": TSMOMSignalGenerator().generate_signal,
        "tsmom-6m": TSMOMSignalGenerator(lookback_days=126).generate_signal,
    }

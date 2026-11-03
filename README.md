@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD060 -->
-# OptionsCommander: Multi-Agent Trading System
+# OptionsCommander: Trading System
 
 Formerly RH2MAS (Reflective Hybrid Head Multi-Agent System). The GitHub repository `iAmGiG/OptionsCommander` was renamed from `AutoTrader-AgentEdge` on 2026-10-28 (#549); old links redirect.
 
@@ -28,7 +28,7 @@ Formerly RH2MAS (Reflective Hybrid Head Multi-Agent System). The GitHub reposito
 
 ## Overview
 
-**OptionsCommander** is a research-driven trading platform with a multi-agent AI architecture built on Microsoft Agent Framework (it was AutoGen until #606). It trades a MACD+RSI voting strategy through Alpaca Markets with human oversight, and its research tests strategies out-of-sample, with transaction costs and look-ahead checks.
+**OptionsCommander** is a research-driven trading platform on Alpaca Markets. It runs on a paper account: scheduled routines manage the open positions' stops and keep daily records, and an interactive CLI places orders on request. The MACD+RSI voting signal has no backtested edge, so nothing opens trades automatically. The agents were retired in #331; Microsoft Agent Framework is used only by the natural-language parser. Its research tests strategies out-of-sample, with transaction costs and look-ahead checks.
 
 **Core Philosophy**: simple rules + human decision making, tested out-of-sample with costs > curve-fit technical indicators
 

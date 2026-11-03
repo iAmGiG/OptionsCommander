@@ -20,7 +20,7 @@ The new components exist but are **not connected** to the interactive CLI (`pyth
 **Current CLI Flow:**
 
 ```text
-User Input → AutoGenLLMParser → RealVoterStrategy → SimpleRiskManager → AlpacaExecutionManager
+User Input → LLMParser → RealVoterStrategy → SimpleRiskManager → AlpacaExecutionManager
 ```
 
 **What's Missing:**

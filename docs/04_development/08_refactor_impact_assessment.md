@@ -1,5 +1,7 @@
 # Refactor Impact Assessment - December 2025
 
+> **Historical record (2025-12-02).** It names `src/autogen_agents/` modules (the orchestrator, `VoterAgent`, the workflow state manager) that were removed in #331. See [the codebase structure](01_codebase_structure.md) for the layout now.
+
 **Date**: 2025-12-02
 **Status**: All Impacts Resolved ✅
 

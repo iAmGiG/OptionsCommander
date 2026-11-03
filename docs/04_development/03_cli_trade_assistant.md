@@ -1,6 +1,6 @@
 # CLI Trade Assistant - Issue #308 Implementation
 
-**Status**: ✅ Complete (November 8, 2025)
+**Status**: ✅ Complete (November 8, 2025). Since #331 the signal is `VotingSignal`, not an agent, and the CLI's tools are plain functions in `src/cli/tools/`; nothing here opens trades automatically.
 **Type**: Human-in-Loop Trading Interface
 **Priority**: P0 - Critical
 
@@ -8,12 +8,12 @@
 
 ## Overview
 
-The CLI Trade Assistant is a conversational trading interface that allows users to request trade analysis using natural language. The system uses OpenAI's GPT models for parsing user input and the production VoterAgent for MACD+RSI technical analysis.
+The CLI Trade Assistant is a conversational trading interface that allows users to request trade analysis using natural language. The system uses OpenAI's GPT models for parsing user input and the production VotingSignal for MACD+RSI technical analysis.
 
 ### Key Features
 
 - **Natural Language Understanding**: Parse queries like "is SPY at 600 a good entry?" or "buy 10 AAPL"
-- **Real Technical Analysis**: Production VoterAgent with MACD+RSI voting system
+- **Real Technical Analysis**: Production VotingSignal with MACD+RSI voting system
 - **Portfolio Risk Management**: Automatic position sizing based on portfolio percentage
 - **Interactive Confirmation**: Review suggestions before execution
 - **Two Autonomy Modes**: Confirm (default) or Auto-execute
@@ -53,7 +53,7 @@ The implementation follows a clean plugin architecture with dependency injection
 
 ### Component Responsibilities
 
-**TradingOrchestrator** (`src/core/trading_orchestrator.py`):
+**TradingOrchestrator** (`src/core/trading_orchestrator.py`, the CLI's request pipeline; not an agent):
 
 - Central coordinator for complete trading workflow
 - Manages: parse → analyze → risk → suggest → execute
@@ -105,11 +105,11 @@ llm_service = OpenAIService(
 - Auto-correction for common typos ("spy at 60" → "SPY at 600")
 - Validation (ticker format, quantity, price ranges)
 
-### 2. Real VoterAgent Integration (`src/strategies/real_voter_strategy.py`)
+### 2. Real VotingSignal Integration (`src/strategies/real_voter_strategy.py`)
 
 **RealVoterStrategy** - Production MACD+RSI analysis:
 
-- Wraps the production VoterAgent
+- Runs the production `VotingSignal` (`src/trading/instruments/voting_signal.py`)
 - Fetches real market data (Alpaca, Alpha Vantage)
 - MACD(13/34/8) + RSI(14) with Fibonacci parameters
 - Voting logic: Strong consensus, weak signal, conflict detection
@@ -211,14 +211,14 @@ Continue? [yes/no]: _
 
 - Loads configuration from config.json
 - Creates all components with correct dependencies
-- Supports stub vs real VoterAgent selection
+- Supports stub vs real VotingSignal selection
 - Hardcoded configuration (YAML deferred to iteration 2)
 
 ```python
 factory = OrchestratorFactory()
 orchestrator = factory.create(
     order_manager=None,      # None = stub mode
-    use_real_voter=True      # True = production VoterAgent
+    use_real_voter=True      # True = production VotingSignal
 )
 ```
 
@@ -308,7 +308,7 @@ Input: "sell 5 TSLA"
 ✅ Generated: Full suggestion with analysis
 ```
 
-### Real VoterAgent Tests (3/3 passing)
+### Real VotingSignal Tests (3/3 passing)
 
 #### Test 1: SPY Analysis
 
@@ -339,7 +339,7 @@ Stub VoterStrategy:
   Signal: BUY (75% confidence)
   Reasoning: "MACD: BUY (bullish crossover) [MVP STUB]"
 
-Real VoterAgent:
+Real VotingSignal:
   Signal: SELL (65% confidence)
   Reasoning: "Weak signal: Only MACD signals SELL"
 
@@ -363,7 +363,7 @@ Real VoterAgent:
 }
 ```
 
-### VoterAgent Parameters
+### VotingSignal Parameters
 
 ```python
 macd_params = {
@@ -396,7 +396,7 @@ rsi_params = {
 - `src/services/llm/openai_service.py` - OpenAI implementation
 - `src/parsers/llm_parser.py` - Natural language parser
 - `src/strategies/voter_strategy.py` - Stub for testing
-- `src/strategies/real_voter_strategy.py` - Production VoterAgent wrapper
+- `src/strategies/real_voter_strategy.py` - Runs VotingSignal for CLI requests
 - `src/risk/simple_risk_manager.py` - Portfolio % risk management
 - `src/execution/alpaca_execution_manager.py` - Alpaca execution
 
@@ -410,7 +410,7 @@ rsi_params = {
 - `tests/test_basic.py` - Foundation tests (4/4 passing)
 - `tests/test_end_to_end.py` - Integration tests (4/4 passing)
 - `test_real_api.py` - Real OpenAI API tests (3/3 passing)
-- `test_real_voter.py` - Real VoterAgent tests (3/3 passing)
+- `test_real_voter.py` - Real VotingSignal tests (3/3 passing)
 
 ### Documentation
 
@@ -525,7 +525,7 @@ rsi_params = {
 The CLI Trade Assistant (#308) delivers a human-in-loop trading interface with:
 
 ✅ Natural language understanding (OpenAI gpt-4o-mini + o4-mini)
-✅ Real technical analysis (VoterAgent MACD+RSI voting)
+✅ Real technical analysis (VotingSignal MACD+RSI voting)
 ✅ Portfolio risk management (5% default position sizing)
 ✅ Interactive confirmation workflow (confirm/auto modes)
 ✅ Plugin architecture (easy to extend and test)

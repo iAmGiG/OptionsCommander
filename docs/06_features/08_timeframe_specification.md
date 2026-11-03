@@ -288,7 +288,7 @@ recs = agent.call_function("get_timeframe_recommendations")
 # Returns: {"recommendations": {...}, "default_recommended": "1d"}
 ```
 
-### 3. VoterAgent Integration
+### 3. VotingSignal Integration
 
 VotingSignal takes a timeframe. To use it:
 
@@ -579,9 +579,9 @@ Issue #365 provides a complete, extensible timeframe system:
 
 - Configuration management (TimeframeConfig)
 - State management (TimeframeManager)
-- Agent tools (5 functions, AutoGen-ready)
+- Tools (5 plain functions in `src/cli/tools/timeframe_tools.py`)
 - CLI commands (natural language support)
-- VoterAgent integration
+- VotingSignal integration
 - Comprehensive testing (10+ test classes)
 - Full documentation
 

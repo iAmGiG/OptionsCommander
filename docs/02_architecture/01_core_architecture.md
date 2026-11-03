@@ -106,14 +106,14 @@ src/
 
 - Integration layer handles external communication
 - Business logic layer performs calculations
-- Agent layer makes decisions
+- Signal layer (`VotingSignal`) produces the vote; the user decides
 - Clean boundaries between layers
 
 **Benefits**:
 
 - Easy to test (mock external dependencies)
 - Easy to swap providers (change integration, keep logic)
-- Easy to enhance (add agents without changing core)
+- Easy to enhance (add signals without changing core)
 
 ### 2. Unified Architecture
 
@@ -147,14 +147,14 @@ manager = AlpacaOrderManager(mode="live")   # Live trading (with confirmations)
 
 **Safety Layers**:
 
-1. **Agent Layer**: Signal validation and confidence scoring
+1. **Signal Layer**: Signal validation and confidence scoring
 2. **Risk Layer**: Position limits, account checks, market hours
 3. **Integration Layer**: Order validation, confirmation prompts
 4. **Broker Layer**: Final validation at Alpaca
 
-### 4. Agent-Ready Design
+### 4. Plain-Function Tools
 
-#### Agent Framework tools for all functionality
+#### Plain functions in `src/cli/tools/` for the CLI's functionality
 
 - Standardized response formats
 - Errors returned as readable messages
@@ -236,7 +236,7 @@ tests/
 
 1. **Unit Tests**: Pure functions in business logic layer
 2. **Integration Tests**: API connections and data retrieval
-3. **Agent Tests**: agent behavior and LLM tool calling against a fake model server (no network, no key)
+3. **Parser Tests**: the natural-language parser (`LLMParser`) against a fake model server (no network, no key)
 4. **End-to-End Tests**: Complete trading workflows
 
 ### Validation Approach
@@ -342,7 +342,7 @@ order = manager.place_market_order("AAPL", 10, "buy")
 - Real-time market data via Alpaca SDK
 - Intelligent caching system (>90% improvement)
 - Multi-provider data normalization
-- Agent Framework tool wrappers
+- Plain-function wrappers for the CLI
 
 ### ✅ Order Management (#313)
 
@@ -351,28 +351,14 @@ order = manager.place_market_order("AAPL", 10, "buy")
 - Unified live/paper architecture
 - Comprehensive safety features
 
-### ✅ Agent System Foundation
+### ✅ Signal Foundation
 
-- VotingSignal with MACD+RSI voting logic
-- BaseAgent foundation with tool integration
+- `VotingSignal` with MACD+RSI voting logic
 - Configuration system for dynamic parameter adjustment
-- Message handling and agent communication framework
 
-## Next Phase: Complete Agent Ecosystem
+## Retired: the Agent Ecosystem
 
-### 🔄 Remaining Agents (Issue #310)
-
-1. **Scanner Agent**: Multi-ticker market scanning
-2. **Risk Agent**: Portfolio risk management
-3. **Executor Agent**: Trade execution coordination
-4. **Human Interface**: Decision presentation and CLI
-
-### Integration Goals
-
-- **Unified Tools**: All agents access same data and execution capabilities
-- **Message Protocol**: Structured communication between agents
-- **State Management**: Shared state across agent interactions
-- **Human Approval**: CLI interface for trade approval workflow
+The scanner, risk and executor agents, the orchestrators, `BaseAgent` and the agent bus were retired in #331 (#650, #655-#657). Nothing opens trades automatically. Risk checks for CLI orders are `SimpleRiskManager`, orders go through `AlpacaExecutionManager`, and the CLI's CONFIRM mode is the human approval.
 
 ---
 

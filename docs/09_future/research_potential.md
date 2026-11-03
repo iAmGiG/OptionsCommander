@@ -42,7 +42,7 @@ Ideas, papers, and techniques worth exploring in future phases.
 - **Source**: [arXiv:2512.23631](https://arxiv.org/abs/2512.23631v1) (Dec 2025, preprint)
 - **Authors**: Iris Xu, Guangtao Zeng, et al.
 - **Summary**: Uses multi-armed bandit optimization to automatically discover effective agent hierarchies instead of manual design. Shows hierarchical multi-agent > monolith for complex tasks. Achieved 2nd place on SWE-bench-Live with 36B parameter system.
-- **Relevance**: Validates our TradingOrchestrator -> specialized agents pattern. Bandit optimization could select between VoterAgent variants per-regime.
+- **Relevance**: Validates specialized-component designs (the agents were retired in #331). Bandit optimization could select between `VotingSignal` variants per-regime.
 - **Priority**: Future (Phase 3+)
 - **GH Potential**: Skip till after multiple strategy variants exist
 - **Revisit When**: Building multiple strategy variants that need automatic selection
@@ -181,7 +181,7 @@ Ideas, papers, and techniques worth exploring in future phases.
 | Exotics | Out of scope | N/A |
 | Var Swaps | Academic interest only | N/A |
 
-**Current Status**: VoterAgent trades equities only. Options mentioned in Trading Modes Phase 4.
+**Current Status**: `VotingSignal` trades equities only. Options mentioned in Trading Modes Phase 4.
 
 ---
 
@@ -312,10 +312,10 @@ When holding too much inventory (Long):
 
 - **Source**: LinkedIn post (Jan 2026)
 - **Summary**: Comprehensive comparison of Value at Risk (VaR) and Conditional Value at Risk (CVaR/Expected Shortfall). VaR = max expected loss at confidence level; CVaR = average loss in tail beyond VaR. CVaR is coherent, convex, and better for optimization. Basel IV shifting from VaR to ES.
-- **Relevance**: **High** - directly applicable to RiskAgent position sizing and portfolio risk limits
+- **Relevance**: **High** - directly applicable to position sizing and portfolio risk limits
 - **Priority**: High
 - **GH Potential**: **Issue created** - [#543](https://github.com/iAmGiG/OptionsCommander/issues/543)
-- **Revisit When**: Implementing RiskAgent or portfolio-level risk management
+- **Revisit When**: Implementing portfolio-level risk management
 
 #### Key Takeaways
 
@@ -364,7 +364,7 @@ Use **both** for comprehensive risk assessment:
 - **Source**: [GitHub: leochlon/pythea/strawberry](https://github.com/leochlon/pythea/tree/main/strawberry)
 - **Paper**: [arXiv:2509.11208](https://arxiv.org/abs/2509.11208) (Sep 2025, preprint)
 - **Summary**: Uses logprobs + KL divergence to detect when LLM confidence doesn't match available evidence. Catches "evidence in context but ignored" patterns. MCP tool for Claude Code.
-- **Relevance**: Low for current VoterAgent (deterministic math). Could matter if building LLM-based analysis agents.
+- **Relevance**: Low for current `VotingSignal` (deterministic math). Could matter if building LLM-based analysis agents.
 - **Priority**: Low
 - **GH Potential**: Archive - not relevant to current architecture
 - **Revisit When**: Building LLM-driven strategy reasoning (not just NL parsing)
@@ -405,7 +405,7 @@ No entries yet.
 
 > "If you torture the data long enough, it will confess to anything."
 
-**Our Status**: VoterAgent uses only 2 indicators (MACD + RSI) with fixed params - low overfitting risk.
+**Our Status**: `VotingSignal` uses only 2 indicators (MACD + RSI) with fixed params - low overfitting risk.
 
 #### 2. Look-Ahead Bias - "Peeking at the Future"
 
@@ -448,7 +448,7 @@ No entries yet.
 
 **Fix**: Walk-forward Optimization
 
-**Our Status**: Existing label `data-leakage` on GitHub. VoterAgent doesn't use ML, so low risk.
+**Our Status**: Existing label `data-leakage` on GitHub. `VotingSignal` doesn't use ML, so low risk.
 
 #### 5. P-Hacking - "Optimization Bias"
 
@@ -493,7 +493,7 @@ No entries yet.
 
 > "Strategies trained only on 2010-2019 (Bull Market) fail in 2020/2022."
 
-**Our Status**: Issue #542 (Fat Tails Validation) addresses this. VoterAgent tested on 2024-2025 (mixed regimes). Documented insight: better in volatile (-14.6%) vs bull (-25.8%) markets.
+**Our Status**: Issue #542 (Fat Tails Validation) addresses this. `VotingSignal` tested on 2024-2025 (mixed regimes). Documented insight: better in volatile (-14.6%) vs bull (-25.8%) markets.
 
 #### 8. Capacity - "Scale Limits"
 

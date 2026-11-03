@@ -48,7 +48,7 @@ AutoTrader integrates multiple data providers with automatic fallback and cachin
 
 ✅ Official `alpaca-py` SDK integration
 ✅ SQLite cache with 90%+ hit rate
-✅ AutoGen agent tools available
+✅ Plain-function tools for the CLI (`src/cli/tools/`)
 ✅ Multi-timeframe support (1Min to 1Day)
 ✅ IEX feed for paper accounts (free)
 

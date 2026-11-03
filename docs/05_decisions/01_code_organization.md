@@ -1,5 +1,7 @@
 # Code Organization Standards
 
+> **Historical decision record (Nov 2025).** The tree below lists `src/autogen_agents/`, which was removed in #331. See [the codebase structure](../04_development/01_codebase_structure.md) for the layout now.
+
 **Status:** Accepted | **Date:** November 2025
 
 ## Context

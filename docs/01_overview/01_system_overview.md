@@ -1,12 +1,12 @@
 # OptionsCommander Overview
 
 **Status**: Trading platform; the MACD+RSI VotingSignal runs on a paper account
-**Foundation**: Microsoft Agent Framework (AutoGen until #606)
+**Foundation**: Python on Alpaca; Microsoft Agent Framework is used only by the natural-language parser (`src/parsers/llm_parser.py`). The agents were retired in #331.
 **Backtested Performance**: Sharpe 0.69 at 5 bps a side with the live rules, no edge over buy-and-hold ([live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md))
 
 ## What Is This System?
 
-OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/OptionsCommander`, formerly AutoTrader-AgentEdge) is an algorithmic trading platform whose agents run on Microsoft Agent Framework (they ran on AutoGen until #606). It uses ensemble voting (MACD+RSI), an approach motivated by academic research; backtested with the live rules and timing, it has no edge over buy-and-hold of the same symbols (#574).
+OptionsCommander (formerly RH2MAS; GitHub repository `iAmGiG/OptionsCommander`, formerly AutoTrader-AgentEdge) is a trading platform on Alpaca. It runs on a paper account: scheduled routines manage the open positions' stops and keep daily records, and an interactive CLI places orders on request. It uses ensemble voting (MACD+RSI), an approach motivated by academic research; backtested with the live rules and timing, it has no edge over buy-and-hold of the same symbols (#574).
 
 ### Core Purpose
 
@@ -38,7 +38,7 @@ This is a **human-guided trade management system**, not an autonomous trading bo
 
 - Real-time account monitoring
 - Position state management
-- Integration with all agents via tools
+- Read by the CLI's plain-function tools and by the routines
 
 **Order Manager** - Complete order placement and monitoring:
 
@@ -75,23 +75,17 @@ This is a **human-guided trade management system**, not an autonomous trading bo
 - Trailing stops (profit protection)
 - Bracket orders (OCO with stops)
 
-### 🔄 In Development
+### Retired
 
-**Multi-Agent Ecosystem** (Issue #310):
-
-1. **Scanner Agent**: Multi-ticker market scanning
-2. **Risk Agent**: Portfolio risk management
-3. **Executor Agent**: Trade execution coordination
-4. **Human Interface**: Decision presentation and CLI
+**Multi-Agent Ecosystem** (Issue #310): the scanner, risk and executor agents, the orchestrators and the agent bus were retired in #331 (#650, #655-#657). Nothing opens trades automatically; risk checks for CLI orders are `SimpleRiskManager`, and orders go through `AlpacaExecutionManager`.
 
 ## Architecture Highlights
 
-### Multi-Agent Framework
+### Plain Functions, One LLM Call
 
-The agents use Microsoft Agent Framework for LLM calls and tool calling:
+The signal and the routines are plain Python. The only LLM call is the natural-language parser (`src/parsers/llm_parser.py`, Microsoft Agent Framework), and only typed requests reach it:
 
-- **Agent Communication**: Structured message passing between agents
-- **Unified Tools**: Single source of truth accessible to all agents
+- **Unified Tools**: Plain functions in `src/cli/tools/` behind the slash commands and typed requests
 - **Error Handling**: Comprehensive error recovery and logging
 - **State Management**: Persistent trade state across restarts
 
@@ -117,7 +111,7 @@ Clean architectural boundaries:
 1. **Separation of Concerns**: Integration ≠ Business Logic ≠ Decisions
 2. **Unified Architecture**: Single codebase for paper and live trading
 3. **Production Safety**: Multi-level confirmations, comprehensive validation
-4. **Agent-Ready Design**: Agent Framework tool wrappers for all functionality
+4. **Plain-Function Tools**: Plain functions in `src/cli/tools/` for the CLI's functionality
 
 ## Backtested Performance
 
@@ -171,7 +165,7 @@ See the [research documentation](../08_research/README.md) for what this project
 
 **Core Framework**:
 
-- Microsoft Agent Framework (agents, tool calling)
+- Microsoft Agent Framework (the natural-language parser only)
 - Python 3.12+ (primary language; CI also runs 3.14 and 3.15)
 
 **Trading Integration**:
@@ -202,8 +196,7 @@ See the [research documentation](../08_research/README.md) for what this project
 ### Phase 3: In Progress 🚧
 
 - Expanded ensemble with additional indicators (RSI, Bollinger Bands, Volume)
-- Multi-agent coordination framework
-- Scanner and Risk agents
+- The multi-agent coordination framework and the scanner and risk agents were retired in #331
 
 ### Phase 4-5: Planned 📋
 
@@ -222,4 +215,4 @@ For detailed information about specific aspects of the system:
 
 ---
 
-*Multi-agent trading platform with ensemble voting and safety controls.*
+*Trading platform with ensemble voting and safety controls.*

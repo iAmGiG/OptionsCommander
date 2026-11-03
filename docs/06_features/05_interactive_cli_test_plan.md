@@ -47,7 +47,7 @@ The CLI uses **LLM-based classification** instead of hardcoded keyword patterns:
 
 **Input:**
 
-```
+```text
 > buy 10 AAPL
 ```
 
@@ -78,7 +78,7 @@ The CLI uses **LLM-based classification** instead of hardcoded keyword patterns:
 
 **Input:**
 
-```
+```text
 > is apple at market price a good entry?
 ```
 
@@ -86,7 +86,7 @@ The CLI uses **LLM-based classification** instead of hardcoded keyword patterns:
 
 - ✅ Interprets "apple" as AAPL
 - ✅ Fetches current market price
-- ✅ Runs VoterAgent analysis (MACD+RSI)
+- ✅ Runs the VotingSignal analysis (MACD+RSI)
 - ✅ Presents BUY/SELL/HOLD decision with reasoning
 - ✅ Shows entry plan with stop/target
 
@@ -97,7 +97,7 @@ The CLI uses **LLM-based classification** instead of hardcoded keyword patterns:
 **Success Criteria:**
 
 - [ ] Correctly parses "apple" → AAPL
-- [ ] VoterAgent provides decision
+- [ ] VotingSignal provides decision
 - [ ] Order validation passes
 
 ---
@@ -106,7 +106,7 @@ The CLI uses **LLM-based classification** instead of hardcoded keyword patterns:
 
 **Input:**
 
-```
+```text
 > what about spy at market
 ```
 
@@ -150,7 +150,7 @@ if signal == "SELL":
 
 **Input (assuming SPY position exists):**
 
-```
+```text
 > sell all spy
 > close my spy position
 ```
@@ -177,7 +177,7 @@ if signal == "SELL":
 
 **Input:**
 
-```
+```text
 > check my alerts
 > show alerts
 > any position alerts?
@@ -193,7 +193,7 @@ if signal == "SELL":
 
 **Output Example:**
 
-```
+```text
 📊 Checking Position Alerts...
 ✅ No active alerts
    3 position(s) monitored
@@ -215,7 +215,7 @@ if signal == "SELL":
 
 **Input:**
 
-```
+```text
 > any positions open
 > what positions do I have?
 > show my positions
@@ -229,7 +229,7 @@ if signal == "SELL":
 
 **Known Issues from #334:**
 
-```
+```text
 ValueError: Invalid request: TradeRequest(ticker='', action='review', ...)
 ```
 
@@ -257,7 +257,7 @@ if any(word in input_lower for word in ["positions", "position status", "what po
 
 **Input:**
 
-```
+```text
 > is there a price target on spy
 > what's the target for my aapl position?
 ```
@@ -293,7 +293,7 @@ if any(word in input_lower for word in ["positions", "position status", "what po
 
 **Input:**
 
-```
+```text
 > show scheduler status
 > what's the scheduler doing?
 > when is the next routine?
@@ -308,7 +308,7 @@ if any(word in input_lower for word in ["positions", "position status", "what po
 
 **Output Example:**
 
-```
+```text
 🤖 Daily Scheduler Status...
 
 Configuration:
@@ -338,7 +338,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > show execution history
 > what did the scheduler do today?
 ```
@@ -362,7 +362,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > show portfolio
 > what's my account balance?
 > show account status
@@ -377,7 +377,7 @@ Configuration:
 
 **Output Example:**
 
-```
+```text
 💼 Portfolio Status...
 
 💰 Account:
@@ -407,7 +407,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > how much buying power do I have?
 > what's my available cash?
 ```
@@ -436,7 +436,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > buy 10 INVALIDTICKER
 ```
 
@@ -448,7 +448,7 @@ Configuration:
 
 **Current Behavior from #334:**
 
-```
+```text
 ❌ Invalid ticker symbol
    The ticker you entered was not recognized by the market.
    Please check the spelling and try again.
@@ -467,7 +467,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > what's the weather today?
 > tell me a joke
 ```
@@ -493,7 +493,7 @@ Configuration:
 
 **Input:**
 
-```
+```text
 > spy
 > aapl?
 ```
@@ -516,7 +516,7 @@ Configuration:
 
 **Inputs to test:**
 
-```
+```text
 > buy 10 shares of apple
 > purchase aapl
 > long spy
@@ -540,7 +540,7 @@ Configuration:
 
 **Inputs to test:**
 
-```
+```text
 > check my positions
 > show me what I own
 > any open trades?
@@ -564,7 +564,7 @@ Configuration:
 
 **Inputs to test:**
 
-```
+```text
 > check alerts
 > show position alerts
 > any approaching targets?
@@ -740,7 +740,7 @@ python main.py
 
 **Input:**
 
-```
+```text
 > any open orders?
 > any positions?
 > any alerts?
@@ -771,7 +771,7 @@ python main.py
 
 **Input:**
 
-```
+```text
 > buy ANY
 > is ANY a good buy?
 > analyze ticker ANY
@@ -808,7 +808,7 @@ python main.py
 
 **Status Query Inputs:**
 
-```
+```text
 > what positions do I have?
 > what's my portfolio?
 > show me my orders
@@ -818,7 +818,7 @@ python main.py
 
 **Trade Request Inputs:**
 
-```
+```text
 > buy WHAT at market
 > is WHO a good investment?
 > analyze ticker SHOW
@@ -838,7 +838,7 @@ python main.py
 
 **Input:**
 
-```
+```text
 > show me my SPY position
 > what's the price target on AAPL?
 > any open orders for TQQQ?
@@ -869,7 +869,7 @@ python main.py
 
 **Input 1:** "any"
 
-```
+```text
 > any
 ```
 
@@ -882,7 +882,7 @@ python main.py
 
 **Input 2:** "buy anything"
 
-```
+```text
 > buy anything
 ```
 
@@ -895,7 +895,7 @@ python main.py
 
 **Input 3:** "is there anything I should know?"
 
-```
+```text
 > is there anything I should know?
 ```
 
@@ -920,23 +920,23 @@ python main.py
 
 **Test Pairs:** Same word, different contexts
 
-**Pair 1: "check"**
+Pair 1: "check"
 
-```
+```text
 > check my alerts          → status_query (system feature)
 > check ticker CHECK       → trade (ticker lookup)
 ```
 
-**Pair 2: "what"**
+Pair 2: "what"
 
-```
+```text
 > what positions?          → status_query
 > buy WHAT                 → trade (ticker=WHAT)
 ```
 
-**Pair 3: "show"**
+Pair 3: "show"
 
-```
+```text
 > show portfolio           → status_query
 > show me analysis of SHOW → trade (ticker=SHOW)
 ```

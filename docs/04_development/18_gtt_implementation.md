@@ -36,13 +36,13 @@ src/trading/gtt/
 └── trailing_stop_bridge.py  # Trailing-stop state saved to / restored from GTT (Phase 3)
 
 src/cli/tools/
-└── gtt_tools.py          # FunctionTool wrappers for CLI
+└── gtt_tools.py          # Plain functions behind /gtt
 ```
 
 ### Integration Points
 
-- **Scheduler:** `trading_cycle.py` calls `check_gtt_triggers()` in morning/evening routines, fetches broker state again if a GTT order or cancel went out, then raises stops
-- **CLI:** Tools registered in `src/cli/tools/__init__.py` under `GTT_TOOLS` category
+- **Scheduler:** `trading_cycle.py` calls `check_gtt_triggers()` in morning/evening routines, fetches broker state again if a GTT order or cancel went out, then raises stops. Triggers are checked at these two routines only, and only for symbols you hold
+- **CLI:** `/gtt` calls the plain functions in `src/cli/tools/gtt_tools.py`
 - **Database:** Uses `state/user.db` (same as alerts_watchlists.py)
 
 ---

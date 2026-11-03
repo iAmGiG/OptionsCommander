@@ -1,140 +1,79 @@
 # Codebase Structure
 
 **Purpose**: Developer guide to file organization and component layout
-**Last Updated**: November 2025
-**Status**: Production VoterAgent with multi-agent framework in development
+**Last Updated**: November 2026 (the agents were retired in #331)
+**Status**: Paper account; scheduled routines manage stops, the CLI places orders on request
 
 ## Project Structure
 
 ```bash
 OptionsCommander/                     # repository root
-├── src/                              # Core implementation
+├── main.py                           # CLI entry point (interactive, --run-due, --daemon)
+├── src/
+│   ├── trading/                      # Trading: broker, orders, positions, state, scheduling
+│   │   ├── scheduling/               # daily_scheduler.py, trading_cycle.py, scheduler_state.py, notices.py, watchdog.py
+│   │   ├── state/                    # state_reconciler.py, broker_state_cache.py, daily_records.py, local_state_manager.py
+│   │   ├── orders/                   # trailing_stop_manager.py, partial_exit_manager.py, multi_level_targets.py, dry_run.py
+│   │   ├── positions/                # position_manager.py, position_tracker.py, position_sizer.py, portfolio_manager.py
+│   │   ├── broker/                   # alpaca_trading_client.py, alpaca_execution_manager.py, advanced_orders.py, market_hours.py
+│   │   ├── gtt/                      # gtt_manager.py, trigger_evaluator.py, action_executor.py, trailing_stop_bridge.py
+│   │   ├── instruments/              # voting_signal.py, multi_timeframe_voter.py, scanner_config.py, entry_planning.py, indicators.py
+│   │   ├── risk/                     # simple_risk_manager.py, risk_calculator.py, broker_account_service.py
+│   │   ├── accounts/                 # account_manager.py, account_tools.py
+│   │   ├── utils/                    # simple_signals.py, unified_price_fetcher.py, report_generator.py
+│   │   └── alerts_watchlists.py      # Watchlists
 │   │
-│   ├── execution/                   # Order execution layer
-│   │   └── alpaca_execution_manager.py # AlpacaExecutionManager (plugin architecture)
+│   ├── cli/                          # Interactive CLI
+│   │   ├── cli_session.py            # The session loop
+│   │   ├── commands/                 # Slash commands (slash_commands.py, registry.py, records_commands.py, voter_commands.py, ...)
+│   │   ├── tools/                    # Plain functions behind the slash commands and typed requests
+│   │   ├── handlers/                 # trade_handler.py
+│   │   ├── scheduler/                # Scheduler CLI pieces (monitor, setup wizard, config editor, daemon manager)
+│   │   └── utils/                    # help_system.py, faq.py, input_parser.py, intent_classifier.py, ...
 │   │
-│   ├── trading/                     # Trading execution & lifecycle
-│   │   ├── alpaca_trading_client.py # Alpaca API integration
-│   │   ├── order_manager.py         # Order placement & tracking
-│   │   ├── position_manager.py      # Position management
-│   │   ├── trading_cycle.py         # Cost-efficient trade cycle
-│   │   ├── market_scanner.py        # Market opportunity detection
-│   │   ├── simple_signals.py        # Signal generation
-│   │   └── unified_state_manager.py # State persistence
-│   │
-│   ├── trading_tools/               # Technical analysis (pure functions)
-│   │   ├── indicators.py            # MACD & RSI calculations
-│   │   ├── data_fetch.py            # Market data retrieval
-│   │   └── risk_calculator.py       # Risk metrics
-│   │
-│   ├── data_sources/                # Data integration layer
-│   │   ├── tools.py                 # Unified tool configuration
-│   │   ├── cache/                   # SQLite caching system (8-10x improvement)
-│   │   │   ├── sqlite_cache.py      # TradingCacheManager (production)
-│   │   │   ├── cache_adapter.py     # Cache router (backward compatibility)
-│   │   │   ├── unified_cache.py     # Deprecated file-based cache
-│   │   │   └── market_data_cache.py # Deprecated legacy cache
-│   │   │
-│   │   ├── sources/market/          # Market data providers
-│   │   │   ├── alpaca_market_data.py      # Primary real-time data
-│   │   │   ├── unified_market_tool.py     # Unified interface
-│   │   │   └── alpha_vantage_market.py    # Fallback source
-│   │   │
-│   │   └── processors/              # Data processing
-│   │       ├── data_normalizer.py   # Format standardization
-│   │       └── sentiment_analyzer.py # News sentiment (deprecated)
-│   │
-│   ├── voting/                      # Voting strategy system
-│   │   ├── base_voting_strategy.py  # Base voting framework
-│   │   └── basic_voting_strategy.py # MACD+RSI voting logic
-│   │
-│   ├── core/indicators/             # Indicator library
-│   │   ├── base_indicator.py        # Base indicator class
-│   │   ├── simple_rsi.py            # RSI implementation
-│   │   └── indicator_library.py     # Indicator collection
-│   │
-│   ├── human_interface/             # CLI & decision formatting
-│   │   ├── cli_interface.py         # Command-line interface
-│   │   └── decision_formatter.py    # Output formatting
-│   │
-│   └── utils/                       # Utility functions
-│       ├── date_utils.py            # Date/time utilities
-│       ├── agent_utils.py           # Agent helpers
-│       └── output_manager.py        # Result organization
+│   ├── core/                         # Request pipeline: factory.py, trading_orchestrator.py, models.py, trading_modes.py, ranked_voter_config.py, interfaces/
+│   ├── strategies/                   # real_voter_strategy.py (runs VotingSignal for CLI requests), voter_strategy.py (stub)
+│   ├── parsers/                      # llm_parser.py (LLMParser): the only user of Microsoft Agent Framework
+│   ├── market_data/                  # alpaca_market_data.py, alpha_vantage_market.py, unified_market_tool.py, options_chain.py
+│   ├── cache/                        # SQLite market-data and broker cache (sqlite_cache.py, cache_adapter.py, unified_broker_cache.py, ...)
+│   ├── database/                     # analysis_history_manager.py
+│   ├── backtesting/                  # Research backtester, GEX overlay, live_rules_sim.py, signals/
+│   └── utils/                        # state_paths.py, market_hours.py (NYSE calendar), date_utils.py, config_loader.py, db_backup.py
 │
-├── config/                          # API configuration (gitignored)
-│   └── config.json                  # API keys and secrets
-│
-├── config_defaults/                 # Default configurations (Issue #358)
-│   ├── README.md                    # Configuration system documentation
-│   ├── trading_config.yaml          # Trading strategy & risk parameters
-│   ├── scanner_config.yaml          # Market scanner watchlist & settings
-│   ├── paths_config.yaml            # File paths & directory structure
-│   ├── market_hours.yaml            # Market hours & holidays
-│   ├── cli_messages.yaml            # User-facing message templates
-│   ├── message_loader.py            # Message template loader
-│   └── safe_print.py                # Platform-aware output utilities
-│
-│
-├── scripts/                         # Utility scripts
-│   ├── experiments/                 # Backtesting experiments
-│   │   ├── experiment_293_validation/ # VoterAgent validation
-│   │   └── configuration_system/      # Parameter testing
-│   ├── analysis/                    # Results analysis
-│   └── data/                        # Data collection
-│
-├── tests/                           # Test suite
-│   ├── unit/                        # Unit tests
-│   ├── tools/                       # Tool integration tests
-│   ├── test_alpaca_basic.py         # Alpaca connection tests
-│   ├── test_alpaca_market_data.py   # Market data tests
-│   ├── test_alpaca_order_manager.py # Order management tests
-│   └── test_alpaca_advanced_orders.py # Advanced order tests
-│
-├── docs/                            # Documentation
-│   ├── 01_overview/                 # System overview
-│   ├── 02_architecture/             # Technical design
-│   ├── 03_reference/                # Reference docs
-│   └── 04_development/              # Developer guides
-│
-├── state/                           # JSON state management
-│   ├── positions.json               # Position tracking
-│   └── orders.json                  # Order history
-│
-├── reports/                         # Generated reports
-│   ├── active/voting_strategy/      # Current experiments
-│   └── README.md                    # Reports index
-│
-├── main.py                          # Unified CLI entry point
-├── pyproject.toml                   # Project configuration
-├── requirements.txt                 # Python dependencies
-└── README.md                        # Project overview
+├── config/config.json                # API keys and secrets (gitignored)
+├── config_defaults/                  # Tracked defaults: trading_config.yaml, scheduler_config.yaml, trading_modes.yaml,
+│                                     #   scanner_config.yaml, voters_config.yaml, help_commands.yaml, faq.yaml, ...
+├── scripts/                          # research/ (GEX and strategy runners), utilities/, analysis/, deployment/
+├── tests/                            # unit/, integration/ (gitignored; tracked files are force-added)
+├── docs/                             # Documentation (01_overview to 09_future, archived)
+├── state/                            # user.db, notices.json, scheduler.log, backups/ (runtime, not tracked)
+├── reports/daily/                    # Routine reports (<ET date>_<routine>.md)
+├── pyproject.toml
+└── README.md
 ```
 
 ## Directory Responsibilities
 
 ### src/trading/ - Unified Trading Domain
 
-**Purpose**: All trading operations organized by concern (consolidated from src/execution/, src/risk/, src/trading_tools/)
-
-**Structure** (9 subfolders):
+**Purpose**: All trading operations organized by concern
 
 #### broker/ - Broker Integration
 
-- `alpaca_trading_client.py`: Alpaca API integration (paper + live trading)
-- `alpaca_execution_manager.py`: AlpacaExecutionManager implementing ExecutionManager interface
+- `alpaca_trading_client.py`: Alpaca API integration (`AlpacaAccountMonitor`, `AlpacaOrderManager`); the account is paper
+- `alpaca_execution_manager.py`: AlpacaExecutionManager implementing the ExecutionManager interface; `plan_close` and `close_position` sell a position, cancelling the stop that holds the shares first
 - `validators/`: Order validation, response parsing, error handling
 
 #### orders/ - Order Lifecycle
 
-- `order_manager.py`: Order placement, modification, cancellation
 - `trailing_stop_manager.py`: Progressive trailing stop logic
 - `partial_exit_manager.py`: Partial position exit handling
+- `multi_level_targets.py`: Multi-level exit targets
 
 #### positions/ - Position Management
 
 - `position_manager.py`: Position tracking (broker as source of truth)
-- `position_sizer.py`: Profile-based position sizing automation
+- `position_sizer.py`: Profile-based position sizing
 - `position_tracker.py`: Exit alerts and TP/SL monitoring
 - `portfolio_manager.py`: Portfolio risk & allocation management
 
@@ -145,66 +84,50 @@ OptionsCommander/                     # repository root
 
 #### state/ - State Management
 
-- `state_reconciler.py`: Broker-to-local state synchronization
+- `state_reconciler.py`: Broker-to-local state synchronization, stop checks, repairs, raises
 - `broker_state_cache.py`: Broker state caching layer
 - `local_state_manager.py`: Local JSON state persistence
+- `daily_records.py`: Daily account, position and fill records (`state/user.db`)
 
 #### scheduling/ - Trading Cycles
 
 - `trading_cycle.py`: Cost-efficient daily routines (morning/evening)
-- `trading_pipeline.py`: Complete daily workflow orchestrator
-- `daily_scheduler.py`: Automated scheduling with GTC orders
+- `daily_scheduler.py`: Runs the routines on NYSE trading days
+- `scheduler_state.py`, `notices.py`, `watchdog.py`: Saved flags, notices and stuck-routine checks
 
 #### accounts/ - Multi-Account Management
 
 - `account_manager.py`: Multi-account support with API-first discovery
-- `account_tools.py`: Agent-compatible account tools
+- `account_tools.py`: Account helper functions
 
-#### instruments/ - Ticker & Timeframe Management
+#### instruments/ - Signals, Tickers and Timeframes
 
-- `ticker_database.py`: Ticker metadata and approved list management
-- `approved_tickers.py`: Per-ticker entry modes and limits
-- `timeframe_tools.py`: Timeframe parsing and conversion
-- `indicators.py`: MACD, RSI, and technical indicator calculations
-- `data_fetch.py`: Market data retrieval utilities
+- `voting_signal.py`: `VotingSignal`, the MACD+RSI vote
+- `multi_timeframe_voter.py`, `scanner_config.py`: Multi-timeframe voting and the scanner config
+- `entry_planning.py`: Entry, stop and target planning from daily bars
+- `ticker_database.py`, `approved_tickers.py`: Ticker metadata and per-ticker limits
+- `indicators.py`, `data_fetch.py`: Indicator calculations and market data retrieval
 
 #### utils/ - Trading Utilities
 
 - `unified_price_fetcher.py`: Current price fetching with fallback
-- `simple_signals.py`: Signal generation helpers
+- `simple_signals.py`: Signal generation helpers (`get_simple_signal`)
 - `report_generator.py`: Morning/evening report formatting
 
-### src/data_sources/ - Data Integration
+### src/cache/ and src/market_data/ - Data Integration
 
-**Purpose**: Market data acquisition, caching, and normalization
+**Purpose**: Market data acquisition and caching
 
-**Structure**:
-
-- `cache/`: SQLite-based caching (8-10x performance improvement, 90%+ hit rate)
-  - `sqlite_cache.py`: Production TradingCacheManager (ACID, thread-safe, futures-ready)
-  - `cache_adapter.py`: Transparent upgrade layer
-  - `unified_cache.py`, `market_data_cache.py`: Deprecated file-based caches
-- `sources/market/`: Multiple provider support (Alpaca, Alpha Vantage)
-- `processors/`: Data normalization and format standardization
-
-### src/voting/ - Voting Strategy Framework
-
-**Purpose**: Multi-indicator ensemble voting system
-
-**Files**:
-
-- `base_voting_strategy.py`: Abstract voting framework
-- `basic_voting_strategy.py`: MACD+RSI voting implementation
+- `src/cache/sqlite_cache.py`: TradingCacheManager (SQLite); `cache_adapter.py` and `unified_broker_cache.py` are built on first use
+- `src/market_data/`: Alpaca (`alpaca_market_data.py`) and Alpha Vantage (`alpha_vantage_market.py`) behind `unified_market_tool.py`
 
 ### src/utils/ - Utility Functions
 
 **Purpose**: General-purpose helper functions
 
-**Files**:
-
+- `state_paths.py`: Where `state/user.db` lives (`$AUTOTRADER_STATE_DIR` overrides it)
+- `market_hours.py`: NYSE calendar
 - `date_utils.py`: Date/time processing and timezone handling
-- `agent_utils.py`: Agent configuration and parsing
-- `output_manager.py`: Organized result management
 
 ## Key File Descriptions
 
@@ -213,10 +136,11 @@ OptionsCommander/                     # repository root
 **Commands**:
 
 ```bash
-python main.py test-voter              # Test VoterAgent with AAPL
-python main.py check-positions          # Check paper trading positions
-python main.py paper-trade [SYMBOL]    # Full trading cycle check
-python main.py analysis                 # Generate analysis reports
+python main.py                         # Interactive CLI (/help lists the commands)
+python main.py --run-due               # Run a routine if one is due now (what cron runs)
+python main.py --daemon                # Daily scheduler in the background
+python main.py --list-accounts         # List configured trading accounts
+python main.py --account ID            # Select a trading account
 ```
 
 ### src/trading/instruments/voting_signal.py
@@ -239,14 +163,14 @@ The MACD+RSI vote the CLI's `RealVoterStrategy` runs. Plain Python, no LLM.
 - Live trading confirmations required
 - Error handling and logging
 
-### src/trading/trading_cycle.py
+### src/trading/scheduling/trading_cycle.py
 
 **Cost-Efficient Operations**:
 
 **Daily Routines**:
 
-- Morning (9:20 AM ET): Reconcile, adjust stops, report
-- Evening (3:50 PM ET): EOD review, next-day prep
+- Morning (9:20 AM ET): Fetch broker state, record, reconcile, re-place stops, report
+- Evening (3:50 PM ET): the same, plus raising stops to the trailing level (#649)
 
 **Efficiency**:
 
@@ -267,7 +191,7 @@ The MACD+RSI vote the CLI's `RealVoterStrategy` runs. Plain Python, no LLM.
 └────────────┬───────────────────────┘
              ↓
 ┌────────────────────────────────────┐
-│  VoterAgent Decision                │
+│  VotingSignal Decision              │
 │  ├─ MACD calculation (13/34/8)      │
 │  ├─ RSI calculation (14/30/70)      │
 │  └─ Voting consensus                │
@@ -367,29 +291,27 @@ execution:
 
 ```bash
 tests/
-├── test_alpaca_basic.py              # Basic Alpaca integration (3/3)
-├── test_alpaca_market_data.py        # Market data retrieval
-├── test_alpaca_order_manager.py      # Order management (9/9)
-├── test_alpaca_advanced_orders.py    # Advanced orders (6/6)
-├── unit/agents/                      # Unit tests for agents
-└── tools/                            # Tool integration tests
+├── conftest.py                       # Sets the cache folder to a temp dir for every test
+├── module_sandbox.py                 # Restores sys.modules and get_config() after stubs
+├── unit/                             # Unit tests (conftest.py sets AUTOTRADER_STATE_DIR to a temp dir)
+└── integration/                      # Integration tests (-m db needs a local PostgreSQL)
 ```
 
-### Test Coverage
+`tests/` is gitignored; add new test files with `git add -f`. Read the test-safety notes in [the testing README](../07_testing/README.md) before a full run.
 
-**Current**: 35/35 tests passing
+### Running the Tests
 
-- Market Data: 3/3
-- Basic Orders: 9/9
-- Advanced Orders: 6/6
-- Advanced Features: 17/17
+```bash
+python -m pytest tests/ -m "not db"    # what CI runs (no database, no credentials)
+python -m pytest tests/ -m "db"        # database tests (read-only, needs a local PostgreSQL)
+```
 
 ## Dependencies
 
 ### Core Framework
 
 ```text
-agent-framework-core>=1.23,<2     # Microsoft Agent Framework: agents, FunctionTool (#606)
+agent-framework-core>=1.23,<2     # Microsoft Agent Framework: the natural-language parser only (#606)
 agent-framework-openai>=1.17,<2   # OpenAI chat clients; brings openai
 ```
 
@@ -411,8 +333,8 @@ openai                        # LLM integration (installed by agent-framework-op
 
 ### 1. Separation of Concerns
 
-- **Agents**: Decision making (Agent Framework agents)
-- **Tools**: Data access and calculations (pure functions)
+- **Signal**: `VotingSignal`, the MACD+RSI vote (pure functions, no LLM)
+- **Tools**: Plain functions in `src/cli/tools/` behind the slash commands
 - **Trading**: Broker integration and execution
 - **Data Sources**: Data acquisition and caching
 
@@ -434,28 +356,9 @@ Always reconcile local state with broker:
 
 ### 4. Extensibility
 
-**Adding Agents**:
+**Adding a slash command**: register a function with `@command("/name", help_text=...)` in `src/cli/commands/slash_commands.py`, put the logic in a plain function in `src/cli/tools/`, and add its entry to `config_defaults/help_commands.yaml`.
 
-```python
-class NewAgent(BaseAgent):
-    def __init__(self, name, **kwargs):
-        super().__init__(name=name, tools=tools, **kwargs)
-
-    def generate_reply(self, messages, context=None):
-        # Custom logic
-        pass
-```
-
-**Adding Tools**:
-
-```python
-new_tool = FunctionTool(
-    func=my_function,
-    name="tool_name",
-    description="Tool description"
-)
-ALL_TOOLS.append(new_tool)
-```
+**Adding a signal**: write a plain class or function under `src/trading/instruments/` and call it from a strategy such as `src/strategies/real_voter_strategy.py`.
 
 ---
 

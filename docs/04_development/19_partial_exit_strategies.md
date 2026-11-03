@@ -72,7 +72,7 @@ This document explores the theoretical and practical foundations for partial pos
 
 ## 5. Recommended Configuration for #248
 
-Based on this research, the `PartialExitManager` should implement the following default behavior for the **VoterAgent** (Trend/Momentum strategy):
+Based on this research, the `PartialExitManager` should implement the following default behavior for the MACD+RSI voting signal (`VotingSignal`; Trend/Momentum strategy):
 
 ### Default Strategy: "The Balanced Runner"
 

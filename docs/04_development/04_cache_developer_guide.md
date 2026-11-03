@@ -836,14 +836,14 @@ cache.archive_trade({
     'quantity': 100,
     'exit_price': 188.20,
     'realized_pnl': 270.00,
-    'strategy_name': 'VoterAgent'
+    'strategy_name': 'VotingSignal'
 })
 
 # Query trade history
-trades = cache.get_trade_history(strategy="VoterAgent")
+trades = cache.get_trade_history(strategy="VotingSignal")
 
 # Get statistics
-stats = cache.get_trade_stats(strategy="VoterAgent")
+stats = cache.get_trade_stats(strategy="VotingSignal")
 print(f"Win rate: {stats['win_rate_pct']:.1f}%")
 ```
 
@@ -890,7 +890,7 @@ CREATE TABLE signal_history (
     symbol TEXT NOT NULL,
     timeframe TEXT NOT NULL,
     signal_type TEXT NOT NULL,         -- 'BUY', 'SELL', 'HOLD'
-    strategy_name TEXT NOT NULL,       -- 'VoterAgent', 'MACD_RSI', etc.
+    strategy_name TEXT NOT NULL,       -- 'VotingSignal', 'MACD_RSI', etc.
     confidence REAL,                   -- 0-1 confidence score
     indicators_json TEXT,              -- Full indicator snapshot
     price_at_signal REAL,

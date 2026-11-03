@@ -42,7 +42,7 @@ Multi-provider data normalization
 
 ### Data Flow
 
-1. **Agent requests market data** via AutoGen tool wrapper
+1. **The caller requests market data** (the CLI, a routine or a research script)
 2. **Cache check**: TradingCacheManager queries SQLite database (~5-10ms)
 3. **Cache hit**: Return cached data (90%+ of requests)
 4. **Cache miss**: Fetch from Alpaca SDK, normalize, cache in SQLite, return
@@ -61,7 +61,7 @@ Multi-provider data normalization
 **Objective**: Generate trading signals using the MACD+RSI voting strategy
 
 ```bash
-VoterAgent processes market data
+VotingSignal processes market data
   ↓
 MACD+RSI voting logic
   ↓
@@ -70,9 +70,9 @@ Signal generation with confidence scoring
 
 ### Key Components
 
-**VoterAgent** (in use on the paper account):
+**VotingSignal** (`src/trading/instruments/voting_signal.py`, in use on the paper account; `RealVoterStrategy` runs it for CLI requests):
 
-- Microsoft AutoGen agent implementation
+- Plain functions, no agent framework
 - MACD+RSI voting coordination
 - Confidence scoring (strong/weak/none)
 - Position sizing recommendations
@@ -96,13 +96,13 @@ Signal generation with confidence scoring
 
 ### Decision Flow
 
-1. **VoterAgent receives** market data request
+1. **VotingSignal receives** market data
 2. **Calculate MACD** using Fibonacci periods (13/34/8)
 3. **Calculate RSI** using 14-period lookback
 4. **Compare signals** via voting logic
 5. **Determine action** (BUY/SELL/HOLD) with confidence
 6. **Recommend position size** based on signal strength
-7. **Return structured decision** to orchestrator
+7. **Return structured decision** to the caller (the CLI shows it; nothing opens a trade automatically)
 
 ### Backtested Performance (experiment 293, superseded)
 
@@ -163,7 +163,7 @@ Daily limit checks and position validation
 # Example calculation
 account_equity = $10,000
 max_position_pct = 10%  # Per-trade limit
-signal_confidence = "strong"  # From VoterAgent
+signal_confidence = "strong"  # From VotingSignal
 
 if signal_confidence == "strong":
     position_size = account_equity * max_position_pct * 1.0  # 100%
@@ -220,7 +220,7 @@ Position tracking and management
 
 ### Execution Flow
 
-1. **VoterAgent decision** passed to OrderManager
+1. **Order request** (typed by the user, after viewing a signal) passed to the order manager
 2. **Order validation** (risk checks, parameters)
 3. **Order submission** to Alpaca API
 4. **Order acknowledgment** with order ID
@@ -265,72 +265,16 @@ NEW → SUBMITTED → ACCEPTED → FILLED
 - Stop orders automatically placed
 - Notification sent (optional)
 
-## Phase 5: Multi-Agent Coordination (In Development)
+## Phase 5: Agent Coordination (Retired)
 
-**Objective**: Coordinate multiple specialized agents for comprehensive trading system
+### Retired Components
 
-```bash
-Scanner Agent → Market opportunity identification
-  ↓
-Risk Agent → Portfolio risk management
-  ↓
-Executor Agent → Trade execution coordination
-  ↓
-Orchestrator → Multi-agent workflow management
-```
+The scanner, risk and executor agents, the trading orchestrator and the agent bus (Issue #310) were retired in #331 (#650, #655-#657) and are not planned. The work they were to do is done elsewhere:
 
-### Planned Components
-
-**Scanner Agent** (Issue #310):
-
-- Multi-ticker market scanning
-- Opportunity identification across portfolio
-- Integration with VoterAgent for signal generation
-- Prioritization of trading candidates
-
-**Risk Agent** (Issue #310):
-
-- Portfolio-level risk assessment
-- Correlation analysis between positions
-- Maximum drawdown monitoring
-- Position sizing across multiple holdings
-
-**Executor Agent** (Issue #310):
-
-- Trade execution coordination
-- Order batching and optimization
-- Slippage minimization
-- Execution quality monitoring
-
-**Trading Orchestrator** (Issue #310):
-
-- Multi-agent workflow coordination
-- Message passing between agents
-- State management across agent interactions
-- Human-in-the-loop decision presentation
-
-### Future Architecture
-
-```bash
-Human Request
-  ↓
-Trading Orchestrator
-  ├─→ Scanner Agent (Find opportunities)
-  ├─→ VoterAgent (Generate signals)
-  ├─→ Risk Agent (Assess portfolio risk)
-  └─→ Executor Agent (Execute trades)
-       ↓
-Human Approval
-  ↓
-Order Execution
-```
-
-### Integration Points
-
-- **Shared Tools**: All agents access same market data, position tracking, order management
-- **Message Protocol**: Structured AutoGen messages for inter-agent communication
-- **State Persistence**: Shared state across agent coordination
-- **Human Interface**: CLI presentation of agent recommendations for approval
+- **Scanning**: the watchlist and scanner tiers (`/watchlist scanner`); nothing opens trades automatically
+- **Risk checks**: `SimpleRiskManager` for the CLI's orders
+- **Execution**: `AlpacaExecutionManager`, and the morning and evening routines for stops (`src/trading/scheduling/trading_cycle.py`)
+- **Human approval**: the CLI's CONFIRM mode (`/toggle`)
 
 ## Complete Trading Cycle Example
 
@@ -338,14 +282,14 @@ Order Execution
 
 #### Phase 1: Data Acquisition
 
-- Scanner requests AAPL data for 2024-01-15 to 2024-01-31
+- The CLI requests AAPL data for 2024-01-15 to 2024-01-31
 - TradingCacheManager queries SQLite database (cache hit)
 - Returns 11 trading days of OHLCV data in ~5-10ms
 
 #### Phase 2: Signal Generation
 
-- VoterAgent calculates MACD: Bullish crossover detected
-- VoterAgent calculates RSI: 45 (neutral, not oversold)
+- VotingSignal calculates MACD: Bullish crossover detected
+- VotingSignal calculates RSI: 45 (neutral, not oversold)
 - Voting result: MACD BUY + RSI HOLD = WEAK BUY signal
 - Position size: 50% (weak signal modifier)
 
@@ -368,7 +312,7 @@ Order Execution
 
 #### Phase 5: Position Management (Current System)
 
-- Monitor for exit signal (VoterAgent checks daily)
+- Monitor for exit signal (VotingSignal checks daily)
 - Stop-loss monitoring (OrderManager)
 - Exit on MACD+RSI SELL signal or stop trigger
 - Close position and record trade result
@@ -397,4 +341,4 @@ Order Execution
 
 ---
 
-*Comprehensive operational flow from market data acquisition through multi-agent coordination and trade execution.*
+*Operational flow from market data acquisition through trade execution. The agent coordination once planned as a fifth phase was retired in #331.*

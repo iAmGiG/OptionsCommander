@@ -4,7 +4,7 @@
 
 **Status**: The V0-V4 sentiment framework (including news data analysis) has been **DEPRECATED** as of the AutoTrader-AgentEdge architecture transition.
 
-**Current System**: **AutoGen VoterAgent** using **MACD+RSI voting** without sentiment dependencies.
+**Current System**: **`VotingSignal`** using **MACD+RSI voting** without sentiment dependencies.
 
 **Reason for Deprecation**: Complex sentiment analysis proved to have unproven ROI compared to simple, validated technical indicators.
 
@@ -182,11 +182,10 @@ The deprecated system used a **UnifiedNewsTool** that provided:
 
 ## Migration to Current System
 
-**Current Production System**: AutoGen VoterAgent with MACD+RSI voting
+**Current System**: `VotingSignal` with MACD+RSI voting
 
-- **File**: `src/autogen_agents/voter_agent.py`
+- **File**: `src/trading/instruments/voting_signal.py`
 - **Validation**: experiment 293's 0.856 Sharpe (in-sample) is superseded; the [live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md) finds no edge over buy-and-hold
-- **Testing**: `scripts/experiments/experiment_293_validation/test_voter_agent.py`
 - **Dependencies**: No news APIs, only market data (Alpaca)
 
 ## Related Issues & Documentation

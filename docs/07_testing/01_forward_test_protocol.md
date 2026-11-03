@@ -1,5 +1,7 @@
 # Forward Testing Protocol
 
+> **Historical protocol (Issue #324).** The forward-test code (`src/trading/forward_test_manager.py` and its runner scripts) was deleted in #435, so the imports and commands below no longer work. Nothing opens trades automatically; the 30-day paper signal run (#574 stage C) is deferred. See [the live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md).
+
 **Issue #324**: 30-Day Forward Testing Validation Before Live Deployment
 
 ## Overview
@@ -106,7 +108,7 @@ python scripts/forward_test_runner.py \\
 
 ### Recording Signals
 
-In your trading code (e.g., VoterAgent, ScannerAgent):
+In your trading code (for example, where `VotingSignal` is called):
 
 ```python
 from src.trading.forward_test_manager import ForwardTestManager, SignalType

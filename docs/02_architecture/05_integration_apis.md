@@ -109,12 +109,12 @@ trade = alpaca.get_latest_trade("AAPL")
 print(f"Price: ${trade['trade']['p']}, Size: {trade['trade']['s']}")
 ```
 
-#### Agent Usage - Market Data
+#### Usage - Market Data
 
 ```python
 from src.market_data.alpaca_market_data import create_alpaca_market_data_tool
 
-# Create tool for agents (SDK-powered)
+# Create the tool (SDK-powered)
 tool = create_alpaca_market_data_tool()
 
 # Use from the CLI or your own script
@@ -392,10 +392,10 @@ python tests/test_alpaca_advanced_orders.py
 ## Next Steps
 
 1. **Implement WebSocket Streaming** (#316 Event Bus integration)
-2. **Real-time Agent Integration** (#310 Complete the agents)
+2. **Real-time data for the CLI** (the agents of #310 were retired in #331)
 3. **Paper Trading Deployment** (#315 Paper Trading Enhancement)
 4. **Live Trading Validation** (Post-paper trading success)
 
 ---
 
-*Complete Alpaca Markets integration providing market data acquisition and order execution with safety checks, validation, and Agent Framework tools.*
+*Complete Alpaca Markets integration providing market data acquisition and order execution with safety checks and validation.*

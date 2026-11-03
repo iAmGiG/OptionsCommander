@@ -1,5 +1,7 @@
 # LLM Service Consolidation Analysis
 
+> **Historical analysis.** The agents, `BaseAgent` and the AutoGen `FunctionTool` code it discusses were retired (#606, #331). The one LLM call left is the natural-language parser, `src/parsers/llm_parser.py` (`LLMParser`).
+
 **Issue**: #406
 **Date**: November 2025
 

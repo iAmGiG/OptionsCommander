@@ -9,7 +9,7 @@ This section documents key architecture and design decisions for the OptionsComm
 | [01](01_code_organization.md) | Code Organization Standards | Accepted | Nov 2025 |
 | [02](02_error_handling_logging.md) | Error Handling & Logging Standards | Accepted | Nov 2025 |
 | [03](03_api_caching_patterns.md) | API Integration & Caching Patterns | Accepted | Nov 2025 |
-| [04](04_agent_singleton_patterns.md) | Agent Architecture & Singleton Patterns | Accepted | Nov 2025 |
+| [04](04_agent_singleton_patterns.md) | Agent Architecture & Singleton Patterns | Accepted, then retired with the agents (#331) | Nov 2025 |
 
 ## Related
 

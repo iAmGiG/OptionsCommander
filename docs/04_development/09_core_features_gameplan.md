@@ -1,5 +1,7 @@
 # Core Features Gameplan
 
+> **Historical plan (2025-12-14).** Paths under `src/autogen_agents/` were removed in #331; `VoterAgent` is now `VotingSignal` and `MultiTimeframeVoter` is in `src/trading/instruments/`. For current status see [the project status](02_project_status.md).
+
 **Created**: 2025-12-14
 **Updated**: 2025-12-14
 **Status**: Active - C Stream: COMPLETE (Core 2/2 + Infra 3/5)

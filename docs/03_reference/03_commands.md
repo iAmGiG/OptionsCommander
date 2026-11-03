@@ -2,12 +2,44 @@
 
 ## Interactive CLI Commands (Issue #396)
 
-The AutoGen-Trader CLI provides a comprehensive interactive trading assistant. Launch it with:
+The OptionsCommander CLI is an interactive trading assistant for the Alpaca paper account. Launch it with:
 
 ```bash
 python main.py                     # Interactive mode
+python main.py --run-due           # Run a routine if one is due now, then exit (what cron runs)
 python main.py --daemon            # Background scheduler mode
+python main.py --list-accounts     # List configured trading accounts
+python main.py --account ID        # Select a trading account
 ```
+
+Nothing opens trades automatically. Orders are placed only when you ask for them.
+
+### Slash Commands
+
+Every registered slash command (`@command(` in `src/cli/commands/slash_commands.py`). Usage and examples are in `config_defaults/help_commands.yaml`; `/help COMMAND` shows them in the CLI.
+
+| Command | Alias | What it does |
+| --- | --- | --- |
+| `/help [topic]` | | Show help |
+| `/exit` | `/quit` | Exit the CLI |
+| `/about` | `/status` | Status dashboard |
+| `/clear` | `/home`, `/cls` | Clear the screen and show the home page |
+| `/faq [section]` | `/guide` | Features and how-to guide |
+| `/tips` | | Moved to `/faq` |
+| `/toggle` | | Switch between CONFIRM and AUTO execution of typed orders |
+| `/mode [conservative\|moderate\|aggressive]` | | Show or set the trading mode |
+| `/schedule` | | Enter scheduler management (status, notices, ack) |
+| `/records [days\|all]` | | Daily equity, fills and realized P&L from the last routine's records. Last 10 recorded days by default. Read-only, no broker calls (#651) |
+| `/plan SYM [levels\|volume\|atr]` | | Entry, stop, target and risk/reward from completed daily bars; `levels` gives support and resistance, `volume` the volume against its average, `atr` the average true range. Places nothing |
+| `/trailing [explain [rate] \| compare \| example ENTRY PRICE STOP [rate]]` | | Trailing stop settings; the tiers of a climb rate (slow, medium, fast); the rates side by side; where the routines would put a given stop. Changes no stop |
+| `/gtt [list \| create SYM COND VAL [notes] \| oco SYM above P below P [days] \| summary \| status ID \| delete ID \| cancel ID \| enable ID \| disable ID]` | | GTT price and gain/loss triggers. Conditions: above, below (a price); gain, loss, trailing (a percent). `oco` makes two price alerts; the first to fire disables the other. Triggers are checked at the morning and evening routines only, and only for symbols you hold |
+| `/watchlist [list \| add SYM [name] \| remove SYM [name] \| show NAME \| create NAME [desc] \| delete NAME \| limits \| scanner]` | `/wl` | Watchlists. `delete` asks first |
+| `/partial [list \| summary \| active \| SYM \| levels SYM \| modify SYM N PRICE]` | `/pe` | Partial exit plans |
+| `/timeframe [mode \| list \| presets \| preset NAME \| single TF \| validate VALUE]` | `/tf` | Timeframe mode. Only 1d has been backtested |
+| `/voter [list \| info \| presets \| preset NAME \| promote NAME \| demote NAME \| role NAME active\|review]` | | Voter rankings and presets for the MACD+RSI signal (`VotingSignal`) |
+| `/backup [list \| create \| restore NAME \| export TABLE \| status \| cleanup [DAYS]]` | | Back up and restore `state/user.db`. `cleanup` removes backups older than DAYS (default 30) after listing them and asking; the 5 newest of each database stay |
+
+The commands under the headings below are typed requests (no slash) that the CLI parses, with the language model for free text.
 
 ### Trading Commands
 
@@ -67,18 +99,9 @@ python main.py --daemon            # Background scheduler mode
 
 ⚠️ **Note**: Only the 1d timeframe has been backtested (with no edge over buy-and-hold, #574). Other timeframes are experimental.
 
-### Forward Testing Commands (Issue #324)
+### Forward Testing (Issue #324)
 
-```bash
-# 30-day validation protocol
-> forward-test start TEST_NAME              # Start new forward test
-> forward-test start my_test --capital 10000  # Start with custom capital
-> forward-test report TEST_NAME             # Generate performance report
-> forward-test status                       # Check progress of active tests
-
-# Forward testing validates strategy performance before live deployment
-# Tests run for 30 days and generate go/no-go recommendations
-```
+The forward-test code was deleted in #435, so there are no `forward-test` commands that work. The 30-day paper signal run (#574 stage C) is deferred. See [the forward test protocol](../07_testing/01_forward_test_protocol.md) (historical).
 
 ### Scheduler Commands
 
@@ -114,15 +137,14 @@ Many commands support short aliases for faster typing:
 
 - `pos` → `show positions`
 - `port` → `show portfolio`
-- `ftest` → `forward-test`
 - `tf` → `timeframe`
 - `morning` → `morning-routine`
 - `monitor` → `monitor`
 
 ## Environment Setup
 
-- **Python version**: 3.10+
-- **Conda environment**: `conda activate AutoTrader`
+- **Python version**: 3.12
+- **Environment**: `~/miniconda3/envs/OptionsCommander/bin/python` (see CLAUDE.md)
 - **Install dependencies**: `pip install -e .`
 
 ## Current Development Commands

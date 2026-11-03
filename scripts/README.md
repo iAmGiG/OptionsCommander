@@ -150,7 +150,7 @@ python scripts/research/v0_v4_analysis/generate_results_summary.py --advanced
 - Execution cost modeling
 - Cost efficiency rankings
 
-**Note**: V0-V4 framework is deprecated in favor of VoterAgent (MACD+RSI), but research results preserved for reference.
+**Note**: V0-V4 framework is deprecated in favor of the MACD+RSI voting signal (`VotingSignal`), but research results preserved for reference.
 
 ### Configuration System Demos (`research/configuration_system/`)
 

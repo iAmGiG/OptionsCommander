@@ -26,4 +26,4 @@ Each entry should include:
 - **Summary**: 2-3 sentence overview
 - **Relevance**: How it applies to OptionsCommander
 - **Priority**: Low / Medium / Future
-- **Revisit When**: Trigger condition (e.g., "When building RiskAgent")
+- **Revisit When**: Trigger condition (e.g., "When building portfolio risk limits")

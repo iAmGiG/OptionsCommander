@@ -1,5 +1,7 @@
 # Configuration Migration Notes
 
+> **Historical notes.** The layout below lists `src/autogen_agents/` and an `agent_bus.py` fix; both were removed in #331. See [the codebase structure](01_codebase_structure.md) for the layout now.
+
 ## Overview
 
 Moving hardcoded configuration data to YAML files in `config_defaults/` for better maintainability.

@@ -171,8 +171,8 @@ Scheduler> notices
 
 `ack <number>` acknowledges one notice, `ack all` every open one. An acknowledged notice leaves
 `status`, `notices` and the routine reports; `notices all` still shows it for 30 days. Only a
-person acknowledges: the agent can read the open-notice count (`get_scheduler_status`), and no
-agent tool acknowledges.
+person acknowledges: the CLI's `get_scheduler_status` shows the open-notice count, and no tool
+acknowledges.
 
 ### Configuration Management
 

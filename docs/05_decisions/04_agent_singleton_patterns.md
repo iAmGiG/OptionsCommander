@@ -1,5 +1,7 @@
 # Agent Architecture & Singleton Patterns
 
+> **Historical decision record (Nov 2025).** The agents, `AgentFactory`, `AgentBus` and `BaseAgent` it describes were retired in #331 (#650, #655-#657); `src/autogen_agents/` no longer exists. The routines in `src/trading/scheduling/trading_cycle.py` and the plain functions in `src/cli/tools/` do this work now.
+
 **Status:** Accepted | **Date:** November 2025
 
 ## Context

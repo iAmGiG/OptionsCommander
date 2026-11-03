@@ -114,7 +114,6 @@ tests/
 ├── conftest.py                    # Shared mock fixtures (broker, OHLCV, signals, options/GEX)
 ├── module_sandbox.py              # Restores sys.modules and get_config() after stubs
 ├── unit/                          # Fast unit tests; conftest.py isolates state/
-│   ├── agents/                    # Agent tests
 │   ├── backtesting/               # Research backtester tests
 │   ├── cli/                       # CLI tests
 │   ├── data_sources/              # Market data tests

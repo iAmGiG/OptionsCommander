@@ -52,7 +52,7 @@ This directory contains guides for developers working on OptionsCommander (forme
 - **[Database-First Caching](10_database_first_caching.md)** - SQLite caching architecture
 - **[Config Migration Notes](11_config_migration_notes.md)** - Configuration system changes
 - **[GEX Quick Reference](12_gex_quick_reference.md)** - Gamma exposure analysis guide
-- **[GEX Voter Integration](13_gex_voter_integration_guide.md)** - GEX + VoterAgent integration plan (not pursued: no GEX overlay survived re-validation, #576)
+- **[GEX Voter Integration](13_gex_voter_integration_guide.md)** - GEX + voting signal integration plan (not pursued: no GEX overlay survived re-validation, #576)
 - **[LLM Consolidation](14_llm_consolidation_analysis.md)** - LLM usage analysis
 
 ### CLI Integration

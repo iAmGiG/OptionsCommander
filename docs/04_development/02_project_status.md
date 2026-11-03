@@ -1,53 +1,46 @@
 # Project Status & Development Roadmap
 
-**Last Updated**: October 2026 (status, performance and GEX resolution; the roadmap below is from December 2025)
-**Version**: v1.0 - VoterAgent in use on paper
-**Framework**: Microsoft Agent Framework 1.x (AutoGen 0.7.x until #606)
+**Last Updated**: November 2026 (status after the agents were retired, #331). The roadmap and milestones from `Development Roadmap` down are the December 2025 record, kept as history.
+**Framework**: no agent framework in the trading path. Microsoft Agent Framework 1.x is used only by the natural-language parser, `src/parsers/llm_parser.py` (`LLMParser`).
 
 ## Project Overview
 
-OptionsCommander (formerly RH2MAS) is a human-in-loop algorithmic trading platform using Microsoft Agent Framework (AutoGen until #606) with a pure-math MACD+RSI voting strategy. Backtested with the live rules and timing, the strategy has no edge over buy-and-hold of the same symbols (#574).
+OptionsCommander (formerly RH2MAS) is a trading platform on Alpaca. It runs on a paper account: scheduled routines manage the open positions' stops and keep daily records, and an interactive CLI places orders on request. The MACD+RSI voting signal (`VotingSignal`) has no backtested edge over buy-and-hold of the same symbols (#574 stage A), so nothing opens trades automatically.
 
 **Core Philosophy**: Pure mathematical indicators + human oversight > complex LLM sentiment analysis
 
-**Current Status**: VoterAgent and the daily scheduler run on a paper account (scheduler on cron); multi-agent framework in development; automated entries and the 30-day paper signal run (#574 stage C) are deferred
+**Current Status**: the daily scheduler runs on the paper account from cron (every 5 minutes, `main.py --run-due`). The agents (scanner, risk, executor, orchestrators, voter agent, agent bus) and the tool objects around them were retired in #331 (#650, #655-#657). Automated entries and the 30-day paper signal run (#574 stage C) are deferred. For the current rules, schedule and stops see the Current Status section of `CLAUDE.md`.
 
 ---
 
 ## Current Status
 
-### ✅ In Use (Phase 1 Complete)
-
-| Component | Status | Performance | Notes |
-| ----------- | -------- | ------------- | ------- |
-| **VoterAgent** | ✅ In use (paper) | Sharpe 0.69 at 5 bps, live rules, 2009 to 2026-10-09; no alpha vs buy-and-hold (#574) | Pure MACD+RSI voting. The 0.856 (experiment 293) and 0.468 (QQQ OOS) figures are superseded. |
-| **main.py CLI** | ✅ Functional | All 4 commands working | Fixed Oct 2025 |
-| **Alpaca Integration** | ✅ Validated | Paper trading operational | 35/35 tests passing |
-| **Position Management** | ✅ Complete | Broker-as-truth reconciliation | Real-time tracking |
-| **Order Management** | ✅ Complete | Bracket, stop, trailing orders | Full lifecycle support |
-| **Trading Cycle** | ✅ Optimized | 90% fewer API calls | Cost-efficient batching |
-| **Daily Scheduler** | ✅ In use (cron) | Morning 9:20, evening 3:50 ET | Raises, re-places and renews stops (#586, #596) |
-| **Market Data** | ✅ Complete | Alpaca + Alpha Vantage | Fallback (Polygon removed, #607) |
-| **Documentation** | ✅ Complete | Restructured with numbering | Presentation-ready |
-
-### 🚧 Phase 2 Agents in Development (Nov 2025)
+### In Use
 
 | Component | Status | Notes |
 | ----------- | -------- | ------- |
-| **ScannerAgent** | Removed (#331) | Never reachable from a command; its watchlist config stays for `/watchlist scanner` |
-| **RiskAgent** | Removed (#331) | Never reachable from a command; `SimpleRiskManager` does the CLI's risk checks |
-| **ExecutorAgent** | Removed (#331) | Never reachable from a command; `AlpacaExecutionManager` places the CLI's orders |
-| **TradingOrchestrator** (multi-agent) | Removed (#331) | The CLI uses `src/core/trading_orchestrator.py` |
-| **TradingPipeline** | Removed (#331) | Never called by anything; the routines in `trading_cycle.py` do this work |
-| **Agent Bus** | In use | Written by the voter, read by nothing yet; the factory was removed (#331) |
-| **TrailingStopManager** | ✅ Complete | Progressive stop logic (#321) |
-| **GTT Triggers** | ✅ Complete | Persistent price triggers, multi-day trailing stops (#340) |
-| **Trading Modes** | ✅ Complete | Natural language risk modes (#400) |
-| **Human-in-Loop CLI** | ✅ Complete | Interactive trade approval interface with multiple execution modes |
+| **VotingSignal** | In use (paper) | `src/trading/instruments/voting_signal.py`; MACD+RSI voting. `RealVoterStrategy` (`src/strategies/real_voter_strategy.py`) runs it for CLI requests. Live rules, 5 bps, 2009 to 2026-10-09: Sharpe 0.69, no alpha vs buy-and-hold (#574). The 0.856 (experiment 293) and 0.468 (QQQ OOS) figures are superseded. |
+| **Interactive CLI** | In use | `main.py`; slash commands are listed in [the command reference](../03_reference/03_commands.md). Plain functions in `src/cli/tools/` sit behind them. |
+| **Daily Scheduler** | In use (cron) | Morning 09:20 and evening 15:50 ET on trading days (`CostEfficientTradeCycle`, `src/trading/scheduling/`). Records the account, positions and fills; re-places and renews stops; raises stops to the trailing level in the evening routine only (#649); notices, reports and a run lock (#618) |
+| **Position and order management** | In use | Broker-as-truth reconciliation (`src/trading/state/state_reconciler.py`); stops are GTC sell stops |
+| **TrailingStopManager** | In use | Progressive tiers (#321); `src/trading/orders/trailing_stop_manager.py` |
+| **GTT triggers** | In use | Persistent price triggers (#340), `src/trading/gtt/`. Checked at the morning and evening routines only, for symbols you hold |
+| **Trading modes** | In use | Conservative, moderate and aggressive (#400). The saved mode, which `/mode` shows, sets the CLI's sizing |
+| **Market data** | In use | Cache, then Alpaca, then Alpha Vantage (Polygon removed, #607) |
 
-**Branch Status**: Core pipeline infrastructure complete. Phase 2 agent implementations in active refactoring. Architecture decision: using Agent Bus (#390) for inter-agent communication.
+### Retired (#331)
+
+| Component | Where the work happens now |
+| ----------- | ------- |
+| **VoterAgent, ScannerAgent, RiskAgent, ExecutorAgent** | `VotingSignal` and `RealVoterStrategy` for the signal; `SimpleRiskManager` for the CLI's risk checks; `AlpacaExecutionManager` for the CLI's orders. The scanner's watchlist config stays for `/watchlist scanner` |
+| **The agent TradingOrchestrator, AgentFactory, TradingPipeline** | `src/core/trading_orchestrator.py` (the CLI's request pipeline, not an agent) for typed requests; the routines in `src/trading/scheduling/trading_cycle.py` for the daily loop |
+| **Agent bus and `BaseAgent`** | Nothing; the bus was written by the voter and read by nothing |
+| **`FunctionTool` objects, tool registry, approval flags** | Plain functions in `src/cli/tools/` |
+| **User price alerts and portfolio overrides** | GTT triggers (`/gtt`) |
 
 ---
+
+> **Historical roadmap.** From here to the end, this document is the roadmap, metrics and milestone log as of December 2025. It names agents, an agent bus and tools that were retired in #331 (#650, #655-#657). Current status is above and in `CLAUDE.md`; the history of the agent work is in [the project history](../01_overview/04_project_history.md).
 
 ## Development Roadmap
 
@@ -323,7 +316,7 @@ This engine checks SL/TP triggers intraday rather than assuming positions are he
 
 ## Key Metrics
 
-### VoterAgent Performance (Live-Rules Baseline, #574 stage A)
+### Signal Performance (Live-Rules Baseline, #574 stage A)
 
 Live rules at live timing, 19-symbol watchlist, 2009 to 2026-10-09, 5 bps a side ([live-rules baseline](../08_research/03_strategy_research/live_rules_baseline.md)):
 
@@ -585,15 +578,13 @@ See [Code Quality Guide](06_code_quality.md) for detailed tracking and standards
 
 ```bash
 # Clone and setup
-git clone https://github.com/iAmGiG/AutoGen-TradingSystem.git
-cd AutoGen-TradingSystem
-conda create -n trading python=3.10
-conda activate trading
-pip install -e .
+git clone https://github.com/iAmGiG/OptionsCommander.git
+cd OptionsCommander
+pip install -e .                  # Python 3.12; see CLAUDE.md for the project environment
 
 # Configure credentials in config/config.json
-# Run test
-python main.py test-voter
+# Run the tests (no database, no credentials)
+python -m pytest tests/ -m "not db"
 ```
 
 ### Development Areas (Prioritized)

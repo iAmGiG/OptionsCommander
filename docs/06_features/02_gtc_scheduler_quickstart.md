@@ -283,7 +283,7 @@ python main.py --run-due
 3. **Review execution log**: Ensure 100% success rate
 4. **Customize schedule**: Adjust times in `scheduler_config.yaml` if needed
 
-Automated entries from VoterAgent signals are deferred (#574): the routines manage existing
+Automated entries from `VotingSignal` signals are deferred (#574): the routines manage existing
 positions only.
 
 ## Advanced Usage

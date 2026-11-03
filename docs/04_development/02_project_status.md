@@ -25,7 +25,7 @@ OptionsCommander (formerly RH2MAS) is a trading platform on Alpaca. It runs on a
 | **Position and order management** | In use | Broker-as-truth reconciliation (`src/trading/state/state_reconciler.py`); stops are GTC sell stops |
 | **TrailingStopManager** | In use | Progressive tiers (#321); `src/trading/orders/trailing_stop_manager.py` |
 | **GTT triggers** | In use | Persistent price triggers (#340), `src/trading/gtt/`. Checked at the morning and evening routines only, for symbols you hold |
-| **Trading modes** | In use | Conservative, moderate (live) and aggressive (#400) |
+| **Trading modes** | In use | Conservative, moderate and aggressive (#400). The saved mode, which `/mode` shows, sets the CLI's sizing |
 | **Market data** | In use | Cache, then Alpaca, then Alpha Vantage (Polygon removed, #607) |
 
 ### Retired (#331)
@@ -33,7 +33,7 @@ OptionsCommander (formerly RH2MAS) is a trading platform on Alpaca. It runs on a
 | Component | Where the work happens now |
 | ----------- | ------- |
 | **VoterAgent, ScannerAgent, RiskAgent, ExecutorAgent** | `VotingSignal` and `RealVoterStrategy` for the signal; `SimpleRiskManager` for the CLI's risk checks; `AlpacaExecutionManager` for the CLI's orders. The scanner's watchlist config stays for `/watchlist scanner` |
-| **TradingOrchestrator, AgentFactory, TradingPipeline** | The routines in `src/trading/scheduling/trading_cycle.py` |
+| **The agent TradingOrchestrator, AgentFactory, TradingPipeline** | `src/core/trading_orchestrator.py` (the CLI's request pipeline, not an agent) for typed requests; the routines in `src/trading/scheduling/trading_cycle.py` for the daily loop |
 | **Agent bus and `BaseAgent`** | Nothing; the bus was written by the voter and read by nothing |
 | **`FunctionTool` objects, tool registry, approval flags** | Plain functions in `src/cli/tools/` |
 | **User price alerts and portfolio overrides** | GTT triggers (`/gtt`) |

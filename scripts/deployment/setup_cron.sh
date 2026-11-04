@@ -1,15 +1,15 @@
 #!/bin/bash
-# Setup crontab for AutoGen Trading System (alternative to systemd)
+# Setup crontab for OptionsCommander (alternative to systemd)
 # Issue #287 - GTC Daily Execution
 
 set -e
 
-echo "=== AutoGen Trading Scheduler - Crontab Setup ==="
+echo "=== OptionsCommander Scheduler - Crontab Setup ==="
 echo ""
 
 # Configuration: this checkout, and the Python to run it (override either from the environment)
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-PYTHON_BIN="${PYTHON_BIN:-$HOME/miniconda3/envs/AutoGex/bin/python}"
+PYTHON_BIN="${PYTHON_BIN:-$HOME/miniconda3/envs/OptionsCommander/bin/python}"
 
 # Check if project exists
 if [ ! -d "$PROJECT_ROOT" ]; then
@@ -31,8 +31,9 @@ mkdir -p "$PROJECT_ROOT/state"
 # the host timezone, on NYSE trading days only, within 5 minutes of each routine's time
 # (config_defaults/scheduler_config.yaml), once per day. A lock in state/ stops a run
 # from overlapping a long retry, the daemon, or a manual run.
-# stdout duplicates state/scheduler.log (rotated), so only errors are kept
-CRON_DUE="*/5 * * * * cd $PROJECT_ROOT && $PYTHON_BIN main.py --run-due > /dev/null 2>> $PROJECT_ROOT/state/scheduler-cron.err"
+# stdout duplicates state/scheduler.log (rotated), so only errors are kept. -s keeps the user
+# site (~/.local) off the path, so only the env's packages load
+CRON_DUE="*/5 * * * * cd $PROJECT_ROOT && $PYTHON_BIN -s main.py --run-due > /dev/null 2>> $PROJECT_ROOT/state/scheduler-cron.err"
 
 EXISTING="$(crontab -l 2>/dev/null | grep -v '^[[:space:]]*#' | grep -e "--run-due" || true)"
 if printf '%s\n' "$EXISTING" | grep -qF "cd $PROJECT_ROOT && "; then

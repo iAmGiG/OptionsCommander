@@ -1,13 +1,13 @@
 [project]
 name = "AutoTrader-AgentEdge"
 version = "1.0.0"
-description = "Multi-agent AI trading platform powered by AgentEdge architecture"
+description = "Paper trading on Alpaca: scheduled stop management and a human-in-the-loop CLI"
 authors = [{name = "iAmGiG"}]
 license = "AGPL-3.0-only"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12"
 dependencies = [
-    # Microsoft Agent Framework (#606; replaced AutoGen): agents, tools, OpenAI client
+    # Microsoft Agent Framework (#606): the natural-language parser only (#331)
     "agent-framework-core>=1.23,<2",
     "agent-framework-openai>=1.17,<2",  # brings openai
     # Trading APIs

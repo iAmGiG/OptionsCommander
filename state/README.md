@@ -1,71 +1,23 @@
-# State Management
+# State Directory
 
-This directory contains state files for the RH2MAS trading system.
+Local state, logs and notices for the scheduler and the CLI. Everything here except this file is gitignored. The broker is the truth: local state is reconciled to it on every routine.
 
-## Current State Files
+`$AUTOTRADER_STATE_DIR` moves this directory (`src/utils/state_paths.py`). Tests set it to a temp dir, so they never touch these files.
 
-The system uses simple JSON files for state persistence:
+## Files
 
-### **positions.json** (TradeCycle)
+| File | Written by | Holds |
+| ---- | ---------- | ----- |
+| `user.db` | Several managers (SQLite) | Daily records (`account_daily`, `position_daily`, `fills`), GTT triggers and trailing-stop state (`gtt_triggers`), scheduler flags and run history (`scheduler_state`, `scheduler_history`), trading mode changes (`trading_mode_history`); other tables, such as watchlists, are created on first use |
+| `cost_efficient_positions.json` | `LocalStateManager` | Each position's entry, quantity and stop as last reconciled; saved atomically |
+| `positions.json` | `PositionManager` | A cache of the broker's positions (the broker is read first) |
+| `notices.json`, `notices.lock` | Notices (#618) | Failed, missed or stuck routines, stop breaches and positions without a stop, until acknowledged (`/schedule`, then `notices` and `ack`) |
+| `scheduler.log` | The scheduler | The routines' log, rotated |
+| `scheduler-cron.err` | The cron entry | Errors from `main.py --run-due` only; normally empty |
+| `scheduler.lock` | The scheduler | The `flock` that stops overlapping runs |
+| `scheduler_execution_log.json` | The scheduler | Recent run records |
+| `partial_exits.json` | `PartialExitManager` | Partial exit plans, once any are registered |
+| `backups/` | `/backup` (`DBBackupManager`) | Database backups (`user_*.db`, `cache_*.db`); `/backup cleanup` removes only `.db` backups past retention, keeping the 5 newest of each |
+| `exports/` | `/backup export` | Table exports as JSON |
 
-- **Purpose**: Trade lifecycle state persistence (SIGNAL → ORDER → POSITION → CLOSED)
-- **Managed By**: `TradeCycle` class in `src/trading/trade_lifecycle.py`
-- **Contains**: Individual trade data by symbol with order IDs, prices, timestamps
-- **Location**: `state/positions.json`
-- **Format**: `{symbol: TradeData}` dictionary structure
-
-## State Management Implementation
-
-### **Simple JSON Persistence**
-
-- **Primary Source**: Alpaca broker API (live data)
-- **Local Files**: State persistence across restarts only
-- **No Complex Caching**: Direct API calls with rate limiting
-
-### **Trade Lifecycle States**
-
-```bash
-SIGNAL_GENERATED → ORDER_PENDING → POSITION_OPEN → POSITION_CLOSED
-```
-
-### **Usage Example**
-
-```python
-# Create trade cycle
-trade = TradeCycle('TQQQ', 'BULLISH', 0.75)
-
-# Place bracket order (entry + stop + target)
-success = trade.place_entry_order(current_price)
-
-# Monitor for fills
-if trade.check_order_fills():
-    # State automatically transitions: ORDER_PENDING → POSITION_OPEN
-    pass
-
-# Save state to positions.json
-trade.save_state()
-```
-
-### **State File Structure**
-
-```json
-{
-  "TQQQ": {
-    "symbol": "TQQQ",
-    "state": "open", 
-    "entry_price": 50.00,
-    "quantity": 100,
-    "order_ids": {"parent": "order_123"}
-  }
-}
-```
-
-## Legacy Files
-
-**Status**: Legacy files moved to `/deprecated/state_legacy/` at project root.
-
----
-
-*Simple state management for production trading system.*
-
-*Last Updated: September 10, 2025 - Post Critical Implementation Fixes*
+Reports are in `reports/daily/`, and the market-data cache is `.cache/trading_data.db` (`$AUTOTRADER_CACHE_DIR`), not here.

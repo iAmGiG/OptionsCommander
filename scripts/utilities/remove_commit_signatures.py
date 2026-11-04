@@ -4,7 +4,7 @@ Remove Claude Code signatures from git commit messages.
 
 This script is designed to be used with git filter-branch:
 
-    git filter-branch -f --msg-filter 'scripts/remove_commit_signatures.py' HEAD~10..HEAD
+    git filter-branch -f --msg-filter 'scripts/utilities/remove_commit_signatures.py' HEAD~10..HEAD
 
 It reads commit messages from stdin and removes:
 - Lines containing "Generated with [Claude Code]"

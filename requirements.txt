@@ -1,7 +1,7 @@
-# AutoGen-TradingSystem Dependencies
+# OptionsCommander dependencies (keep in step with pyproject.toml)
 # Python 3.12+ required
 
-# Microsoft Agent Framework (#606; replaced AutoGen): agents, tools, OpenAI client
+# Microsoft Agent Framework: the natural-language parser only (#331); brings openai
 agent-framework-core>=1.23,<2
 agent-framework-openai>=1.17,<2  # brings openai
 

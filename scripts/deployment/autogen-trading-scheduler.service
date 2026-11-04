@@ -15,7 +15,7 @@ Environment="PYTHONPATH=/home/trader/OptionsCommander"
 # The same entry point as the CLI scheduler's "start", so the CLI sees it as running.
 # Routine times are in ET whatever the host timezone, on NYSE trading days only, and a
 # lock in state/ keeps it from overlapping with a cron or manual run.
-ExecStart=/home/trader/miniconda3/envs/AutoGex/bin/python -u main.py --daemon
+ExecStart=/home/trader/miniconda3/envs/OptionsCommander/bin/python -s -u main.py --daemon
 
 # Restart policy
 Restart=on-failure

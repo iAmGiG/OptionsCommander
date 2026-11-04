@@ -3,7 +3,7 @@
 
 # Microsoft Agent Framework: the natural-language parser only (#331); brings openai
 agent-framework-core>=1.23,<2
-agent-framework-openai>=1.17,<2  # brings openai
+agent-framework-openai>=1.17,<2
 
 # Trading APIs
 alpaca-py>=0.43.2
@@ -24,6 +24,7 @@ psycopg2-binary>=2.9.9
 # Utility
 pyyaml>=6.0.3
 
-# CLI enhancements (Windows tab completion and editing)
-# pyreadline3 is pip-only (not available via conda), already installed
-# Provides: Tab completion, Ctrl+Backspace, arrow key history on Windows
+# Optional extras (pyproject.toml): pip install -e ".[gex]" for the gex package,
+# requirements-dev.txt (or ".[dev]") for the dev tools.
+# Windows: the CLI's history and tab completion use readline; pip install pyreadline3
+# for them (the CLI runs without it).

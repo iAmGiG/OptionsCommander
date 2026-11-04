@@ -49,7 +49,7 @@ dev = [
     "radon>=6.0.1",
     "vulture>=2.10",
     # Pre-commit hooks
-    "pre-commit>=3.6.0",
+    "pre-commit>=3.2.0",  # the hook versions need 3.2+; CI uses 4.7.0
     # Testing
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
@@ -59,11 +59,6 @@ dev = [
     # Utilities
     "ipython>=8.12.0",
 ]
-
-[tool.autopep8]
-# Main autopep8 configuration
-ignore = ["E402"]  # module level import not at top of file
-max_line_length = 100
 
 [tool.ruff]
 # Ruff lints, sorts imports (rule I) and formats (`ruff format`, Black-compatible); it
@@ -95,17 +90,6 @@ known-local-folder = ["src", "config"]
 "scripts/verify_free_data_access.py" = ["I001"]
 # Issue #414: TrailingStopManager has justified complexity for profit zone logic
 "src/trading/orders/trailing_stop_manager.py" = ["C901"]
-
-[tool.pycodestyle]
-# For tools that read from pyproject.toml
-ignore = ["E402"]
-max-line-length = 100
-
-[tool.flake8]
-# Note: flake8 doesn't support pyproject.toml natively, this is for reference
-# Real config stays in .flake8 file
-ignore = ["E402"]
-max-line-length = 100
 
 [tool.pytest.ini_options]
 # Pytest configuration

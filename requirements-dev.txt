@@ -18,7 +18,7 @@ radon>=6.0.1              # Complexity analysis
 vulture>=2.10             # Dead code finder
 
 # Pre-commit hooks
-pre-commit>=3.2.0         # Git hooks framework (the hook versions need 3.2+)
+pre-commit>=3.2.0         # Git hooks framework (the hook versions need 3.2+; CI uses 4.7.0)
 
 # Testing
 pytest>=7.4.0             # Testing framework

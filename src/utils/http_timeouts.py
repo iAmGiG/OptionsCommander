@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 CONNECT_TIMEOUT_SECONDS = 10
 READ_TIMEOUT_SECONDS = 30
 DEFAULT_TIMEOUT: Tuple[float, float] = (CONNECT_TIMEOUT_SECONDS, READ_TIMEOUT_SECONDS)
+# The dead-man heartbeat ping runs on every cron tick, so it gives up quickly
+HEARTBEAT_TIMEOUT: Tuple[float, float] = (5, 5)
 
 
 def set_default_timeout(

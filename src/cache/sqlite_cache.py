@@ -20,7 +20,53 @@ import pandas as pd
 from src.cache.options_cache import OptionsCacheMixin
 from src.cache.trade_cache import TradeCacheMixin
 from src.utils.date_utils import get_datetime_now, now_iso, parse_date_string
+from src.utils.market_hours import market_today, unfinished_session_day
 from src.utils.state_paths import get_cache_db_path
+
+LIVE_BAR_SOURCE = "alpaca_live"  # AlpacaMarketData's synthetic bar from the last trade
+
+
+def _dated_rows(data: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    """
+    A copy of the bars with a string 'date' column (a day for daily and longer bars, a full
+    timestamp for intraday ones), daily bars limited to the finished ones.
+
+    Raises:
+        ValueError: If data has no date column/index
+    """
+    df = data.copy()
+
+    # Ensure we have a date column: an explicit one wins, else the DatetimeIndex
+    # (whatever its name) becomes it
+    if isinstance(df.index, pd.DatetimeIndex) and "date" not in df.columns:
+        index_name = df.index.name or "index"
+        df = df.reset_index().rename(columns={index_name: "date"})
+    elif isinstance(df.index, pd.DatetimeIndex):
+        df = df.reset_index(drop=True)
+    elif "date" not in df.columns:
+        raise ValueError("Data must have 'date' column or DatetimeIndex")
+
+    if timeframe in ("1Day", "1Week", "1Month"):
+        df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+    else:
+        df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
+    return _finished_daily_bars(df) if timeframe == "1Day" else df
+
+
+def _finished_daily_bars(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    The daily bars that won't change any more (#620): not today's while the session is
+    open, and never a synthetic bar made from the last trade. Either would otherwise be
+    served later as that day's bar.
+    """
+    keep = pd.Series(True, index=df.index)
+    if "source" in df.columns:
+        keep &= df["source"] != LIVE_BAR_SOURCE
+    forming = unfinished_session_day()
+    if forming is not None:
+        keep &= df["date"] != forming
+    return df[keep]
+
 
 logger = logging.getLogger(__name__)
 
@@ -472,26 +518,10 @@ class TradingCacheManager(OptionsCacheMixin, TradeCacheMixin):
             return
 
         try:
-            # Prepare DataFrame
-            df = data.copy()
-
-            # Ensure we have a date column: an explicit one wins, else the DatetimeIndex
-            # (whatever its name) becomes it
-            if isinstance(df.index, pd.DatetimeIndex) and "date" not in df.columns:
-                index_name = df.index.name or "index"
-                df = df.reset_index().rename(columns={index_name: "date"})
-            elif isinstance(df.index, pd.DatetimeIndex):
-                df = df.reset_index(drop=True)
-            elif "date" not in df.columns:
-                raise ValueError("Data must have 'date' column or DatetimeIndex")
-
-            # Convert date to string format
-            # For intraday data, preserve full timestamp; for daily, use just date
-            if timeframe in ("1Day", "1Week", "1Month"):
-                df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
-            else:
-                # Intraday: preserve full ISO timestamp
-                df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
+            df = _dated_rows(data, timeframe)
+            if df.empty:
+                self.logger.debug(f"Nothing finished to cache for {symbol}")
+                return
 
             # Add metadata columns
             df["asset_type"] = asset_type
@@ -767,7 +797,7 @@ class TradingCacheManager(OptionsCacheMixin, TradeCacheMixin):
         """
         try:
             end_dt = parse_date_string(end_date)
-            today = get_datetime_now().date()
+            today = pd.Timestamp(market_today()).date()  # the ET date (#620)
 
             # Historical data should never practically expire
             if end_dt.date() < today - timedelta(days=2):

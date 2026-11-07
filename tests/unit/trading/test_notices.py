@@ -76,6 +76,9 @@ def test_the_file_is_in_the_state_directory_with_its_lock_beside_it():
         "count",
         "acked_at",
         "resolved_at",
+        "emailed_at",
+        "email_attempts",
+        "email_last_try",
     }
 
 

@@ -400,7 +400,8 @@ def _gtt_create_trigger(args_str: str) -> str:
             "  /gtt create SPY below 450       # Alert when SPY drops to $450\n"
             "  /gtt create TSLA gain 10        # Alert on a 10% gain from now\n"
             "  /gtt create NVDA trailing 5     # Alert 5% below its high\n\n"
-            "Checked at the morning and evening routines, for symbols you hold."
+            "Held symbols are checked at the morning and evening routines; other symbols at the\n"
+            "evening routine (when a fresh price exists), alerts only."
         )
 
     parts = args_str.split(maxsplit=3)
@@ -435,7 +436,8 @@ def _gtt_create_oco(args_str: str | None) -> str:
     usage = (
         "Usage: /gtt oco <symbol> above <price> below <price> [days]\n\n"
         "Alerts when either price is reached; the first to fire disables the other.\n"
-        "Checked at the morning and evening routines, for symbols you hold."
+        "Held symbols are checked at the morning and evening routines; other symbols at the\n"
+        "evening routine (when a fresh price exists), alerts only."
     )
     parts = (args_str or "").split()
     if len(parts) not in (5, 6):
@@ -608,6 +610,14 @@ def cmd_trailing(session, args: str = None):
         /trailing example ENTRY PRICE STOP [rate]  # Where the routines would put that stop
     """
     safe_print(_trailing_view(args))
+
+
+@command("/alerts", help_text="Position alerts against their stops and targets")
+def cmd_alerts(session):
+    """Show each position's distance to its stop and target (reads the broker; #659)."""
+    from src.cli.tools.alert_tools import show_alerts
+
+    safe_print(show_alerts())
 
 
 @command("/records", help_text="Daily equity, fills and realized P&L", has_args=True)

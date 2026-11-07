@@ -338,8 +338,8 @@ Success rate: 100.0%
 ### Notices
 
 A failure in the unattended loop leaves a *notice* in `state/notices.json`, so it is visible
-without reading logs (#342). Notices are local: they involve no network call (email and a
-heartbeat are a later change). There is one notice per condition per day, so a condition seen
+without reading logs (#342). Notices are local: they involve no network call (CRITICAL ones
+are also emailed when [email is set up](#email-and-heartbeat)). There is one notice per condition per day, so a condition seen
 again only updates the notice's count and last-seen time.
 
 | Key | Severity | Raised when |
@@ -501,12 +501,38 @@ python -m src.trading.scheduling.daily_scheduler --mode once --task morning_rout
 3. Increase retry delay: `retry_delay_seconds` in config
 4. Check network stability
 
+### Email and heartbeat
+
+`enable_notifications` in `scheduler_config.yaml` gates nothing. Email and the heartbeat are set
+in `config/config.json` (gitignored), under `notifications`:
+
+| Key | Meaning |
+| --- | --- |
+| `notifications.email.smtp_host`, `smtp_port` | The mail server |
+| `notifications.email.use_ssl` | `true`: SMTP over SSL (usually port 465); `false`: STARTTLS (usually 587) |
+| `notifications.email.username`, `password` | Login (an app password, not your main one) |
+| `notifications.email.from_addr` | Sender |
+| `notifications.email.to_addrs` | A list of recipients (a single string works too) |
+| `notifications.heartbeat_url` | A URL pinged with a GET after each healthy cron tick |
+
+Email is on only when every email key is set; otherwise it is off and silent (`status` names
+the missing keys). One message goes out for the open CRITICAL notices not yet sent; WARNING
+notices are never emailed. A failed send is retried after 15 minutes, up to 3 attempts per
+notice; at most 10 emails go out per market day (`state/email_log.json`). A notice that
+reopens emails again. A crashed `--run-due` check is emailed in the same tick. The password,
+user name, host and heartbeat URL are never logged. Check the settings with `notify test`.
+
+The heartbeat is for a service that alerts when the pings stop (the cron entry or the host is
+down). `--run-due` pings after each tick that ends without error, and the daemon at most once
+every 5 minutes; a failed ping is only logged.
+
 ## Future Enhancements
 
 ### Planned (Future Issues)
 
 - [x] Local notices for failures (done, see [Notices](#notices))
-- [ ] Email/SMS notifications on failures, and a dead-man heartbeat for a cron that stops
+- [x] Email for CRITICAL notices, and a dead-man heartbeat for a cron that stops (done, see [Email and heartbeat](#email-and-heartbeat))
+- [ ] SMS notifications
 - [ ] Telegram bot integration
 - [x] Skip weekends and NYSE holidays; move the evening routine on early closes (done)
 - [ ] Multi-account support

@@ -57,6 +57,16 @@ def _get_condition_type(condition_str: str):
     return mapping.get(condition_str.lower())
 
 
+def _checked_text(symbol: str, is_order: bool) -> str:
+    """When the routines check a new trigger, for its confirmation message (#658)."""
+    if is_order:
+        return f"Checked at the routines while {symbol} is held."
+    return (
+        f"Checked at both routines while {symbol} is held, and at the evening routine "
+        "when it isn't (if a fresh price exists)."
+    )
+
+
 def _get_action_type(action_str: str):
     """Convert action string to ActionType enum."""
     from src.trading.gtt.gtt_manager import ActionType
@@ -133,7 +143,8 @@ def create_gtt_trigger(
     Create a new GTT (Good-Till-Triggered) trigger.
 
     GTT triggers persist across sessions and are checked twice daily (morning 9:20 AM and
-    evening 3:50 PM ET), for symbols currently held.
+    evening 3:50 PM ET) for symbols held; symbols not held are
+    checked at the evening routine only, when a fresh price exists, and only alerts run there.
 
     Args:
         symbol: Stock ticker symbol (e.g., "SPY", "AAPL")
@@ -208,7 +219,7 @@ def create_gtt_trigger(
                     f"GTT trigger created: {trigger.symbol} {trigger.condition_type} "
                     f"{_value_text(trigger.condition_type, trigger.trigger_value)}"
                     + (f", then {side} {quantity} at market" if is_order else "")
-                    + f". Checked at the routines while {trigger.symbol} is held."
+                    + f". {_checked_text(trigger.symbol, is_order)}"
                 ),
             }
 

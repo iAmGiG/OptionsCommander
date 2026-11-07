@@ -586,3 +586,29 @@ def mock_intraday_gex_manager(mock_gex_snapshots):
     ]
     mgr.get_snapshot_count.return_value = 21
     return mgr
+
+
+# =============================================================================
+# Notifications (#342): no real mail or ping from any test
+# =============================================================================
+
+
+class RealNetworkUsed(BaseException):
+    """A test reached for the real network; a BaseException, so no handler hides it."""
+
+
+def _refuse(*args, **kwargs):
+    raise RealNetworkUsed("a test tried to use the network (SMTP or the heartbeat)")
+
+
+@pytest.fixture(autouse=True)
+def no_notifications(monkeypatch):
+    """No real SMTP or heartbeat request, and the notifier sees no settings by default."""
+    import smtplib
+
+    from src.trading.scheduling import notifier
+
+    monkeypatch.setattr(smtplib, "SMTP", _refuse)
+    monkeypatch.setattr(smtplib, "SMTP_SSL", _refuse)
+    monkeypatch.setattr(notifier, "_get", _refuse)
+    monkeypatch.setattr(notifier, "_setting", lambda key: None)

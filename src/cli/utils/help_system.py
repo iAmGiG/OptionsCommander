@@ -20,6 +20,26 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+def _edit_distance(s1: str, s2: str) -> int:
+    """Calculate edit distance between two strings."""
+    if len(s1) < len(s2):
+        return _edit_distance(s2, s1)  # pylint: disable=arguments-out-of-order
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
 class HelpSystem:
     """Interactive help system with searchable documentation."""
 
@@ -63,7 +83,7 @@ class HelpSystem:
         """Get help for all commands grouped by category."""
         output = []
         output.append("╔════════════════════════════════════════════════════════════════╗")
-        output.append("║           AUTOGEN-TRADER INTERACTIVE CLI - HELP MENU            ║")
+        output.append("║          OPTIONSCOMMANDER INTERACTIVE CLI - HELP MENU          ║")
         output.append("╚════════════════════════════════════════════════════════════════╝\n")
 
         for category in sorted(self.categories.keys()):
@@ -97,31 +117,12 @@ class HelpSystem:
             List of similar command names
         """
 
-        def levenshtein_distance(s1: str, s2: str) -> int:
-            """Calculate edit distance between two strings."""
-            if len(s1) < len(s2):
-                return levenshtein_distance(s2, s1)  # pylint: disable=arguments-out-of-order
-            if len(s2) == 0:
-                return len(s1)
-
-            previous_row = range(len(s2) + 1)
-            for i, c1 in enumerate(s1):
-                current_row = [i + 1]
-                for j, c2 in enumerate(s2):
-                    insertions = previous_row[j + 1] + 1
-                    deletions = current_row[j] + 1
-                    substitutions = previous_row[j] + (c1 != c2)
-                    current_row.append(min(insertions, deletions, substitutions))
-                previous_row = current_row
-
-            return previous_row[-1]
-
         # Calculate distances for all commands and aliases
         candidates = []
         command_lower = command.lower()
 
         for cmd, cmd_data in self.commands.items():
-            distance = levenshtein_distance(command_lower, cmd.lower())
+            distance = _edit_distance(command_lower, cmd.lower())
             # Only suggest if edit distance is reasonable (< 40% of command length)
             if distance <= max(2, len(command) * 0.4):
                 candidates.append((cmd, distance))
@@ -129,7 +130,7 @@ class HelpSystem:
             # Also check aliases
             aliases = cmd_data.get("aliases", [])
             for alias in aliases:
-                distance = levenshtein_distance(command_lower, alias.lower())
+                distance = _edit_distance(command_lower, alias.lower())
                 if distance <= max(2, len(command) * 0.4):
                     candidates.append((cmd, distance))
 
@@ -147,10 +148,24 @@ class HelpSystem:
 
         return unique_suggestions[:max_suggestions]
 
+    def _matching_commands(self, command: str) -> List[str]:
+        """An exact name, then its slash form, then an alias, then names that start with it."""
+        for name in (command, "/" + command.lstrip("/")):
+            if name in self.commands:
+                return [name]
+        bare = command.lstrip("/")
+        aliased = [
+            cmd
+            for cmd, data in self.commands.items()
+            if bare in (alias.lstrip("/").lower() for alias in data.get("aliases") or [])
+        ]
+        if aliased:
+            return aliased
+        return [cmd for cmd in self.commands if cmd.startswith((command, "/" + bare))]
+
     def get_help_command(self, command: str) -> str:
         """Get detailed help for a specific command."""
-        # Handle partial command names
-        matching = [cmd for cmd in self.commands if cmd.startswith(command.lower())]
+        matching = self._matching_commands(command.lower())
 
         if not matching:
             # Try to suggest similar commands

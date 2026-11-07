@@ -302,12 +302,10 @@ def test_daemon_logging_goes_to_the_state_dir_once(restore_root_logging):
 def test_reports_are_named_by_the_market_date(monkeypatch, tmp_path):
     """A run at 22:44 ET is that day's report, though the host (UTC) is already on the next."""
 
-    class _Clock(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(2026, 10, 15, 2, 44, tzinfo=timezone.utc).astimezone(tz)
+    from src.utils import market_hours
 
-    monkeypatch.setattr(scheduler_state, "datetime", _Clock)
+    now = datetime(2026, 10, 15, 2, 44, tzinfo=timezone.utc)
+    monkeypatch.setattr(market_hours, "get_datetime_now", lambda tz=None: now.astimezone(tz))
     cycle = object.__new__(CostEfficientTradeCycle)
     template = str(tmp_path / "{date}_{routine_type}.md")
     cycle.paths = {"report_templates": {"daily_routine": template}}

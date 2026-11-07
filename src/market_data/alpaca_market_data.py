@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 # Smart cache logic: Live data is priority for current trading day
-from src.utils.date_utils import format_data_status, get_datetime_now
-from src.utils.market_hours import is_market_hours
+from src.utils.date_utils import format_data_status
+from src.utils.market_hours import is_market_hours, market_today
 
 try:
     from alpaca.data import StockHistoricalDataClient
@@ -162,7 +162,7 @@ class AlpacaMarketData:
         symbols_to_fetch = []
 
         end_dt_check = pd.to_datetime(end).date()
-        today = get_datetime_now().date()
+        today = pd.Timestamp(market_today()).date()  # the ET date, not the host's (#620)
         is_current_day = end_dt_check >= today
 
         # Debug-level logging for cache decision details
@@ -292,7 +292,7 @@ class AlpacaMarketData:
         if is_current_day and timeframe == "1Day":
             if is_market_hours():
                 # Check if today's bar exists in the data
-                today_date = get_datetime_now().date()
+                today_date = today
                 has_today = False
 
                 if all_data:

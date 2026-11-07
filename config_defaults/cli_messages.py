@@ -58,7 +58,7 @@ class CLIMessages:
     # WELCOME / HELP
     # ========================================================================
     WELCOME_BANNER = "=" * 70
-    WELCOME_TITLE = "   AutoGen Trading Assistant - Unified Interactive CLI"
+    WELCOME_TITLE = "   OptionsCommander - Interactive CLI"
 
     HELP_COMMANDS = """
 System Commands:
@@ -66,27 +66,27 @@ System Commands:
   /exit      - Exit (or Ctrl+C)
   /toggle    - Toggle between CONFIRM and AUTO modes
   /schedule  - Enter scheduler management mode
-  /tips      - Show trading basics for beginners
+  /faq       - Features and how-to guide
 
 Trading:
   > buy 10 AAPL
   > is SPY at $XXX.XX a good entry?
-  > sell all TQQQ
+  > sell SPY
   > pltr                        (just type ticker for analysis)
 
 Monitoring:
-  > check my alerts
+  > /alerts                     (or: check my alerts)
   > show portfolio
   > any open orders
   > what's my position status?
 
 Scheduler:
   > show scheduler status
-  > show execution history
+  > /records                    (equity, fills, realized P&L)
   Or use /schedule for full scheduler CLI
 
 Tip: Just type naturally - the LLM will understand!
-     New to trading? Type /tips to learn the basics!
+     /faq has the guide, /help every command.
 """
 
     # ========================================================================

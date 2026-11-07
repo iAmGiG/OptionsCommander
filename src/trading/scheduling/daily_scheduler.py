@@ -46,6 +46,7 @@ from .notices import (
     NoticeStore,
     routine_key,
 )
+from .notifier import ping_heartbeat, send_notice_digest
 from .scheduler_state import SchedulerExecution, SchedulerStateManager, get_scheduler_state_manager
 from .trading_cycle import CostEfficientTradeCycle, RoutineType
 from .watchdog import RunDueTimeoutError
@@ -111,6 +112,7 @@ OUTCOME_GRACE = timedelta(minutes=5)
 # A run recorded as started and never finished this long ago is stuck (a routine with its
 # retries takes under ten minutes)
 STUCK_AFTER = timedelta(minutes=30)
+HEARTBEAT_EVERY_SECONDS = 300  # the daemon pings its heartbeat at most this often
 
 
 def load_scheduler_config(config_file: Optional[str] = None) -> Dict[str, Any]:
@@ -889,6 +891,7 @@ class DailyScheduler:
                 logger.info("Another scheduler run is in progress; skipping this check")
         # Lock or not: a run that never finishes is one that keeps others from getting it
         self.check_routine_outcomes()
+        send_notice_digest(self.notice_store)  # CRITICAL ones by email, if set up
         return ran
 
     # -------------------------------------------------------------------------
@@ -1197,11 +1200,15 @@ class DailyScheduler:
                 "" if routine_on else " (disabled)",
             )
 
+        last_ping = float("-inf")
         try:
             while True:
                 try:
                     # Check and run scheduled tasks
                     self.run_scheduled_tasks()
+                    if time.monotonic() - last_ping >= HEARTBEAT_EVERY_SECONDS:
+                        await asyncio.to_thread(ping_heartbeat)  # don't block the loop
+                        last_ping = time.monotonic()
 
                     # Sleep until next check
                     await asyncio.sleep(check_interval_seconds)

@@ -16,21 +16,15 @@ import logging
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Tuple
-from zoneinfo import ZoneInfo
 
 from src.utils.date_utils import get_datetime_now, now_iso
+from src.utils.market_hours import market_today  # noqa: F401  (re-exported: the ET date, #620)
 from src.utils.state_paths import get_user_db_path
 
 logger = logging.getLogger(__name__)
 
 MARKET_TIMEZONE = "America/New_York"
-
-
-def market_today() -> str:
-    """Today's date in the market's timezone (ET), whatever the host's timezone."""
-    return datetime.now(ZoneInfo(MARKET_TIMEZONE)).date().isoformat()
 
 
 @dataclass

@@ -30,6 +30,7 @@ def world(tmp_path, monkeypatch):
         SimpleNamespace(success=True, trigger=t, details={}) for t in fired
     ]
     monkeypatch.setattr(trading_cycle, "GTT_AVAILABLE", True)
+    monkeypatch.setattr(trading_cycle, "is_market_hours", lambda: True)  # the evening routine
     monkeypatch.setattr(trading_cycle, "get_trigger_evaluator", lambda: evaluator, raising=False)
     monkeypatch.setattr(trading_cycle, "get_action_executor", lambda: executor, raising=False)
     cycle = object.__new__(CostEfficientTradeCycle)
@@ -202,15 +203,34 @@ def test_without_market_data_the_unheld_path_is_skipped(world):
     assert CostEfficientTradeCycle.market_data is None
 
 
-def test_a_sell_on_a_symbol_not_held_says_not_held():
-    trigger = SimpleNamespace(
-        id=9,
-        symbol="AAPL",
-        action_type="place_order",
-        action_config={"side": "sell", "qty": 3},
+def test_nothing_is_checked_while_the_market_is_closed(world, monkeypatch):
+    """The 09:20 routine: IEX has no pre-market prints, so no snapshot call is made."""
+    monkeypatch.setattr(trading_cycle, "is_market_hours", lambda: False)
+    _alert(world)
+
+    assert world.cycle.check_gtt_triggers(EMPTY) == []
+    world.snapshot.assert_not_called()
+
+
+def test_an_order_trigger_whose_condition_isnt_met_is_not_reported(world):
+    world.manager.create_trigger(
+        "AAPL",
+        ConditionType.PRICE_ABOVE,
+        250.0,
+        ActionType.PLACE_ORDER,
+        {"side": "buy", "qty": 5, "order_type": "market"},
     )
 
-    kept, skipped = trading_cycle._within_free_shares([trigger], {"positions": {}, "orders": {}})
+    assert world.cycle.check_gtt_triggers(EMPTY) == []
+    world.executor.execute_triggers_batch.assert_not_called()
 
-    assert kept == []
-    assert skipped[0][1] == "not executed: not held"
+
+def test_one_unreadable_trade_doesnt_silence_the_others(world):
+    msft = _alert(world, symbol="MSFT", value=400.0)
+    _alert(world)
+    world.snapshot.return_value = {
+        "AAPL": {"latest_trade": {"p": 205.0, "t": "not a time"}},
+        "MSFT": _trade(410.0),
+    }
+
+    assert _executed(world, world.cycle.check_gtt_triggers(EMPTY)) == [msft.id]

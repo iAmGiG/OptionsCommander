@@ -351,10 +351,6 @@ def holds_position_state(trigger: GTTTrigger) -> bool:
     )
 
 
-# Former private name
-_holds_position_state = holds_position_state
-
-
 def _find_trailing_stop_trigger(symbol: str) -> Optional[GTTTrigger]:
     """Find existing TRAILING_STOP trigger for a symbol."""
     gtt_manager = get_gtt_manager()

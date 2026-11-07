@@ -53,6 +53,7 @@ from src.utils.market_hours import is_market_hours
 # GTT (Good-Till-Triggered) integration - Issue #340
 try:
     from src.trading.gtt.action_executor import ActionResult, get_action_executor
+    from src.trading.gtt.gtt_manager import ActionType
     from src.trading.gtt.trailing_stop_bridge import (
         cleanup_orphaned_trailing_stops,
         holds_position_state,
@@ -144,7 +145,8 @@ def _not_executed(triggered: List[Any]) -> List[Any]:
 
 
 def _skipped_unheld(trigger: Any) -> Any:
-    """Result for a GTT order trigger on a symbol that isn't held: only alerts run there."""
+    """Result for a GTT order trigger on a symbol not held whose condition is met: only
+    alerts run there."""
     return ActionResult(
         trigger_id=trigger.id,
         success=False,
@@ -191,12 +193,7 @@ def _within_free_shares(
             free_left[trigger.symbol] = _free_shares(trigger.symbol, broker_state)
         free = free_left[trigger.symbol]
         if free <= 0:
-            if trigger.symbol in broker_state.get("positions", {}):
-                skipped.append(
-                    (trigger, "not executed: no free shares (open sell orders hold them)")
-                )
-            else:
-                skipped.append((trigger, "not executed: not held"))
+            skipped.append((trigger, "not executed: no free shares (open sell orders hold them)"))
             continue
         if qty > free:
             logger.info(f"GTT {trigger.id} ({trigger.symbol} sell) cut to the {free} free shares")
@@ -798,11 +795,12 @@ class CostEfficientTradeCycle:
 
     def _check_unheld_gtt_alerts(self, broker_state: Dict[str, Any]) -> List[Any]:
         """
-        Run the alert triggers on symbols that aren't held (#658). Order triggers there are
-        reported as skipped, so a routine never opens a position, and a position's saved
-        trailing state is left to the sync. Never raises.
+        Run the alert triggers on symbols that aren't held (#658), while the market is open:
+        the evening routine (at 09:20 there is no fresh price). An order trigger there whose
+        condition is met is reported as skipped, so a routine never opens a position; a
+        position's saved trailing state is left to the sync. Never raises.
         """
-        if self.market_data is None:
+        if self.market_data is None or not is_market_hours():
             return []
         try:
             evaluator = get_trigger_evaluator()
@@ -812,15 +810,17 @@ class CostEfficientTradeCycle:
                 for t in evaluator.gtt_manager.get_triggers(active_only=True)
                 if t.symbol not in held and not holds_position_state(t)
             ]
-            alerts = [t for t in candidates if t.action_type == "alert"]
-            results = [_skipped_unheld(t) for t in candidates if t.action_type != "alert"]
-            prices = self._fresh_prices(sorted({t.symbol for t in alerts}))
-            if not prices:
+            prices = self._fresh_prices(sorted({t.symbol for t in candidates}))
+            priced = [t for t in candidates if t.symbol in prices]
+            alerts = [t for t in priced if t.action_type == ActionType.ALERT.value]
+            orders = [t for t in priced if t.action_type != ActionType.ALERT.value]
+            # Order triggers are only looked at (nothing saved), to say which ones would fire
+            met = evaluator.evaluate_triggers_batch(prices, persist=False, triggers=orders)
+            results = [_skipped_unheld(t) for t in met] if orders else []
+            if not alerts:
                 return results
             fired = evaluator.evaluate_triggers_batch(
-                prices,
-                persist=not self._dry_run_active,
-                triggers=[t for t in alerts if t.symbol in prices],
+                prices, persist=not self._dry_run_active, triggers=alerts
             )
             if not fired:
                 return results
@@ -849,13 +849,18 @@ class CostEfficientTradeCycle:
             price, stamp = trade.get("p"), trade.get("t")
             if not price or not stamp:
                 continue
-            traded_at = datetime.fromisoformat(stamp)
+            try:  # one symbol's bad data mustn't silence the others
+                traded_at = datetime.fromisoformat(str(stamp))
+                price = float(price)
+            except (TypeError, ValueError):
+                logger.info(f"GTT: {symbol} has an unreadable last trade; alerts not checked")
+                continue
             if traded_at.tzinfo is None:
                 traded_at = traded_at.replace(tzinfo=timezone.utc)
             if now - traded_at > GTT_PRICE_MAX_AGE:
                 logger.info(f"GTT: {symbol} last trade ({stamp}) is stale; alerts not checked")
                 continue
-            prices[symbol] = float(price)
+            prices[symbol] = price
         return prices
 
     # -------------------------------------------------------------------------

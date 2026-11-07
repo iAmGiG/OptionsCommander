@@ -66,11 +66,12 @@ def fetch_unified_market_data(
             f"{symbol}; use 'auto', 'alpaca' or 'alpha_vantage'"
         )
 
-    # Check if requesting current trading day - skip cache during market hours
-    from src.utils.date_utils import get_datetime_now
+    # A request that reaches today (the ET date: in the evening the host's UTC date is
+    # already tomorrow, #620) skips the cache, whose row for today may be mid-session
+    from src.utils.market_hours import market_today
 
     end_dt = pd.to_datetime(end_date).date()
-    today = get_datetime_now().date()
+    today = pd.Timestamp(market_today()).date()
     is_current_day = end_dt >= today
 
     # Skip cache for current trading day during market hours

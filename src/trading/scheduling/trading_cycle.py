@@ -18,9 +18,10 @@ Refactored in #439 to use extracted components:
 import copy
 import logging
 import os
+import time
 from contextlib import contextmanager
 from dataclasses import asdict, replace
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -46,7 +47,7 @@ from src.trading.state.state_reconciler import (
     StopRepair,
 )
 from src.trading.utils.report_generator import ReportGenerator, RoutineType
-from src.utils.date_utils import DEFAULT_TIMEZONE, get_datetime_now
+from src.utils.date_utils import DEFAULT_TIMEZONE, get_datetime_now, now_iso
 from src.utils.market_hours import is_market_hours
 
 # GTT (Good-Till-Triggered) integration - Issue #340
@@ -69,6 +70,7 @@ __all__ = [
     "Discrepancy",
     "RoutineError",
     "StopAdjustment",
+    "PartialExitFailure",
     "PositionAlertSummary",
     "RoutineType",
 ]
@@ -87,8 +89,18 @@ REPORT_NOTICES = 10
 
 DRY_RUN_BANNER = (
     "> 🧪 **DRY RUN**: no orders were sent, and local state, daily records and GTT "
-    "triggers were not changed. Stop changes below are what the routine would have made.\n\n"
+    "triggers were not changed. Stop changes and partial sales below are what the routine "
+    "would have made.\n\n"
 )
+
+
+class PartialExitFailure(NamedTuple):
+    """A software partial exit (#584) that did not go through, for the scheduler's notice."""
+
+    symbol: str
+    quantity: int
+    reason: str
+    stop_lost: bool  # the position's stop is not in place: until the next routine, unprotected
 
 
 def _free_shares(symbol: str, broker_state: Dict[str, Any]) -> int:
@@ -237,6 +249,7 @@ class CostEfficientTradeCycle:
     # The latest routine's alerts and discrepancies, read by the scheduler for its notices
     last_alerts: Tuple[PositionAlertSummary, ...] = ()
     last_discrepancies: Tuple[Discrepancy, ...] = ()
+    last_partial_exits: Tuple[PartialExitFailure, ...] = ()  # sales that failed
     notice_store = None  # set by the DailyScheduler; the reports list its open notices
 
     def __init__(self, state_file: str = None, dry_run: bool = False):
@@ -356,6 +369,7 @@ class CostEfficientTradeCycle:
         """Forget the previous routine's results, so a routine that fails early leaves none."""
         self.last_alerts = ()
         self.last_discrepancies = ()
+        self.last_partial_exits = ()
         self.last_report_path = None
         self.last_open_symbols = None
         self._new_fills = []
@@ -587,6 +601,230 @@ class CostEfficientTradeCycle:
         if any(r.success and r.action_type != "alert" for r in gtt_results):
             return self.fetch_broker_state(force_refresh=True)
         return broker_state
+
+    # -------------------------------------------------------------------------
+    # Partial exits: software targets (#584)
+    # -------------------------------------------------------------------------
+
+    def _partial_exits(
+        self, broker_state: Dict[str, Any], evening: bool = False
+    ) -> Tuple[Dict[str, Any], List[str]]:
+        """
+        Keep the saved partial exit plans up to date, then sell their targets the price has
+        reached (the evening routine, market open) or report them (the morning routine; the
+        evening one after hours). A dry run only reports what it would sell.
+
+        With no plans saved this does nothing, not even touching the order manager.
+
+        Errors are contained: a failed sale is recorded in last_partial_exits for a notice
+        and the routine goes on. The broker state is fetched again if a sale was tried,
+        since the stop the routines work on has changed.
+
+        Returns:
+            (the broker state, report lines)
+        """
+        try:
+            from src.trading.orders.partial_exit_manager import load_partial_exit_manager
+
+            manager = load_partial_exit_manager()
+            if not manager.exit_states:
+                return broker_state, []
+            lines = [] if self._dry_run_active else self._partial_upkeep(manager, broker_state)
+            tried = False
+            prices = _position_prices(broker_state)
+            for symbol in list(manager.exit_states):
+                state = manager.refresh_plan(symbol)  # the CLI may have changed or removed it
+                target = self._open_software_target(state)
+                position = broker_state["positions"].get(symbol)
+                price = prices.get(symbol)
+                if target is None or position is None or price is None:
+                    continue
+                if price < target.exit_price:
+                    continue
+                step, sold = self._partial_step(manager, state, target, position, price, evening)
+                lines.extend(step)
+                tried = tried or sold
+            if tried:
+                broker_state = self.fetch_broker_state(force_refresh=True)
+            if lines:
+                lines = ["", "## Partial Exits", ""] + [f"- {line}" for line in lines]
+            return broker_state, lines
+        except Exception as e:
+            logger.error(f"Partial exits failed: {e}", exc_info=True)
+            return broker_state, ["", f"⚠️ Partial exits not checked: {e}"]
+
+    def _partial_step(
+        self,
+        manager: Any,
+        state: Any,
+        target: Any,
+        position: Dict[str, Any],
+        price: float,
+        evening: bool,
+    ) -> Tuple[List[str], bool]:
+        """
+        What to do about one plan whose target the price may have reached: nothing below it;
+        report it where the routine doesn't sell (the morning routine, or the evening one
+        after hours); say what a dry run would sell; or sell it.
+
+        Returns:
+            (report lines, whether a sale was tried)
+        """
+        symbol = state.symbol
+        if price < target.exit_price:
+            return [], False
+        held = int(position["quantity"])
+        reached = f"{symbol} reached its partial target ${target.exit_price:.2f}"
+        if held <= target.quantity:
+            return [
+                f"{reached}, but holds {held} share(s) and the target sells "
+                f"{target.quantity}: selling it would close the position, so it is left to "
+                "its stop"
+            ], False
+        if not (evening and is_market_hours()):
+            when = (
+                "the market is closed, so the sale waits for the next evening routine"
+                if evening
+                else f"the evening routine sells {target.quantity} shares"
+            )
+            return [f"{reached}; {when}"], False
+        if self._dry_run_active:
+            return [
+                f"{symbol}: would sell {target.quantity} shares at about ${price:.2f} "
+                f"(partial target ${target.exit_price:.2f})"
+            ], False
+        try:
+            return self._sell_partial_target(manager, state, target, held, price), True
+        except Exception as e:  # unknown how far it got: assume the stop is gone
+            logger.error(f"Partial sale of {symbol} failed: {e}", exc_info=True)
+            reason = f"error during the sale, its stop may be gone: {e}"
+            self.last_partial_exits += (PartialExitFailure(symbol, target.quantity, reason, True),)
+            return [f"{symbol}: partial sale of {target.quantity} FAILED: {reason}"], True
+
+    @staticmethod
+    def _open_software_target(state: Any) -> Optional[Any]:
+        """A plan's software target that is neither sold nor ordered, or None."""
+        if state is None or str(state.side).lower() == "short":
+            return None
+        return next(
+            (
+                t
+                for t in state.targets
+                if t.exit_type == "software"
+                and not t.filled
+                and not t.order_id
+                and t.exit_price
+                and t.quantity > 0
+            ),
+            None,
+        )
+
+    def _partial_upkeep(self, manager: Any, broker_state: Dict[str, Any]) -> List[str]:
+        """
+        Mark targets filled when their sale appears in this run's new fills, and drop plans
+        for positions no longer held or whose average entry moved (sold and bought again, or
+        added to: the plan's target and quantities no longer fit).
+
+        Returns:
+            Report lines for what changed
+        """
+        lines = []
+        fill_ids = {fill.get("id") for fill in self._new_fills}
+        positions = broker_state["positions"]
+        for symbol in list(manager.exit_states):
+            state = manager.refresh_plan(symbol)
+            if state is None:
+                continue
+            for target in state.get_active_targets():
+                if target.order_id and target.order_id in fill_ids:
+                    target.filled = True
+                    target.filled_at = now_iso()
+                    state.last_updated = now_iso()
+                    manager.save(symbol)
+                    lines.append(f"{symbol}: partial target {target.target_number} sold")
+            position = positions.get(symbol)
+            if position is None:
+                manager.remove_position(symbol)
+                lines.append(f"{symbol}: no longer held, partial exit plan removed")
+            elif abs(position["entry_price"] - state.entry_price) > (
+                ENTRY_CHANGE_TOLERANCE * state.entry_price
+            ):
+                manager.remove_position(symbol)
+                lines.append(
+                    f"{symbol}: average entry moved from ${state.entry_price:.2f} to "
+                    f"${position['entry_price']:.2f}, partial exit plan dropped (set a new one "
+                    "with /partial set)"
+                )
+        return lines
+
+    def _sell_partial_target(
+        self, manager: Any, state: Any, target: Any, held: int, price: float
+    ) -> List[str]:
+        """
+        Sell a software target at market (the stop on the shares is cancelled first and put
+        back on the rest). The sale's order ID is saved at once, so a retry of the routine
+        can't sell it twice.
+
+        Returns:
+            Report lines
+        """
+        from src.trading.broker.alpaca_execution_manager import (
+            NO_STOP,
+            STOP_LOST,
+            AlpacaExecutionManager,
+        )
+
+        symbol, quantity = state.symbol, target.quantity
+        executor = AlpacaExecutionManager(order_manager=self.order_manager)
+        plan = executor.plan_close(symbol, quantity=quantity)
+        if plan is None or plan["quantity"] != quantity:
+            return [f"{symbol}: partial sale of {quantity} not made: the position changed"]
+        result = executor.close_position_sync(plan, sleep=time.sleep)
+        stop_lost = STOP_LOST in result.message or NO_STOP in result.message
+        failures = list(self.last_partial_exits)
+
+        if not result.success:
+            logger.error(f"Partial sale of {quantity} {symbol} failed: {result.message}")
+            failures.append(PartialExitFailure(symbol, quantity, result.message, stop_lost))
+            self.last_partial_exits = tuple(failures)
+            return [f"{symbol}: partial sale of {quantity} shares FAILED: {result.message}"]
+
+        target.order_id = result.entry_order_id or "unknown"
+        state.last_updated = now_iso()
+        manager.save(symbol)
+        saved = manager.refresh_plan(symbol)
+        recorded = saved is not None and any(
+            t.target_number == target.target_number and t.order_id for t in saved.targets
+        )
+        self._record_partial_sale(symbol, quantity)
+        lines = [
+            f"{symbol}: sold {quantity} shares at market (price about ${price:.2f}, partial "
+            f"target ${target.exit_price:.2f}), order {target.order_id}. {result.message}"
+        ]
+        problems = []
+        if stop_lost:
+            problems.append(result.message)
+        if not recorded:
+            problems.append(
+                "the sale's order ID could not be saved to the plan: do not run the routine "
+                f"again before checking {symbol}'s plan"
+            )
+            lines.append(f"{symbol}: the sale's order ID was NOT saved to the plan")
+        if problems:
+            failures.append(PartialExitFailure(symbol, quantity, "; ".join(problems), stop_lost))
+            self.last_partial_exits = tuple(failures)
+        return lines
+
+    def _record_partial_sale(self, symbol: str, quantity: int) -> None:
+        """Take sold shares off the local state and the trailing state, so the next run's
+        reconcile doesn't see a quantity mismatch."""
+        position = self.local_state_manager.state.get("positions", {}).get(symbol)
+        if position:
+            position["quantity"] = max(position.get("quantity", 0) - quantity, 0)
+        manager = self.trailing_stop_manager
+        stop_state = manager.stop_states.get(symbol) if manager is not None else None
+        if stop_state is not None:
+            stop_state.quantity = max(stop_state.quantity - quantity, 0)
 
     # -------------------------------------------------------------------------
     # Protective stops - Issue #586
@@ -1035,6 +1273,9 @@ class CostEfficientTradeCycle:
             gtt_results = self.check_gtt_triggers(broker_state)
             broker_state = self._after_gtt_actions(broker_state, gtt_results)
 
+            # Partial targets reached: the evening routine sells them (#584)
+            broker_state, partial_lines = self._partial_exits(broker_state)
+
             # No stop raise here (#623): on 09:20 prices it showed no benefit over raising in
             # the evening, and it locks in gaps the session often gives back
             adjustments, modification_results = [], None
@@ -1060,7 +1301,9 @@ class CostEfficientTradeCycle:
                 modification_results,
             )
 
-            report = self._append_report_sections(report, gtt_results, alert_lines + record_lines)
+            report = self._append_report_sections(
+                report, gtt_results, alert_lines + record_lines + partial_lines
+            )
             report, report_file = self._save_report("morning", report)
             logger.info(f"Morning routine complete. Report saved to {report_file}")
             if raise_errors:
@@ -1098,6 +1341,10 @@ class CostEfficientTradeCycle:
             gtt_results = self.check_gtt_triggers(broker_state)
             broker_state = self._after_gtt_actions(broker_state, gtt_results)
 
+            # Sell partial targets the price has reached, while the market is open (#584);
+            # before the raise, which then sees the stop on the shares left
+            broker_state, partial_lines = self._partial_exits(broker_state, evening=True)
+
             # Raise stops to their trailing level while the market is open, so an
             # overnight gap can't take the day's gains. This is the only raise (#623). Run
             # after hours (by hand), the raise waits for the next evening: thin
@@ -1126,7 +1373,9 @@ class CostEfficientTradeCycle:
                 modification_results,
             )
 
-            report = self._append_report_sections(report, gtt_results, alert_lines + record_lines)
+            report = self._append_report_sections(
+                report, gtt_results, alert_lines + record_lines + partial_lines
+            )
             report, report_file = self._save_report("evening", report)
             logger.info(f"Evening routine complete. Report saved to {report_file}")
             if raise_errors:

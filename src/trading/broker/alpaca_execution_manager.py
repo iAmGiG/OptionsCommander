@@ -7,8 +7,9 @@ Refactored to use extracted components (Issue #441).
 
 import asyncio
 import logging
+import time
 import uuid
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # Import extracted components
 from .api_error_translator import APIErrorTranslator
@@ -53,6 +54,10 @@ _FINISHED_ORDER_STATUSES = ("filled", "canceled", "expired", "rejected", "replac
 _ORDER_NOT_SENT_STATUSES = ("error", "cancelled", "dry_run")
 _RELEASE_WAIT_TRIES = 10
 _RELEASE_WAIT_SECONDS = 0.5
+# Fragments of a close's message that callers (the partial exits) look for: a stop that is
+# not in place
+STOP_LOST = "COULD NOT BE PUT BACK"
+NO_STOP = "HAVE NO STOP"
 
 
 class AlpacaExecutionManager(ExecutionManager):
@@ -502,7 +507,8 @@ class AlpacaExecutionManager(ExecutionManager):
         Sell at market, first cancelling the orders that hold the shares.
 
         A stop is cancelled before the sale, so a failed sale puts it back, and a partial
-        sale leaves the remaining shares a new stop.
+        sale leaves the remaining shares a new stop. For the CLI: it waits without
+        blocking the event loop. A routine uses close_position_sync.
 
         Args:
             plan: From plan_close
@@ -510,6 +516,50 @@ class AlpacaExecutionManager(ExecutionManager):
         Returns:
             OrderResult; on failure, its message says whether a stop is in place
         """
+        cancelled = self._cancel_holding_orders(plan)
+        still_open = {order["id"] for order in plan["orders_to_cancel"]}
+        for _ in range(_RELEASE_WAIT_TRIES):
+            still_open = self._still_open(plan["ticker"], still_open)
+            if not still_open:
+                break
+            await asyncio.sleep(_RELEASE_WAIT_SECONDS)
+        return self._sell_after_release(plan, cancelled, still_open)
+
+    def close_position_sync(
+        self, plan: Dict[str, Any], sleep: Callable[[float], None] = time.sleep
+    ) -> OrderResult:
+        """
+        close_position without asyncio, for the routines: they run inside event loops
+        (the daemon, the scheduler CLI), where asyncio.run can't be called.
+
+        Args:
+            plan: From plan_close
+            sleep: Called with the seconds to wait for Alpaca to release the shares
+
+        Returns:
+            OrderResult, as close_position
+        """
+        cancelled = self._cancel_holding_orders(plan)
+        still_open = {order["id"] for order in plan["orders_to_cancel"]}
+        for _ in range(_RELEASE_WAIT_TRIES):
+            still_open = self._still_open(plan["ticker"], still_open)
+            if not still_open:
+                break
+            sleep(_RELEASE_WAIT_SECONDS)
+        return self._sell_after_release(plan, cancelled, still_open)
+
+    def _cancel_holding_orders(self, plan: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Cancel the orders that hold the shares; the ones the broker confirmed cancelled."""
+        cancelled = []
+        for order in plan["orders_to_cancel"]:
+            if self.order_manager.cancel_order(order["id"]).get("status") == "cancelled":
+                cancelled.append(order)
+        return cancelled
+
+    def _sell_after_release(
+        self, plan: Dict[str, Any], cancelled: List[Dict[str, Any]], still_open: Set[str]
+    ) -> OrderResult:
+        """The sale itself, once the wait for the shares to be released is over."""
         ticker, quantity, held = plan["ticker"], plan["quantity"], plan["held"]
 
         def failed(reason: str, cancelled: List[Dict[str, Any]]) -> OrderResult:
@@ -519,19 +569,12 @@ class AlpacaExecutionManager(ExecutionManager):
                 message += (
                     ". Its stop is back in place"
                     if restored
-                    else ". ITS STOP WAS CANCELLED AND COULD NOT BE PUT BACK: the next routine "
-                    "re-places it"
+                    else f". ITS STOP WAS CANCELLED AND {STOP_LOST}: the next routine re-places it"
                 )
             return OrderResult(
                 success=False, ticker=ticker, quantity=quantity, message=message, error=reason
             )
 
-        cancelled = []
-        for order in plan["orders_to_cancel"]:
-            if self.order_manager.cancel_order(order["id"]).get("status") == "cancelled":
-                cancelled.append(order)
-
-        still_open = await self._wait_for_release(ticker, plan["orders_to_cancel"])
         if still_open:
             # A stop whose cancel hasn't landed is still working: only replace those gone
             gone = [order for order in cancelled if order["id"] not in still_open]
@@ -551,7 +594,7 @@ class AlpacaExecutionManager(ExecutionManager):
             message += (
                 f". New stop placed on the other {remaining} shares"
                 if self._replace_stop(ticker, remaining, cancelled)
-                else f". THE OTHER {remaining} SHARES HAVE NO STOP until the next routine"
+                else f". THE OTHER {remaining} SHARES {NO_STOP} until the next routine"
             )
         return OrderResult(
             success=True,
@@ -561,21 +604,16 @@ class AlpacaExecutionManager(ExecutionManager):
             message=message,
         )
 
-    async def _wait_for_release(self, ticker: str, orders: List[Dict[str, Any]]) -> Set[str]:
+    def _still_open(self, ticker: str, waiting_on: Set[str]) -> Set[str]:
         """
         Alpaca cancels asynchronously, and refuses a sale until the shares are released.
 
         Returns:
-            The IDs of these orders still open when the wait ended
+            Which of these order IDs are still open
         """
-        still_open = {order["id"] for order in orders}
-        for _ in range(_RELEASE_WAIT_TRIES):
-            if not still_open:
-                break
-            still_open &= {order["id"] for order in self._open_sell_orders(ticker)}
-            if still_open:
-                await asyncio.sleep(_RELEASE_WAIT_SECONDS)
-        return still_open
+        if not waiting_on:
+            return waiting_on
+        return waiting_on & {order["id"] for order in self._open_sell_orders(ticker)}
 
     @staticmethod
     def _stop_of(orders: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

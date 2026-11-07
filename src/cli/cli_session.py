@@ -45,6 +45,7 @@ from src.cli.utils.help_system import HelpSystem
 from src.cli.utils.input_parser import (
     MODE_NAMES,
     extract_ticker_from_query,
+    is_alert_request,
     is_cancel_request,
     is_mode_request,
     is_scheduler_request,
@@ -69,6 +70,9 @@ from src.trading.scheduling.trading_cycle import CostEfficientTradeCycle
 from src.utils.safe_print import safe_print
 
 logger = logging.getLogger(__name__)
+
+# Typed words that are commands, not tickers
+TYPED_COMMANDS = {"help": "/help", "exit": "/exit", "quit": "/exit"}
 
 # Global ticker completer instance (from extracted module)
 _ticker_completer = get_ticker_completer()
@@ -277,6 +281,10 @@ class CLISession:
                 if not user_input:
                     continue
 
+                # Typed "help", "exit" and "quit" mean the commands, not tickers HELP/EXIT/QUIT
+                if user_input.lower() in TYPED_COMMANDS:
+                    user_input = TYPED_COMMANDS[user_input.lower()]
+
                 # Handle commands
                 if user_input.startswith("/"):
                     if not await self._handle_command(user_input):
@@ -379,10 +387,8 @@ class CLISession:
             # Scheduler queries
             await self._handle_scheduler_request(user_input)
 
-        elif (
-            any(word in input_lower for word in ["alert", "approaching"]) and "check" in input_lower
-        ):
-            # Alert queries
+        elif is_alert_request(user_input):
+            # Alert queries: "check my alerts", "what are my alerts?" (#659)
             await self._handle_alerts_request(user_input)
 
         elif is_cancel_request(user_input):

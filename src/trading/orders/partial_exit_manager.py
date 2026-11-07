@@ -5,7 +5,8 @@ Partial Exit Manager - Multi-Target Position Exits
 Issue #248: Implement Partial Position Exits
 
 Manages positions with multiple exit targets:
-- Target 1: Partial profit-taking at fixed profit level (e.g., 4-6%)
+- Target 1: Partial profit-taking at fixed profit level (e.g., 4-6%), a broker limit order
+  or a software target the evening routine sells (#584)
 - Target 2: Trailing stop for remaining position (integrates with #414)
 
 Design:
@@ -43,9 +44,9 @@ class ExitTarget:
     target_number: int  # 1, 2, 3, etc.
     quantity: int  # Shares for this target
     ratio: float  # Percentage of total position (0.0 - 1.0)
-    exit_type: str  # "limit" or "trailing"
-    exit_price: Optional[float] = None  # For limit orders
-    order_id: Optional[str] = None  # Broker order ID
+    exit_type: str  # "limit" (a broker order), "software" (sold by the routine) or "trailing"
+    exit_price: Optional[float] = None  # For limit and software targets
+    order_id: Optional[str] = None  # Broker order ID (a software target: its sale)
     filled: bool = False  # Whether this target has been hit
     filled_at: Optional[str] = None  # ISO timestamp of fill
 
@@ -212,6 +213,72 @@ class PartialExitManager:
 
         return state
 
+    def register_software_plan(
+        self,
+        symbol: str,
+        entry_price: float,
+        total_quantity: int,
+        stop_price: float = 0.0,
+        target_1_pct: Optional[float] = None,
+    ) -> PartialExitState:
+        """
+        Save a plan for a long position whose target 1 the evening routine sells (#584).
+
+        Target 1 is a "software" target: no order is placed, and the trailing stop is left
+        alone (register_position does both, and is not used here). The routine sells it at
+        market once the price is at the target.
+
+        Args:
+            symbol: Ticker symbol
+            entry_price: The position's average entry
+            total_quantity: Shares held (at least 2)
+            stop_price: The live stop's level, for display (0 if unknown)
+            target_1_pct: Profit for target 1 (default: the configured one)
+
+        Returns:
+            The saved plan
+
+        Raises:
+            ValueError: Fewer than 2 shares, or no usable entry price
+        """
+        if total_quantity < 2:
+            raise ValueError(
+                f"{symbol} has {total_quantity} share(s): a partial exit needs at least 2"
+            )
+        if not math.isfinite(entry_price) or entry_price <= 0:
+            raise ValueError(f"{symbol} has no usable entry price ({entry_price})")
+
+        targets = self.software_targets(symbol, entry_price, total_quantity, target_1_pct)
+        state = PartialExitState(
+            symbol=symbol,
+            entry_price=entry_price,
+            total_quantity=total_quantity,
+            side="long",
+            targets=targets,
+            stop_price=stop_price,
+        )
+        self.exit_states[symbol] = state
+        self.save(symbol)
+        logger.info(
+            f"Registered {symbol} for a software partial exit: {targets[0].quantity} of "
+            f"{total_quantity} shares at ${targets[0].exit_price:.2f}"
+        )
+        return state
+
+    def software_targets(
+        self,
+        symbol: str,
+        entry_price: float,
+        total_quantity: int,
+        target_1_pct: Optional[float] = None,
+    ) -> List[ExitTarget]:
+        """The targets a software plan would have (nothing is saved), so callers can show them."""
+        targets = self._calculate_targets(
+            symbol, entry_price, total_quantity, 0.0, "long", target_1_pct
+        )
+        targets[0].exit_type = "software"
+        return targets
+
     def _calculate_targets(
         self,
         symbol: str,
@@ -219,6 +286,7 @@ class PartialExitManager:
         total_quantity: int,
         stop_price: float,
         side: str = "long",
+        target_1_pct: Optional[float] = None,
     ) -> List[ExitTarget]:
         """
         Calculate exit targets based on configuration.
@@ -228,6 +296,7 @@ class PartialExitManager:
             entry_price: Position entry price
             total_quantity: Total shares
             stop_price: Initial stop price
+            target_1_pct: Profit for target 1 (default: the configured one)
 
         Returns:
             List of ExitTarget objects
@@ -248,7 +317,11 @@ class PartialExitManager:
             # Determine exit type and price
             if i == 1:
                 # Target 1: Limit order at profit percentage
-                target_pct = self.config.get("target_1_pct", 0.04)
+                target_pct = (
+                    target_1_pct
+                    if target_1_pct is not None
+                    else self.config.get("target_1_pct", 0.04)
+                )
                 if side.lower() == "short":
                     # For shorts, profit is below entry
                     exit_price = entry_price * (1 - target_pct)
@@ -483,10 +556,10 @@ class PartialExitManager:
         self, symbol: str, target_number: int, new_price: float
     ) -> Tuple[bool, str]:
         """
-        Change the exit price of an unfilled limit target in a saved plan.
+        Change the exit price of an unfilled limit or software target in a saved plan.
 
-        A target with a live broker order is refused: changing only the stored price
-        would leave the broker order at the old one.
+        A target with an order is refused: changing only the stored price would leave the
+        broker order at the old one (a software target's order is its sale).
 
         Returns:
             Tuple of (changed, message)
@@ -500,10 +573,15 @@ class PartialExitManager:
             return False, f"Target {target_number} not found for {symbol}"
         if target.filled:
             return False, f"Target {target_number} for {symbol} has already been filled"
-        if target.exit_type != "limit":
+        if target.exit_type not in ("limit", "software"):
             return False, f"Target {target_number} is a {target.exit_type} target, not a limit"
         if not math.isfinite(new_price) or new_price <= 0:
             return False, f"Exit price must be a positive number, got {new_price}"
+        if target.order_id and target.exit_type == "software":
+            return False, (
+                f"Target {target_number} for {symbol} has already been sold "
+                f"(order {target.order_id})"
+            )
         if target.order_id:
             return False, (
                 f"Target {target_number} for {symbol} has a live order ({target.order_id}); "
@@ -515,11 +593,16 @@ class PartialExitManager:
         state.last_updated = now_iso()
         self.save(symbol)
         previous = f"${old_price:.2f}" if old_price else "none"
+        saved = (
+            "the evening routine sells it at this price"
+            if target.exit_type == "software"
+            else "this target has no broker order, so nothing was sent"
+        )
         return True, (
             f"Modified {symbol} target {target_number}\n"
             f"  Previous price: {previous}\n"
             f"  New price: ${new_price:.2f}\n"
-            "  Saved in the plan only: this target has no broker order, so nothing was sent"
+            f"  Saved in the plan only: {saved}"
         )
 
     def save(self, symbol: Optional[str] = None) -> None:
@@ -557,6 +640,25 @@ class PartialExitManager:
             return
         if saved is not None:
             self.exit_states[symbol] = PartialExitState.from_dict(saved)
+
+    def refresh_plan(self, symbol: str) -> Optional[PartialExitState]:
+        """
+        A symbol's plan as saved now, or None if another process removed it. Unlike
+        _refresh, a plan gone from the file is dropped from memory too. Without a state
+        file, the plan in memory.
+        """
+        if self.state_file is None:
+            return self.exit_states.get(symbol)
+        try:
+            saved = self._read_plans().get(symbol)
+        except Exception as e:
+            logger.warning(f"Could not re-read partial exit plans: {e}")
+            return self.exit_states.get(symbol)
+        if saved is None:
+            self.exit_states.pop(symbol, None)
+            return None
+        self.exit_states[symbol] = PartialExitState.from_dict(saved)
+        return self.exit_states[symbol]
 
     def _read_plans(self) -> Dict[str, Dict[str, Any]]:
         """Raw saved plans by symbol ({} if no file); raises if the file is unreadable."""
@@ -636,17 +738,7 @@ class PartialExitManager:
             PartialExitManager instance configured for the mode
         """
         params = mode_manager.get_parameters(mode)
-
-        # Extract partial exit config from mode parameters
-        # This would need to be added to ModeParameters dataclass
-        # For now, use a default structure
-        partial_exit_config = {
-            "enabled": True,
-            "targets": 2,
-            "split": [0.5, 0.5],
-            "target_1_pct": 0.04,  # Could vary by mode
-            "target_2": "trailing",
-        }
+        partial_exit_config = mode_manager.get_partial_exit_config_dict(mode)
 
         logger.info(
             f"Creating PartialExitManager from mode: {params.mode.value}, "

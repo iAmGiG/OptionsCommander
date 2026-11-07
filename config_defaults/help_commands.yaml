@@ -602,7 +602,7 @@ disable scheduler:
 /partial:
   category: Trading
   description: Partial exit management
-  usage: /partial {list|summary|active|levels|modify} [args]
+  usage: /partial {list|summary|active|levels|modify|set|remove} [args]
   examples:
   - /partial
   - /partial list
@@ -611,6 +611,8 @@ disable scheduler:
   - /partial levels AAPL
   - /partial active
   - /partial modify AAPL 1 210.50
+  - /partial set AAPL
+  - /partial remove AAPL
   aliases:
   - pe
   tags:
@@ -628,10 +630,15 @@ disable scheduler:
     \  active            - List only active targets\n\
     \  levels <symbol>   - Show exit target levels for position\n\
     \  modify <sym> <n> <price> - Modify target n exit price\n\
+    \  set <symbol>      - Plan a partial exit for a held long position (2+ shares)\n\
+    \  remove <symbol>   - Remove a plan, after asking\n\
     \  <symbol>          - Show plan for specific symbol\n\n\
     Partial exits split positions across multiple targets:\n\
-    - Target 1: Profit-taking at fixed level (limit order)\n\
-    - Target 2: Trailing stop for remaining position"
+    - Target 1: its share of the position (half, rounded down, with the 50/50 split) sold at market by the evening routine once\n\
+    \  the price is at the average entry plus the trading mode's target_1_pct (4%, 5% or 6%).\n\
+    \  No order rests at the broker; the stop is cancelled for a few seconds around the sale.\n\
+    - Target 2: the rest stays on the trailing stop\n\
+    The morning routine never sells; it reports a target that was reached."
 /help:
   category: Help
   description: Show help

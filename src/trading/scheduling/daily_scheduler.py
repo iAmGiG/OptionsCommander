@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 from .notices import (
     CALENDAR_DISAGREES,
     CRITICAL,
+    PARTIAL_EXIT_FAILED,
     ROUTINE_FAILED,
     ROUTINE_MISSED,
     ROUTINE_STUCK,
@@ -937,7 +938,8 @@ class DailyScheduler:
     def _notice_positions(self, market_date: str, run_completed: bool) -> None:
         """
         Notices for what the latest routine found: positions through their stop or target
-        while still open, and positions left without a protective stop. A completed run
+        while still open, partial sales that failed (#584), and positions left without a
+        protective stop. A completed run
         that finds a position protected again clears its "unprotected" notice, and one
         that finds a position gone clears its breach notices (#634).
         """
@@ -960,6 +962,18 @@ class DailyScheduler:
                 detail=details.get("error") or details.get("reason") or "",
                 market_date=market_date,
                 symbol=symbol,
+                report_path=report_path,
+            )
+        for failure in _items(getattr(cycle, "last_partial_exits", ())):
+            self.notice_store.raise_notice(
+                key=f"{PARTIAL_EXIT_FAILED}:{failure.symbol}:{market_date}",
+                kind=PARTIAL_EXIT_FAILED,
+                severity=CRITICAL if failure.stop_lost or failure.critical else WARNING,
+                title=f"Partial sale of {failure.quantity} {failure.symbol} failed"
+                + (", its stop is not in place" if failure.stop_lost else ""),
+                detail=failure.reason,
+                market_date=market_date,
+                symbol=failure.symbol,
                 report_path=report_path,
             )
         if run_completed:

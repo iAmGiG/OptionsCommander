@@ -20,6 +20,8 @@ position has a stop again):
 ``stop_breach:<SYM>:<date>``          CRITICAL  through the stop, position still open
 ``target_breach:<SYM>:<date>``        WARNING   through the target, position still open
 ``unprotected:<SYM>``                 CRITICAL  an open position without a protective stop
+``partial_exit_failed:<SYM>:<date>``  CRITICAL  a partial sale failed and the stop is not back
+                                      WARNING   a partial sale failed, the stop is in place
 ``state_db_error:<date>``             CRITICAL  the scheduler history can't be read
 ``notices_file_reset:<date>``         WARNING   this file was unreadable and was reset
 ====================================  ========  =======================================
@@ -65,6 +67,7 @@ RUN_DUE_ERROR = "run_due_error"
 STOP_BREACH = "stop_breach"
 TARGET_BREACH = "target_breach"
 UNPROTECTED = "unprotected"
+PARTIAL_EXIT_FAILED = "partial_exit_failed"
 STATE_DB_ERROR = "state_db_error"
 NOTICES_FILE_RESET = "notices_file_reset"
 CALENDAR_DISAGREES = "calendar_disagrees"

@@ -240,3 +240,66 @@ def test_free_shares_are_sold_without_touching_the_stop(manager, broker):
 def test_no_order_manager_refuses(broker):
     with pytest.raises(ValueError, match="No order manager"):
         AlpacaExecutionManager(order_manager=None).plan_close("SPY")
+
+
+# The synchronous path, for the routines (#584)
+
+
+def close_sync(manager, plan):
+    return manager.close_position_sync(plan, sleep=lambda seconds: None)
+
+
+def test_the_sync_close_sells_like_the_async_one(manager, broker):
+    result = close_sync(manager, manager.plan_close("SPY", 5))
+
+    assert result.success is True
+    assert (result.ticker, result.quantity, result.entry_order_id) == ("SPY", 5, "sell-1")
+    names = [call[0] for call in broker.method_calls]
+    assert names.index("cancel_order") < names.index("place_market_order")
+    broker.place_market_order.assert_called_once_with(symbol="SPY", qty=5, side="sell")
+    broker.place_stop_order.assert_called_once_with(
+        symbol="SPY", qty=9, side="sell", stop_price=744.47, time_in_force="gtc"
+    )
+
+
+def test_the_sync_close_waits_with_the_sleep_it_is_given(manager, broker):
+    answers = iter([[dict(STOP)], [dict(STOP)], []])
+    plan = manager.plan_close("SPY")
+    broker.get_orders.side_effect = lambda **kwargs: next(answers)
+    broker.cancel_order.side_effect = lambda order_id: {"status": "cancelled"}
+    waits = []
+
+    result = manager.close_position_sync(plan, sleep=waits.append)
+
+    assert result.success is True
+    assert waits == [module._RELEASE_WAIT_SECONDS] * 2
+
+
+def test_the_sync_close_gives_up_when_the_cancel_never_lands(manager, broker):
+    plan = manager.plan_close("SPY")
+    broker.cancel_order.side_effect = lambda order_id: {"status": "cancelled"}  # stays open
+
+    result = close_sync(manager, plan)
+
+    assert result.success is False and "still open" in result.message
+    broker.place_market_order.assert_not_called()
+    broker.place_stop_order.assert_not_called()
+
+
+def test_the_sync_close_puts_the_stop_back_after_a_refusal(manager, broker):
+    broker.place_market_order.return_value = {"status": "error", "message": "refused"}
+
+    result = close_sync(manager, manager.plan_close("SPY"))
+
+    assert result.success is False and "stop is back in place" in result.message
+    broker.place_stop_order.assert_called_once()
+
+
+def test_the_sync_close_runs_inside_an_event_loop(manager, broker):
+    """The routines run in the daemon's and the scheduler CLI's loops: no asyncio.run."""
+    plan = manager.plan_close("SPY", 5)
+
+    async def inside_a_loop():
+        return close_sync(manager, plan)
+
+    assert asyncio.run(inside_a_loop()).success is True

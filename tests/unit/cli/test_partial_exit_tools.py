@@ -190,3 +190,192 @@ def test_malformed_plan_gives_an_error_reply_not_an_exception():
 
     assert tools.show_all_partial_exits().startswith("[ERROR] Failed to retrieve partial exits")
     assert tools.show_partial_exit_plan("AAPL").startswith("[ERROR]")
+
+
+# /partial set and remove (#584)
+
+
+def _held(symbol="AAPL", qty=10.0, entry=100.0, value=1000.0, side="long"):
+    return {
+        "symbol": symbol,
+        "qty": qty,
+        "side": side,
+        "avg_entry_price": entry,
+        "market_value": value,
+    }
+
+
+def _no(question):
+    raise AssertionError(f"asked: {question}")
+
+
+def _mode(monkeypatch, pct, enabled=True):
+    from src.core import trading_modes
+
+    config = {"enabled": enabled, "split": [0.5, 0.5], "target_1_pct": pct}
+    monkeypatch.setattr(
+        trading_modes.get_mode_manager(), "get_partial_exit_config_dict", lambda mode=None: config
+    )
+
+
+@pytest.mark.parametrize(
+    "mode, pct", [("conservative", 0.04), ("moderate", 0.05), ("aggressive", 0.06)]
+)
+def test_set_uses_the_saved_modes_percentage(mode, pct):
+    from src.core.trading_modes import TradingMode, get_mode_manager
+
+    get_mode_manager().set_mode(TradingMode(mode))
+
+    reply = tools.set_partial_plan("aapl", [_held(qty=7.0, entry=200.0)], _no)
+
+    assert reply.startswith("[OK]")
+    state = load_partial_exit_manager().exit_states["AAPL"]
+    assert state.entry_price == 200.0 and state.total_quantity == 7
+    target = state.targets[0]
+    assert (target.exit_type, target.quantity) == ("software", 3)
+    assert target.exit_price == pytest.approx(200.0 * (1 + pct))
+    assert state.targets[1].quantity == 4
+    assert "No order was sent" in reply
+
+
+@pytest.mark.parametrize(
+    "positions, expected",
+    [
+        ([_held(qty=1.0, value=100.0)], "at least 2"),
+        ([_held(qty=-5.0, side="short")], "short"),
+        ([_held("MSFT")], "not held"),
+        ([_held(qty=2.5)], "whole number"),
+        (None, "Could not read"),
+    ],
+)
+def test_set_refusals(positions, expected):
+    reply = tools.set_partial_plan("AAPL", positions, _no)
+
+    assert reply.startswith("[ERROR]") and expected in reply
+    assert load_partial_exit_manager().exit_states == {}
+
+
+def test_set_refuses_a_symbol_that_already_has_a_plan():
+    _save_plan()
+
+    reply = tools.set_partial_plan("AAPL", [_held()], _no)
+
+    assert "already has a plan" in reply
+    assert load_partial_exit_manager().exit_states["AAPL"].targets[0].exit_type == "limit"
+
+
+def test_set_asks_when_the_price_is_already_at_the_target(monkeypatch):
+    _mode(monkeypatch, 0.05)
+    asked = []
+
+    def decline(question):
+        asked.append(question)
+        return False
+
+    reply = tools.set_partial_plan("AAPL", [_held(value=1100.0)], decline)  # $110 > $105
+
+    assert "next evening routine would sell 5" in asked[0]
+    assert reply.startswith("[INFO]")
+    assert load_partial_exit_manager().exit_states == {}
+    assert tools.set_partial_plan("AAPL", [_held(value=1100.0)], lambda q: True).startswith("[OK]")
+
+
+def test_set_does_not_ask_below_the_target(monkeypatch):
+    _mode(monkeypatch, 0.05)
+
+    assert tools.set_partial_plan("AAPL", [_held(value=1040.0)], _no).startswith("[OK]")
+
+
+def test_set_refuses_when_the_mode_has_partial_exits_off(monkeypatch):
+    _mode(monkeypatch, 0.05, enabled=False)
+
+    assert "switched off" in tools.set_partial_plan("AAPL", [_held()], _no)
+
+
+def test_set_places_no_order(monkeypatch):
+    from src.trading.orders import partial_exit_manager as module
+
+    orders = MagicMock()
+    monkeypatch.setattr(module.PartialExitManager, "_place_target_orders", orders)
+    monkeypatch.setattr(module.PartialExitManager, "register_position", orders)
+
+    tools.set_partial_plan("AAPL", [_held()], _no)
+
+    orders.assert_not_called()
+
+
+def test_remove_asks_then_drops_the_plan():
+    _save_plan()
+
+    assert tools.remove_partial_plan("aapl", lambda q: False).startswith("[INFO]")
+    assert "AAPL" in load_partial_exit_manager().exit_states
+    assert tools.remove_partial_plan("aapl", lambda q: True).startswith("[OK]")
+    assert load_partial_exit_manager().exit_states == {}
+    assert tools.remove_partial_plan("AAPL", _no).startswith("[INFO]")
+
+
+def test_a_software_target_is_shown_as_one():
+    manager = load_partial_exit_manager()
+    manager.register_software_plan("AAPL", 100.0, 10, target_1_pct=0.05)
+
+    text = tools.show_partial_exit_plan("AAPL")
+
+    assert "Software target @ $105.00 (+5.0% gain)" in text
+    assert "Sold by the evening routine" in text
+    assert "Stop Price" not in text
+    assert text.count("Trailing Stop") == 1  # target 2 only
+
+
+def test_a_sold_software_target_shows_its_order():
+    manager = load_partial_exit_manager()
+    state = manager.register_software_plan("AAPL", 100.0, 10)
+    state.targets[0].order_id = "sell-1"
+    manager.save()
+
+    assert "sold: order sell-1" in tools.show_partial_exit_plan("AAPL")
+
+
+def test_modify_works_for_a_software_target():
+    load_partial_exit_manager().register_software_plan("AAPL", 100.0, 10)
+
+    reply = _partial_handle_modify("AAPL 1 110.50")
+
+    assert reply.startswith("[OK]")
+    assert load_partial_exit_manager().exit_states["AAPL"].targets[0].exit_price == 110.5
+
+
+def test_the_slash_command_routes_set_and_remove(monkeypatch):
+    from src.cli.commands import slash_commands
+
+    printed = []
+    monkeypatch.setattr(slash_commands, "safe_print", printed.append)
+    session = MagicMock()
+    session.account_monitor.get_positions.return_value = [_held(value=1000.0)]
+
+    slash_commands.cmd_partial(session, "set aapl")
+    slash_commands.cmd_partial(session, "set")
+    monkeypatch.setattr(slash_commands, "_confirmed", lambda q: True)
+    slash_commands.cmd_partial(session, "remove AAPL")
+    session.account_monitor.get_positions.side_effect = RuntimeError("down")
+    slash_commands.cmd_partial(session, "set AAPL")
+
+    assert printed[0].startswith("[OK]")
+    assert printed[1] == "Usage: /partial set <symbol>"
+    assert printed[2].startswith("[OK] Removed")
+    assert "Could not read the positions" in printed[3]
+
+
+def test_the_prompt_shows_the_computed_quantity(monkeypatch):
+    _mode(monkeypatch, 0.05)
+    asked = []
+
+    tools.set_partial_plan("AAPL", [_held(qty=15.0, value=1650.0)], lambda q: asked.append(q))
+
+    assert "sell 7 of 15 shares" in asked[0]
+    assert "half" not in asked[0]
+
+
+def test_the_reply_shows_the_computed_quantity():
+    reply = tools.set_partial_plan("AAPL", [_held(qty=15.0)], _no)
+
+    assert "sell 7 of 15 shares" in reply

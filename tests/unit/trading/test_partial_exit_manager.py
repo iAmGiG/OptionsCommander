@@ -400,3 +400,84 @@ class TestPartialExitManagerIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSoftwarePlans(unittest.TestCase):
+    """register_software_plan (#584): a plan saved with no order and no trailing change."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+
+        self.dir = tempfile.TemporaryDirectory()
+        self.order_manager = Mock()
+        self.trailing = Mock()
+        self.manager = PartialExitManager(
+            self.order_manager, self.trailing, state_file=Path(self.dir.name) / "plans.json"
+        )
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_registers_half_the_shares_at_the_target_without_any_order(self):
+        state = self.manager.register_software_plan("AAPL", 100.0, 7, target_1_pct=0.05)
+
+        first, second = state.targets
+        self.assertEqual((first.exit_type, first.quantity), ("software", 3))
+        self.assertAlmostEqual(first.exit_price, 105.0)
+        self.assertEqual((second.exit_type, second.quantity), ("trailing", 4))
+        self.assertIsNone(first.order_id)
+        self.assertEqual(self.order_manager.method_calls, [])
+        self.assertEqual(self.trailing.method_calls, [])
+
+    def test_the_plan_is_saved_for_other_processes(self):
+        self.manager.register_software_plan("AAPL", 100.0, 10)
+
+        other = PartialExitManager(None, state_file=self.manager.state_file)
+        self.assertEqual(other.exit_states["AAPL"].targets[0].exit_type, "software")
+
+    def test_rejects_one_share_and_a_bad_entry(self):
+        with self.assertRaises(ValueError):
+            self.manager.register_software_plan("AAPL", 100.0, 1)
+        with self.assertRaises(ValueError):
+            self.manager.register_software_plan("AAPL", 0.0, 10)
+        self.assertEqual(self.manager.exit_states, {})
+
+    def test_defaults_to_the_configured_percentage(self):
+        state = self.manager.register_software_plan("AAPL", 200.0, 4)
+
+        self.assertAlmostEqual(state.targets[0].exit_price, 208.0)
+
+    def test_a_software_target_price_can_be_changed_until_it_is_sold(self):
+        self.manager.register_software_plan("AAPL", 100.0, 10)
+
+        changed, message = self.manager.update_target_price("AAPL", 1, 110.0)
+
+        self.assertTrue(changed)
+        self.assertIn("evening routine sells it at this price", message)
+        self.assertEqual(self.manager.exit_states["AAPL"].targets[0].exit_price, 110.0)
+        self.manager.exit_states["AAPL"].targets[0].order_id = "sell-1"
+        self.manager.save()
+        self.assertFalse(self.manager.update_target_price("AAPL", 1, 120.0)[0])
+
+    def test_refresh_plan_follows_the_saved_file(self):
+        self.manager.register_software_plan("AAPL", 100.0, 10)
+        other = PartialExitManager(None, state_file=self.manager.state_file)
+        other.update_target_price("AAPL", 1, 111.0)
+
+        self.assertEqual(self.manager.refresh_plan("AAPL").targets[0].exit_price, 111.0)
+        other.remove_position("AAPL")
+        self.assertIsNone(self.manager.refresh_plan("AAPL"))
+        self.assertNotIn("AAPL", self.manager.exit_states)
+
+    def test_from_mode_manager_uses_the_modes_settings(self):
+        from src.core.trading_modes import TradingMode, TradingModeManager
+
+        modes = TradingModeManager()
+        for mode, pct in (
+            (TradingMode.CONSERVATIVE, 0.04),
+            (TradingMode.MODERATE, 0.05),
+            (TradingMode.AGGRESSIVE, 0.06),
+        ):
+            manager = PartialExitManager.from_mode_manager(None, None, modes, mode)
+            self.assertEqual(manager.config["target_1_pct"], pct)

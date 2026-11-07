@@ -889,6 +889,22 @@ def _partial_handle_modify(subarg: str | None) -> str:
     return modify_exit_target(symbol, target_num, new_price)
 
 
+def _partial_handle_plan(session, subcommand: str, subarg: str | None) -> str:
+    """Handle /partial set and /partial remove (#584)."""
+    from src.cli.tools.partial_exit_tools import remove_partial_plan, set_partial_plan
+
+    if not subarg:
+        return f"Usage: /partial {subcommand} <symbol>"
+    if subcommand == "remove":
+        return remove_partial_plan(subarg.strip(), _confirmed)
+    try:
+        positions = session.account_monitor.get_positions()
+    except Exception as e:
+        logger.error(f"Could not read positions for /partial set: {e}")
+        positions = None
+    return set_partial_plan(subarg.strip(), positions, _confirmed)
+
+
 @command("/partial", aliases=["/pe"], help_text="Partial exit management", has_args=True)
 def cmd_partial(session, args: str = None):
     """
@@ -902,6 +918,8 @@ def cmd_partial(session, args: str = None):
         /partial levels <sym>              # Show exit target levels
         /partial active                    # Show only active targets
         /partial modify <sym> <n> <price>  # Modify target n exit price
+        /partial set <sym>                 # Plan: the evening routine sells target 1 once the price is there
+        /partial remove <sym>              # Drop a plan
     """
     from src.cli.tools.partial_exit_tools import (
         get_exit_summary,
@@ -932,6 +950,8 @@ def cmd_partial(session, args: str = None):
             safe_print(show_exit_targets(subarg.upper()))
     elif subcommand == "modify":
         safe_print(_partial_handle_modify(subarg))
+    elif subcommand in ("set", "remove"):
+        safe_print(_partial_handle_plan(session, subcommand, subarg))
     else:
         # Assume first arg is symbol
         symbol = subcommand.upper()

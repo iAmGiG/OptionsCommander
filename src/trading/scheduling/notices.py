@@ -6,7 +6,8 @@ routine fails, doesn't run or gets stuck, when a position is through its stop or
 protective stop, or when the check itself crashes. Notices are kept in state/notices.json,
 one per condition (seeing a condition again updates its count rather than adding a notice),
 shown by the scheduler CLI (``status``, ``notices``, ``ack``) and in the routine reports,
-and stay open until someone acknowledges them. Nothing here touches the network.
+and stay open until someone acknowledges them. Nothing here touches the network (notifier.py
+emails the CRITICAL ones, using the claims kept on each notice).
 
 Keys (one notice per condition per day, except ``unprotected``, which lasts until the
 position has a stop again):
@@ -34,7 +35,7 @@ import os
 import re
 import time
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Container, Dict, Iterator, List, Optional, Tuple, Union
@@ -168,16 +169,33 @@ class Notice:
     count: int = 1  # times the condition was raised
     acked_at: Optional[str] = None
     resolved_at: Optional[str] = None  # the condition cleared; the notice stays until acked
+    # Email claims (notifier.py): when it was sent, and the attempts so far
+    emailed_at: Optional[str] = None
+    email_attempts: int = 0
+    email_last_try: Optional[str] = None
 
     @classmethod
     def from_dict(cls, raw: Dict[str, Any]) -> "Notice":
         """A notice from its saved form; raises if a field is missing or mistyped."""
         known = {f.name for f in fields(cls)}
         notice = cls(**{name: value for name, value in raw.items() if name in known})
-        for name, kind in (("seq", int), ("count", int), ("key", str), ("title", str)):
+        for name, kind in (
+            ("seq", int),
+            ("count", int),
+            ("email_attempts", int),
+            ("key", str),
+            ("title", str),
+        ):
             if not isinstance(getattr(notice, name), kind):
                 raise ValueError(f"notice field {name!r} has the wrong type")
-        for name in ("first_seen", "last_seen", "acked_at", "resolved_at"):
+        for name in (
+            "first_seen",
+            "last_seen",
+            "acked_at",
+            "resolved_at",
+            "emailed_at",
+            "email_last_try",
+        ):
             if getattr(notice, name):
                 _parse_stamp(getattr(notice, name))  # raises if it isn't a time
         return notice
@@ -236,11 +254,22 @@ def _upsert(
         return old, False
     if old.resolved_at is not None:
         old.resolved_at = old.acked_at = None
+        old.emailed_at = old.email_last_try = None  # back: it emails again
+        old.email_attempts = 0
     old.count += 1
     old.last_seen = stamp
     old.detail = new.detail
     old.report_path = new.report_path or old.report_path
     return old, True
+
+
+def email_due(notice: Notice, now: datetime, max_attempts: int, retry_after: timedelta) -> bool:
+    """Whether an open CRITICAL notice still waits for its email (see claim_for_email)."""
+    if notice.severity != CRITICAL or notice.acked_at or notice.resolved_at or notice.emailed_at:
+        return False
+    if notice.email_attempts >= max_attempts:
+        return False
+    return not notice.email_last_try or now - _parse_stamp(notice.email_last_try) >= retry_after
 
 
 def _prune(state: _State, now: datetime) -> None:
@@ -426,6 +455,48 @@ class NoticeStore:
             for notice in chosen:
                 notice.acked_at = _stamp(now)
             return len(chosen), bool(chosen)
+
+        return self._update(change) or 0
+
+    # -------------------------------------------------------------------------
+    # Email claims (the notifier sends; these only keep the record)
+    # -------------------------------------------------------------------------
+
+    def email_pending(self, max_attempts: int, retry_after: timedelta) -> bool:
+        """Whether a notice waits for its email now (a read: no lock). Raises as open_notices."""
+        now = self._now()
+        return any(email_due(n, now, max_attempts, retry_after) for n in self.open_notices())
+
+    @_contained(list)
+    def claim_for_email(
+        self, max_attempts: int, retry_after: timedelta, limit: Optional[int] = None
+    ) -> List[Notice]:
+        """
+        Pick the open CRITICAL notices still to be emailed and mark an attempt on each:
+        not sent, fewer than max_attempts made, and the last one at least retry_after ago.
+        Returns the claimed notices (copies).
+        """
+
+        def change(state: _State, now: datetime) -> Tuple[List[Notice], bool]:
+            chosen = [
+                n for n in state.notices.values() if email_due(n, now, max_attempts, retry_after)
+            ][:limit]
+            for notice in chosen:
+                notice.email_attempts += 1
+                notice.email_last_try = _stamp(now)
+            return [replace(n) for n in chosen], bool(chosen)
+
+        return self._update(change) or []
+
+    @_contained(int)
+    def mark_emailed(self, keys: Container[str]) -> int:
+        """Record that the notices with these keys were emailed. Returns how many."""
+
+        def change(state: _State, now: datetime) -> Tuple[int, bool]:
+            hit = [n for n in state.notices.values() if n.key in keys and n.emailed_at is None]
+            for notice in hit:
+                notice.emailed_at = _stamp(now)
+            return len(hit), bool(hit)
 
         return self._update(change) or 0
 

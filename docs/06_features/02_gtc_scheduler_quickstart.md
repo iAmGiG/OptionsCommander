@@ -288,17 +288,30 @@ positions only.
 
 ## Advanced Usage
 
-### Notifications (Future)
+### Notifications
+
+`enable_notifications` in `scheduler_config.yaml` gates nothing. Email for CRITICAL notices and
+a heartbeat URL are set in `config/config.json` (see
+[Email and heartbeat](03_gtc_scheduler_technical.md#email-and-heartbeat)):
 
 ```json
 {
-  "enable_notifications": true,
-  "notification_channels": {
-    "email": "trader@example.com",
-    "telegram": "@tradingbot"
+  "notifications": {
+    "email": {
+      "smtp_host": "smtp.example.com",
+      "smtp_port": 465,
+      "use_ssl": true,
+      "username": "user@example.com",
+      "password": "app-password",
+      "from_addr": "user@example.com",
+      "to_addrs": ["you@example.com"]
+    },
+    "heartbeat_url": "https://hc-ping.example.com/your-uuid"
   }
 }
 ```
+
+Then run `notify test` in the scheduler CLI.
 
 ## Documentation
 

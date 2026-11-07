@@ -36,3 +36,16 @@ ClaudeCodeMaxHPCC: "your-claude-api-key"
 
 # Contact Info
 VALIDEMAIL: "your-email@example.com"
+
+# Notifications (scheduler): email for CRITICAL notices, and a dead-man heartbeat.
+# Email is on only when every key is set. use_ssl true: port 465; false: STARTTLS (587).
+notifications:
+  email:
+    smtp_host: "smtp.example.com"
+    smtp_port: 465
+    use_ssl: true
+    username: "your-smtp-user"
+    password: "your-smtp-app-password"
+    from_addr: "your-email@example.com"
+    to_addrs: ["your-email@example.com"]
+  heartbeat_url: "https://hc-ping.example.com/your-ping-id"

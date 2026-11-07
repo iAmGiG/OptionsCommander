@@ -144,6 +144,14 @@ Scheduler> next
 
 Show the last lines of `state/scheduler.log` (default 50; `logs 100` for more). Alias: `log`.
 
+#### `notify test`
+
+Send one test email with the `notifications.email` settings, to check them. Prints `sent` or
+`failed` with the exception's class name only, or the names of the keys that are missing. It
+does not count against the daily email cap and touches no notice. `status` shows
+`Email: configured (N recipients)` or `Email: off (missing: ...)`, and `Heartbeat: set` or
+`not set`.
+
 #### `notices`
 
 List the open notices: the failures and warnings the unattended loop raised, so they are visible
@@ -410,7 +418,7 @@ Editable via `edit` command:
 - `market_timezone`: Always `America/New_York`
 - `retry_delay_seconds`: Initial retry delay (exponential backoff)
 - `run_due_timeout_seconds`: Wall-clock limit for one cron check, retries included (default 900)
-- `enable_notifications`: Not used yet (reserved for email). Local [notices](#notices) are always on
+- `enable_notifications`: Gates nothing. Local [notices](#notices) are always on; email and the heartbeat are set in `notifications.*` in `config/config.json` (see [Email and heartbeat](03_gtc_scheduler_technical.md#email-and-heartbeat)), and `notify test` sends a test email
 
 ## Use Cases
 

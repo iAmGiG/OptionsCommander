@@ -47,7 +47,12 @@ from src.trading.state.state_reconciler import (
     StopRepair,
 )
 from src.trading.utils.report_generator import ReportGenerator, RoutineType
-from src.utils.date_utils import DEFAULT_TIMEZONE, get_datetime_now, now_iso
+from src.utils.date_utils import (
+    DEFAULT_TIMEZONE,
+    add_business_days,
+    get_datetime_now,
+    now_iso,
+)
 from src.utils.market_hours import is_market_hours
 
 # GTT (Good-Till-Triggered) integration - Issue #340
@@ -84,6 +89,9 @@ ENTRY_CHANGE_TOLERANCE = 0.001
 # Discrepancy action of a stop repair a dry run did not send (#601)
 DRY_RUN_ACTION = "DRY_RUN_NOT_SENT"
 
+# A partial sale target whose sale could not be confirmed: it will not sell again
+UNCONFIRMED_SALE = "unconfirmed"
+
 # Open notices listed in a routine report (the latest); the scheduler CLI's `notices` has all
 REPORT_NOTICES = 10
 
@@ -101,6 +109,7 @@ class PartialExitFailure(NamedTuple):
     quantity: int
     reason: str
     stop_lost: bool  # the position's stop is not in place: until the next routine, unprotected
+    critical: bool = False  # needs a person now (a plan that may sell again), stop or not
 
 
 def _free_shares(symbol: str, broker_state: Dict[str, Any]) -> int:
@@ -671,8 +680,6 @@ class CostEfficientTradeCycle:
             (report lines, whether a sale was tried)
         """
         symbol = state.symbol
-        if price < target.exit_price:
-            return [], False
         held = int(position["quantity"])
         reached = f"{symbol} reached its partial target ${target.exit_price:.2f}"
         if held <= target.quantity:
@@ -697,9 +704,47 @@ class CostEfficientTradeCycle:
             return self._sell_partial_target(manager, state, target, held, price), True
         except Exception as e:  # unknown how far it got: assume the stop is gone
             logger.error(f"Partial sale of {symbol} failed: {e}", exc_info=True)
-            reason = f"error during the sale, its stop may be gone: {e}"
-            self.last_partial_exits += (PartialExitFailure(symbol, target.quantity, reason, True),)
+            # Block another sale until a person has looked at the broker
+            target.order_id = UNCONFIRMED_SALE
+            saved = self._persist_target_order(manager, state, target)
+            reason = (
+                f"error during the sale, so its stop may be gone and the sale may have gone "
+                f"through: {e}. The target will not sell again until the broker is checked "
+                f"and the plan re-set (/partial remove {symbol}, then /partial set {symbol})"
+            )
+            if not saved:
+                reason += (
+                    ". THE PLAN COULD NOT BE SAVED either: the next evening routine could "
+                    "sell again"
+                )
+            self._record_partial_failure(
+                PartialExitFailure(symbol, target.quantity, reason, True, critical=True)
+            )
             return [f"{symbol}: partial sale of {target.quantity} FAILED: {reason}"], True
+
+    def _record_partial_failure(self, failure: PartialExitFailure) -> None:
+        """Add a failed or doubtful partial exit for the scheduler's notices."""
+        self.last_partial_exits += (failure,)
+
+    def _persist_target_order(self, manager: Any, state: Any, target: Any) -> bool:
+        """
+        Save a target's order ID (saving is tried twice) and check it on disk, not in
+        memory: save() contains write errors, and a plan without the ID sells again.
+        """
+        from src.trading.orders.partial_exit_manager import load_partial_exit_manager
+
+        state.last_updated = now_iso()
+        for _ in range(2):
+            manager.save(state.symbol)
+            saved = load_partial_exit_manager().exit_states.get(state.symbol)
+            on_disk = (
+                next((t for t in saved.targets if t.target_number == target.target_number), None)
+                if saved
+                else None
+            )
+            if on_disk is not None and on_disk.order_id == target.order_id:
+                return True
+        return False
 
     @staticmethod
     def _open_software_target(state: Any) -> Optional[Any]:
@@ -721,41 +766,78 @@ class CostEfficientTradeCycle:
 
     def _partial_upkeep(self, manager: Any, broker_state: Dict[str, Any]) -> List[str]:
         """
-        Mark targets filled when their sale appears in this run's new fills, and drop plans
-        for positions no longer held or whose average entry moved (sold and bought again, or
-        added to: the plan's target and quantities no longer fit).
+        Keep plans true to the broker. A target with a sale order is marked filled when its
+        order is in this run's new fills or the position has shrunk by its shares; until
+        then it is reported on every run, and a WARNING notice is raised if it is more than a
+        trading day old (a cancelled or rejected sale). Plans are dropped for positions no
+        longer held, whose average entry moved, or whose share count no longer fits (an
+        add-on, or shares sold another way) when no sale is pending.
 
         Returns:
-            Report lines for what changed
+            Report lines
         """
         lines = []
         fill_ids = {fill.get("id") for fill in self._new_fills}
         positions = broker_state["positions"]
         for symbol in list(manager.exit_states):
             state = manager.refresh_plan(symbol)
+            position = positions.get(symbol)
             if state is None:
                 continue
+            if position is None:
+                manager.remove_position(symbol)
+                lines.append(f"{symbol}: no longer held, partial exit plan removed")
+                continue
+            held = int(position["quantity"])
+            pending = False
             for target in state.get_active_targets():
-                if target.order_id and target.order_id in fill_ids:
+                if not target.order_id:
+                    continue
+                if target.order_id in fill_ids or held <= state.total_quantity - target.quantity:
                     target.filled = True
                     target.filled_at = now_iso()
                     state.last_updated = now_iso()
                     manager.save(symbol)
                     lines.append(f"{symbol}: partial target {target.target_number} sold")
-            position = positions.get(symbol)
-            if position is None:
-                manager.remove_position(symbol)
-                lines.append(f"{symbol}: no longer held, partial exit plan removed")
-            elif abs(position["entry_price"] - state.entry_price) > (
+                else:
+                    pending = True
+                    lines.append(self._pending_sale_line(symbol, target, state))
+            drop = None
+            if abs(position["entry_price"] - state.entry_price) > (
                 ENTRY_CHANGE_TOLERANCE * state.entry_price
             ):
+                drop = (
+                    f"average entry moved from ${state.entry_price:.2f} to "
+                    f"${position['entry_price']:.2f}"
+                )
+            elif not pending and held != state.get_remaining_quantity():
+                drop = (
+                    f"holds {held} shares where the plan expects {state.get_remaining_quantity()}"
+                )
+            if drop:
                 manager.remove_position(symbol)
                 lines.append(
-                    f"{symbol}: average entry moved from ${state.entry_price:.2f} to "
-                    f"${position['entry_price']:.2f}, partial exit plan dropped (set a new one "
-                    "with /partial set)"
+                    f"{symbol}: {drop}, partial exit plan dropped (set a new one with /partial set)"
                 )
         return lines
+
+    def _pending_sale_line(self, symbol: str, target: Any, state: Any) -> str:
+        """Report line for a sale order with no fill yet; a stale one also gets a notice."""
+        line = f"partial sale order {target.order_id} for {symbol} shows no fill yet"
+        if target.order_id == UNCONFIRMED_SALE:
+            line += (
+                ": the sale was never confirmed; check the broker, then /partial remove and "
+                f"/partial set {symbol}"
+            )
+        try:
+            stale = add_business_days(str(state.last_updated)[:10], 1) < market_today()
+        except Exception as e:
+            logger.warning(f"Could not age {symbol}'s partial sale: {e}")
+            stale = False
+        if stale:
+            line += f" (since {str(state.last_updated)[:16]}: cancelled or rejected?)"
+            self._record_partial_failure(PartialExitFailure(symbol, target.quantity, line, False))
+        return line
 
     def _sell_partial_target(
         self, manager: Any, state: Any, target: Any, held: int, price: float
@@ -781,38 +863,34 @@ class CostEfficientTradeCycle:
             return [f"{symbol}: partial sale of {quantity} not made: the position changed"]
         result = executor.close_position_sync(plan, sleep=time.sleep)
         stop_lost = STOP_LOST in result.message or NO_STOP in result.message
-        failures = list(self.last_partial_exits)
 
         if not result.success:
             logger.error(f"Partial sale of {quantity} {symbol} failed: {result.message}")
-            failures.append(PartialExitFailure(symbol, quantity, result.message, stop_lost))
-            self.last_partial_exits = tuple(failures)
+            self._record_partial_failure(
+                PartialExitFailure(symbol, quantity, result.message, stop_lost)
+            )
             return [f"{symbol}: partial sale of {quantity} shares FAILED: {result.message}"]
 
-        target.order_id = result.entry_order_id or "unknown"
-        state.last_updated = now_iso()
-        manager.save(symbol)
-        saved = manager.refresh_plan(symbol)
-        recorded = saved is not None and any(
-            t.target_number == target.target_number and t.order_id for t in saved.targets
-        )
+        target.order_id = result.entry_order_id or UNCONFIRMED_SALE
+        recorded = self._persist_target_order(manager, state, target)
         self._record_partial_sale(symbol, quantity)
         lines = [
             f"{symbol}: sold {quantity} shares at market (price about ${price:.2f}, partial "
             f"target ${target.exit_price:.2f}), order {target.order_id}. {result.message}"
         ]
-        problems = []
-        if stop_lost:
-            problems.append(result.message)
+        problems = [result.message] if stop_lost else []
         if not recorded:
             problems.append(
-                "the sale's order ID could not be saved to the plan: do not run the routine "
-                f"again before checking {symbol}'s plan"
+                "the sale went through but the plan could not be saved with its order ID: the "
+                f"next evening routine could sell again; check {symbol}'s plan"
             )
             lines.append(f"{symbol}: the sale's order ID was NOT saved to the plan")
         if problems:
-            failures.append(PartialExitFailure(symbol, quantity, "; ".join(problems), stop_lost))
-            self.last_partial_exits = tuple(failures)
+            self._record_partial_failure(
+                PartialExitFailure(
+                    symbol, quantity, "; ".join(problems), stop_lost, critical=not recorded
+                )
+            )
         return lines
 
     def _record_partial_sale(self, symbol: str, quantity: int) -> None:

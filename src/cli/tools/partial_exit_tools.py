@@ -290,8 +290,9 @@ def set_partial_plan(
     """
     Register a held long position for a software partial exit (#584).
 
-    Target 1 is half the shares (rounded down) at the average entry plus the trading
-    mode's target_1_pct; the rest stays on the trailing stop. Nothing is sent to the
+    Target 1 is the first part of the split (half, rounded down, with the 50/50 split) at
+    the average entry plus the trading mode's target_1_pct; the rest stays on the trailing
+    stop. Nothing is sent to the
     broker: the evening routine sells the shares once the price is at the target.
 
     Args:
@@ -326,13 +327,14 @@ def set_partial_plan(
     if symbol in manager.exit_states:
         return f"[ERROR] {symbol} already has a plan: /partial remove {symbol} first"
 
-    target_price = entry * (1 + target_pct)
+    first = manager.software_targets(symbol, entry, shares, target_pct)[0]
+    target_price = first.exit_price
     market_value = float(position.get("market_value") or 0)
     price = market_value / shares if market_value else 0.0
     if price and price >= target_price:
         question = (
             f"{symbol} is at about ${price:.2f}, already at or past its ${target_price:.2f} "
-            f"target: the next evening routine would sell {shares // 2} share(s)."
+            f"target: the next evening routine would sell {first.quantity} of {shares} shares."
         )
         if not confirm(question):
             return f"[INFO] No plan registered for {symbol}"
@@ -345,7 +347,7 @@ def set_partial_plan(
     return "\n".join(
         [
             f"[OK] Partial exit plan registered for {symbol} ({shares} shares @ ${entry:.2f})",
-            f"  Target 1: sell {target.quantity} at ${target.exit_price:.2f} "
+            f"  Target 1: sell {target.quantity} of {shares} shares at ${target.exit_price:.2f} "
             f"({target_pct * 100:.1f}% above entry)",
             f"  The other {shares - target.quantity} stay on the trailing stop",
             "  No order was sent: the evening routine sells target 1 at market once the price "

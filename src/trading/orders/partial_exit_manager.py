@@ -248,10 +248,7 @@ class PartialExitManager:
         if not math.isfinite(entry_price) or entry_price <= 0:
             raise ValueError(f"{symbol} has no usable entry price ({entry_price})")
 
-        targets = self._calculate_targets(
-            symbol, entry_price, total_quantity, stop_price, "long", target_1_pct
-        )
-        targets[0].exit_type = "software"
+        targets = self.software_targets(symbol, entry_price, total_quantity, target_1_pct)
         state = PartialExitState(
             symbol=symbol,
             entry_price=entry_price,
@@ -267,6 +264,20 @@ class PartialExitManager:
             f"{total_quantity} shares at ${targets[0].exit_price:.2f}"
         )
         return state
+
+    def software_targets(
+        self,
+        symbol: str,
+        entry_price: float,
+        total_quantity: int,
+        target_1_pct: Optional[float] = None,
+    ) -> List[ExitTarget]:
+        """The targets a software plan would have (nothing is saved), so callers can show them."""
+        targets = self._calculate_targets(
+            symbol, entry_price, total_quantity, 0.0, "long", target_1_pct
+        )
+        targets[0].exit_type = "software"
+        return targets
 
     def _calculate_targets(
         self,

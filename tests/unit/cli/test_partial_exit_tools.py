@@ -363,3 +363,19 @@ def test_the_slash_command_routes_set_and_remove(monkeypatch):
     assert printed[1] == "Usage: /partial set <symbol>"
     assert printed[2].startswith("[OK] Removed")
     assert "Could not read the positions" in printed[3]
+
+
+def test_the_prompt_shows_the_computed_quantity(monkeypatch):
+    _mode(monkeypatch, 0.05)
+    asked = []
+
+    tools.set_partial_plan("AAPL", [_held(qty=15.0, value=1650.0)], lambda q: asked.append(q))
+
+    assert "sell 7 of 15 shares" in asked[0]
+    assert "half" not in asked[0]
+
+
+def test_the_reply_shows_the_computed_quantity():
+    reply = tools.set_partial_plan("AAPL", [_held(qty=15.0)], _no)
+
+    assert "sell 7 of 15 shares" in reply

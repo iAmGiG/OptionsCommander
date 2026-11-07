@@ -908,7 +908,7 @@ def cmd_partial(session, args: str = None):
         /partial levels <sym>              # Show exit target levels
         /partial active                    # Show only active targets
         /partial modify <sym> <n> <price>  # Modify target n exit price
-        /partial set <sym>                 # Plan: the evening routine sells half at the target
+        /partial set <sym>                 # Plan: the evening routine sells target 1 once the price is there
         /partial remove <sym>              # Drop a plan
     """
     from src.cli.tools.partial_exit_tools import (

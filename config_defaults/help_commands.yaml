@@ -964,7 +964,7 @@ exit:
     \  remove <symbol>   - Remove a plan, after asking\n\
     \  <symbol>          - Show plan for specific symbol\n\n\
     Partial exits split positions across multiple targets:\n\
-    - Target 1: half the shares (rounded down) sold at market by the evening routine once\n\
+    - Target 1: its share of the position (half, rounded down, with the 50/50 split) sold at market by the evening routine once\n\
     \  the price is at the average entry plus the trading mode's target_1_pct (4%, 5% or 6%).\n\
     \  No order rests at the broker; the stop is cancelled for a few seconds around the sale.\n\
     - Target 2: the rest stays on the trailing stop\n\

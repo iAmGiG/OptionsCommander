@@ -965,7 +965,7 @@ class DailyScheduler:
             self.notice_store.raise_notice(
                 key=f"{PARTIAL_EXIT_FAILED}:{failure.symbol}:{market_date}",
                 kind=PARTIAL_EXIT_FAILED,
-                severity=CRITICAL if failure.stop_lost else WARNING,
+                severity=CRITICAL if failure.stop_lost or failure.critical else WARNING,
                 title=f"Partial sale of {failure.quantity} {failure.symbol} failed"
                 + (", its stop is not in place" if failure.stop_lost else ""),
                 detail=failure.reason,

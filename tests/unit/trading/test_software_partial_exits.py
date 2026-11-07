@@ -171,6 +171,7 @@ def test_after_hours_the_evening_routine_does_not_sell(cycle, broker, monkeypatc
 
 def test_a_position_no_larger_than_the_target_is_not_sold(cycle, broker):
     save_plan()
+    cycle._dry_run_active = True  # a real run drops such a plan first (shares sold elsewhere)
 
     _, lines = cycle._partial_exits(broker_state(AAPL=position(quantity=5)), evening=True)
 
@@ -332,7 +333,7 @@ def test_another_fill_does_not_fill_it(cycle):
     save_plan(order_id="sell-0")
     cycle._new_fills = [{"id": "other"}]
 
-    cycle._partial_exits(broker_state(AAPL=position(quantity=5)))
+    cycle._partial_exits(broker_state(AAPL=position(quantity=10)))
 
     assert saved_target().filled is False
 
@@ -364,6 +365,142 @@ def test_the_rounded_entry_keeps_the_plan(cycle):
     save_plan()
 
     cycle._partial_exits(broker_state(AAPL=position(entry=100.04)))
+
+    assert "AAPL" in load_partial_exit_manager().exit_states
+
+
+def disk_writes_fail(monkeypatch):
+    """Saving a plan fails from here on (the error is contained, as in production)."""
+    from src.trading.orders.partial_exit_manager import PartialExitManager
+
+    def refuse(self, plans):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(PartialExitManager, "_write_plans", refuse)
+
+
+def test_a_failed_save_is_reported_and_the_next_evening_does_not_sell(cycle, broker, monkeypatch):
+    save_plan()
+    with monkeypatch.context() as failing:
+        disk_writes_fail(failing)
+        _, lines = cycle._partial_exits(broker_state(AAPL=position()), evening=True)
+
+    assert any("NOT saved" in line for line in lines)
+    (failure,) = cycle.last_partial_exits
+    assert failure.critical is True and failure.stop_lost is False
+    assert "could sell again" in failure.reason
+    assert saved_target().order_id is None  # the disk has no ID; memory did
+    broker.reset_mock()
+
+    # Next evening: the broker now shows the shares sold, so the plan no longer fits
+    cycle._start_routine()
+    _, lines = cycle._partial_exits(broker_state(AAPL=position(quantity=5)), evening=True)
+
+    assert sells(broker) == []
+    assert any("holds 5 shares where the plan expects 10" in line for line in lines)
+
+
+def test_an_exception_mid_sale_sets_the_sentinel_and_blocks_a_resale(cycle, broker):
+    save_plan()
+    broker.get_orders.side_effect = RuntimeError("broker down")
+
+    _, lines = cycle._partial_exits(broker_state(AAPL=position()), evening=True)
+
+    assert saved_target().order_id == "unconfirmed"
+    (failure,) = cycle.last_partial_exits
+    assert failure.critical and failure.stop_lost
+    assert "/partial remove AAPL, then /partial set AAPL" in failure.reason
+    assert any("will not sell again" in line for line in lines)
+    broker.get_orders.side_effect = lambda **kwargs: list(broker.open)
+    broker.reset_mock()
+    cycle._start_routine()
+
+    _, lines = cycle._partial_exits(broker_state(AAPL=position()), evening=True)
+
+    assert sells(broker) == []
+    broker.cancel_order.assert_not_called()
+    assert any("never confirmed" in line for line in lines)
+
+
+def test_an_exception_with_a_failing_save_says_so(cycle, broker, monkeypatch):
+    save_plan()
+    broker.get_orders.side_effect = RuntimeError("broker down")
+    disk_writes_fail(monkeypatch)
+
+    cycle._partial_exits(broker_state(AAPL=position()), evening=True)
+
+    assert "COULD NOT BE SAVED" in cycle.last_partial_exits[0].reason
+
+
+# Share counts, pending sales and stale plans
+
+
+def test_a_target_is_filled_when_the_position_shrank_by_its_shares(cycle):
+    save_plan(order_id="sell-0")
+    cycle._new_fills = []  # the fill was recorded by someone else earlier
+
+    cycle._partial_exits(broker_state(AAPL=position(quantity=5)))
+
+    assert saved_target().filled is True
+    assert "AAPL" in load_partial_exit_manager().exit_states  # 5 left is what the plan expects
+
+
+def test_a_pending_sale_is_reported_on_every_run(cycle):
+    save_plan(order_id="sell-0")
+
+    for _ in range(2):
+        cycle._start_routine()
+        _, lines = cycle._partial_exits(broker_state(AAPL=position()))
+        assert any("order sell-0 for AAPL shows no fill yet" in line for line in lines)
+        assert cycle.last_partial_exits == ()  # fresh: no notice yet
+    assert saved_target().filled is False
+
+
+def test_a_stale_pending_sale_raises_a_warning(cycle, monkeypatch):
+    manager = load_partial_exit_manager()
+    save_plan(order_id="sell-0")
+    manager.refresh_plan("AAPL").last_updated = "2026-11-02T15:50:00"
+    manager.save("AAPL")
+    monkeypatch.setattr(
+        cycle_module, "market_today", lambda: "2026-11-03"
+    )  # a trading day later: fine
+
+    cycle._partial_exits(broker_state(AAPL=position()))
+    assert cycle.last_partial_exits == ()
+
+    monkeypatch.setattr(cycle_module, "market_today", lambda: "2026-11-04")
+    _, lines = cycle._partial_exits(broker_state(AAPL=position()))
+
+    (failure,) = cycle.last_partial_exits
+    assert (failure.critical, failure.stop_lost) == (False, False)
+    assert "cancelled or rejected?" in lines[-1]
+
+
+def test_a_stale_pending_sale_notice_is_a_warning(cycle, tmp_path):
+    from src.trading.scheduling.trading_cycle import PartialExitFailure
+
+    cycle.last_partial_exits = (PartialExitFailure("AAPL", 5, "no fill", False),)
+    scheduler = scheduler_with(cycle, tmp_path)
+
+    scheduler._notice_positions("2026-11-09", run_completed=True)
+
+    assert scheduler.notice_store.open_notices()[0].severity == WARNING
+
+
+def test_an_add_on_drops_the_plan(cycle, broker):
+    save_plan()
+
+    _, lines = cycle._partial_exits(broker_state(AAPL=position(quantity=14)), evening=True)
+
+    assert load_partial_exit_manager().exit_states == {}
+    assert sells(broker) == []
+    assert any("holds 14 shares where the plan expects 10" in line for line in lines)
+
+
+def test_a_pending_sale_keeps_a_plan_whose_shares_have_not_moved(cycle):
+    save_plan(order_id="sell-0")
+
+    cycle._partial_exits(broker_state(AAPL=position(quantity=10)))
 
     assert "AAPL" in load_partial_exit_manager().exit_states
 

@@ -610,6 +610,14 @@ def cmd_trailing(session, args: str = None):
     safe_print(_trailing_view(args))
 
 
+@command("/alerts", help_text="Position alerts against their stops and targets")
+def cmd_alerts(session):
+    """Show each position's distance to its stop and target (reads the broker; #659)."""
+    from src.cli.tools.alert_tools import show_alerts
+
+    safe_print(show_alerts())
+
+
 @command("/records", help_text="Daily equity, fills and realized P&L", has_args=True)
 def cmd_records(session, args: str = None):
     """

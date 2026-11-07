@@ -149,6 +149,14 @@ def is_scheduler_request(user_input: str) -> bool:
     return bool(_SCHEDULER_WORDS.search(user_input)) and detect_user_intent(user_input) is None
 
 
+def is_alert_request(user_input: str) -> bool:
+    """
+    Whether the input asks for the position alerts, by whole word (#659). Nothing with a
+    cancel, delete or remove in it: those aren't questions about the alerts.
+    """
+    return bool(_ALERT_WORDS.search(user_input)) and not _CANCEL_VERB.search(user_input)
+
+
 def is_mode_request(user_input: str) -> bool:
     """
     Whether the input is a trading mode command, not a sentence that uses a mode's name
@@ -159,6 +167,7 @@ def is_mode_request(user_input: str) -> bool:
     return bool(_MODE_COMMAND.search(user_input.strip()))
 
 
+_ALERT_WORDS = re.compile(r"\b(?:alerts?|approaching)\b", re.IGNORECASE)
 _CANCEL_VERB = re.compile(r"\b(cancel|delete|remove)\b", re.IGNORECASE)
 _ORDER_WORD = re.compile(r"\borders?\b", re.IGNORECASE)
 _ALL_WORD = re.compile(r"\ball\b", re.IGNORECASE)

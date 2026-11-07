@@ -152,7 +152,7 @@ def restore_trailing_stops_from_gtt(
 
     # Positions' saved states only: a trailing trigger a user made has no position to restore
     all_triggers = gtt_manager.get_triggers(active_only=True)
-    trailing_triggers = [t for t in all_triggers if _holds_position_state(t)]
+    trailing_triggers = [t for t in all_triggers if holds_position_state(t)]
 
     logger.info("Restoring %d trailing stops from GTT", len(trailing_triggers))
 
@@ -297,7 +297,7 @@ def cleanup_orphaned_trailing_stops(
 
     for trigger in gtt_manager.get_triggers(enabled_only=False, active_only=False):
         if (
-            _holds_position_state(trigger)
+            holds_position_state(trigger)
             and trigger.symbol not in active_set
             and gtt_manager.delete_trigger(trigger.id)
         ):
@@ -340,7 +340,7 @@ def get_trailing_stop_status(symbol: str) -> Optional[Dict[str, Any]]:
     }
 
 
-def _holds_position_state(trigger: GTTTrigger) -> bool:
+def holds_position_state(trigger: GTTTrigger) -> bool:
     """
     Whether this is a position's saved trailing state, not a trailing trigger a user made.
     Only the sync above writes entry_price; evaluating any trailing trigger writes its
@@ -358,7 +358,7 @@ def _find_trailing_stop_trigger(symbol: str) -> Optional[GTTTrigger]:
     triggers = gtt_manager.get_triggers(symbol=symbol.upper(), active_only=False, enabled_only=True)
 
     for trigger in triggers:
-        if _holds_position_state(trigger):
+        if holds_position_state(trigger):
             return trigger
 
     return None

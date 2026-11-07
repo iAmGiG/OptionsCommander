@@ -561,7 +561,8 @@ disable scheduler:
     \  disable <id>      - Disable a trigger\n\n\
     Conditions: above, below (a price); gain, loss, trailing (a percent, 5 = 5%)\n\
     GTT triggers persist across sessions, and are checked at the morning and evening\
-    \ routines, for symbols you hold."
+    \ routines for symbols you hold; other symbols at the evening routine (when a\
+    \ fresh price exists), alerts only."
 
 /watchlist:
   category: Configuration

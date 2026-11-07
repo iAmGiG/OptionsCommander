@@ -106,6 +106,7 @@ class TriggerEvaluator:
         volumes: Optional[Dict[str, float]] = None,
         average_volumes: Optional[Dict[str, float]] = None,
         persist: bool = True,
+        triggers: Optional[List[GTTTrigger]] = None,
     ) -> List[GTTTrigger]:
         """
         Evaluate all active triggers against current prices.
@@ -116,6 +117,8 @@ class TriggerEvaluator:
             volumes: Dict mapping symbol -> current volume
             average_volumes: Dict mapping symbol -> average volume
             persist: Save new trailing-stop highs (False for a dry run, #601)
+            triggers: Evaluate only these (default: every active trigger), so a caller can
+                keep out triggers it must not evaluate, since evaluating saves trailing highs
 
         Returns:
             List of triggers that should fire
@@ -124,9 +127,10 @@ class TriggerEvaluator:
         reference_prices = reference_prices or {}
 
         # Get all active triggers
-        active_triggers = self.gtt_manager.get_triggers(active_only=True)
+        if triggers is None:
+            triggers = self.gtt_manager.get_triggers(active_only=True)
 
-        for trigger in active_triggers:
+        for trigger in triggers:
             if trigger.symbol not in prices:
                 continue
 

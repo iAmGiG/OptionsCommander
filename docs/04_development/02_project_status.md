@@ -24,7 +24,7 @@ OptionsCommander (formerly RH2MAS) is a trading platform on Alpaca. It runs on a
 | **Daily Scheduler** | In use (cron) | Morning 09:20 and evening 15:50 ET on trading days (`CostEfficientTradeCycle`, `src/trading/scheduling/`). Records the account, positions and fills; re-places and renews stops; raises stops to the trailing level in the evening routine only (#649); notices, reports and a run lock (#618) |
 | **Position and order management** | In use | Broker-as-truth reconciliation (`src/trading/state/state_reconciler.py`); stops are GTC sell stops |
 | **TrailingStopManager** | In use | Progressive tiers (#321); `src/trading/orders/trailing_stop_manager.py` |
-| **GTT triggers** | In use | Persistent price triggers (#340), `src/trading/gtt/`. Checked at the morning and evening routines only, for symbols you hold |
+| **GTT triggers** | In use | Persistent price triggers (#340), `src/trading/gtt/`. Held symbols are checked at the morning and evening routines; other symbols at the evening routine (when a fresh price exists), alerts only (#658) |
 | **Trading modes** | In use | Conservative, moderate and aggressive (#400). The saved mode, which `/mode` shows, sets the CLI's sizing |
 | **Market data** | In use | Cache, then Alpaca, then Alpha Vantage (Polygon removed, #607) |
 

@@ -41,7 +41,7 @@ src/cli/tools/
 
 ### Integration Points
 
-- **Scheduler:** `trading_cycle.py` calls `check_gtt_triggers()` in morning/evening routines, fetches broker state again if a GTT order or cancel went out, then raises stops. Triggers are checked at these two routines only, and only for symbols you hold
+- **Scheduler:** `trading_cycle.py` calls `check_gtt_triggers()` in morning/evening routines, fetches broker state again if a GTT order or cancel went out, then raises stops. Held symbols are checked at both routines. Other symbols are checked at the evening routine only, from one market-data snapshot, and only if the latest trade is under 15 minutes old (IEX has no pre-market prints, so at 09:20 it is yesterday's); only `alert` triggers run there, while order triggers are reported as skipped, so a routine never opens a position (#658)
 - **CLI:** `/gtt` calls the plain functions in `src/cli/tools/gtt_tools.py`
 - **Database:** Uses `state/user.db` (same as alerts_watchlists.py)
 

@@ -363,6 +363,23 @@ def calendar_disagreement(day: date) -> Optional[str]:
     return _CALENDAR_DISAGREEMENTS.get(day)
 
 
+def market_today() -> str:
+    """Today's date in the market's timezone (ET), whatever the host's timezone."""
+    return get_datetime_now(pytz.timezone("America/New_York")).date().isoformat()
+
+
+def unfinished_session_day() -> Optional[str]:
+    """
+    Today's ET date while its trading session hasn't closed (its daily bar is still
+    forming, #620), else None: a weekend, a holiday, or after the close.
+    """
+    now_et = get_datetime_now(pytz.timezone("America/New_York"))
+    _, close_time, is_trading_day = get_market_hours_for_date(now_et)
+    if not is_trading_day or now_et.time() >= close_time:
+        return None
+    return now_et.date().isoformat()
+
+
 def is_market_hours() -> bool:
     """
     Check if US stock market is currently open.

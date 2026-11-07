@@ -4,7 +4,7 @@
 
 This document describes the enhancements made to the position management system to provide better exit alerts and dynamic stop integration for live trading monitoring.
 
-User-set price alerts and portfolio overrides were removed in #657 (#331). For a price alert on a held symbol use `/gtt create` or `/gtt oco`; GTT triggers are checked at the morning and evening routines only, and only for symbols you hold.
+User-set price alerts and portfolio overrides were removed in #657 (#331). For a price alert use `/gtt create` or `/gtt oco`; held symbols are checked at the morning and evening routines, other symbols at the evening routine (when a fresh price exists), alerts only.
 
 ## Enhancements Summary
 

@@ -204,7 +204,7 @@ def test_the_help_shows_percents():
     assert "gain 10 " in usage
     assert "trailing 5 " in usage
     assert "0.10" not in usage
-    assert "for symbols you hold" in usage
+    assert "alerts only" in usage
 
 
 def test_a_typed_gtt_create_can_only_make_an_alert(gtt):

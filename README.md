@@ -190,7 +190,7 @@ Slash commands are listed in full, from the code, in [the command reference](doc
 | `/records [days\|all]` | Daily equity, fills and realized P&L |
 | `/plan SYM [levels\|volume\|atr]` | Entry plan for a buy, and its inputs (places nothing) |
 | `/trailing [explain\|compare\|example]` | How trailing stops move, from the routines' own code |
-| `/gtt` | Persistent price triggers (checked at the routines, for symbols you hold) |
+| `/gtt` | Persistent price triggers (held symbols checked at both routines; other symbols at the evening routine, alerts only) |
 | `/watchlist`, `/backup`, `/partial` | Watchlists, database backups, partial exit plans |
 | `/mode`, `/timeframe`, `/voter` | Trading mode, timeframe and voter settings |
 | `/schedule` | Scheduler status, notices and acknowledgements |

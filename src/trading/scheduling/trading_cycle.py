@@ -20,6 +20,7 @@ import logging
 import os
 from contextlib import contextmanager
 from dataclasses import asdict, replace
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
@@ -54,6 +55,7 @@ try:
     from src.trading.gtt.action_executor import ActionResult, get_action_executor
     from src.trading.gtt.trailing_stop_bridge import (
         cleanup_orphaned_trailing_stops,
+        holds_position_state,
         restore_trailing_stops_from_gtt,
         sync_all_trailing_stops,
     )
@@ -78,6 +80,8 @@ STOP_REPAIR_TYPES = ("MISSING_STOP", "STOP_EXPIRING")
 # A position's average entry moved this far from its trailing state's: it was sold and bought
 # again, or added to (#634). Wide enough for the state's rounded copy of the entry.
 ENTRY_CHANGE_TOLERANCE = 0.001
+# A symbol that isn't held is priced by its latest trade only if that is this recent (#658)
+GTT_PRICE_MAX_AGE = timedelta(minutes=15)
 
 # Discrepancy action of a stop repair a dry run did not send (#601)
 DRY_RUN_ACTION = "DRY_RUN_NOT_SENT"
@@ -139,6 +143,17 @@ def _not_executed(triggered: List[Any]) -> List[Any]:
     return results
 
 
+def _skipped_unheld(trigger: Any) -> Any:
+    """Result for a GTT order trigger on a symbol that isn't held: only alerts run there."""
+    return ActionResult(
+        trigger_id=trigger.id,
+        success=False,
+        action_type=trigger.action_type,
+        message=f"{trigger.symbol} not held: only alerts run for symbols you don't hold",
+        details={"symbol": trigger.symbol, "skipped": True},
+    )
+
+
 def _within_free_shares(
     triggered: List[Any], broker_state: Dict[str, Any]
 ) -> Tuple[List[Any], List[Tuple[Any, str]]]:
@@ -176,7 +191,12 @@ def _within_free_shares(
             free_left[trigger.symbol] = _free_shares(trigger.symbol, broker_state)
         free = free_left[trigger.symbol]
         if free <= 0:
-            skipped.append((trigger, "not executed: no free shares (open sell orders hold them)"))
+            if trigger.symbol in broker_state.get("positions", {}):
+                skipped.append(
+                    (trigger, "not executed: no free shares (open sell orders hold them)")
+                )
+            else:
+                skipped.append((trigger, "not executed: not held"))
             continue
         if qty > free:
             logger.info(f"GTT {trigger.id} ({trigger.symbol} sell) cut to the {free} free shares")
@@ -234,6 +254,7 @@ class CostEfficientTradeCycle:
     dry_run = False
     _dry_run_active = False
     position_tracker = None
+    market_data = None  # AlpacaMarketData; prices GTT alerts on symbols not held
     # The latest routine's alerts and discrepancies, read by the scheduler for its notices
     last_alerts: Tuple[PositionAlertSummary, ...] = ()
     last_discrepancies: Tuple[Discrepancy, ...] = ()
@@ -713,6 +734,9 @@ class CostEfficientTradeCycle:
         """
         Check GTT triggers against current prices.
 
+        Held symbols are priced from the broker state, at both routines. Other symbols are
+        priced from a market-data snapshot, and only their alerts run (#658).
+
         Args:
             broker_state: Current broker state with positions/prices
 
@@ -723,49 +747,116 @@ class CostEfficientTradeCycle:
             return []
 
         try:
-            prices = _position_prices(broker_state)
-            if not prices:
-                logger.debug("No prices available for GTT check")
-                return []
-
-            # Evaluate triggers; sells are kept within the shares free to sell
-            evaluator = get_trigger_evaluator()
-            # A dry run doesn't save the trailing stops' new highs
-            fired = evaluator.evaluate_triggers_batch(prices, persist=not self._dry_run_active)
-            triggered, skipped = _within_free_shares(fired, broker_state)
-            results = []
-            for trigger, reason in skipped:
-                logger.info(f"GTT {trigger.id} ({trigger.symbol}) {reason}")
-                results.append(
-                    ActionResult(
-                        trigger_id=trigger.id,
-                        success=False,
-                        action_type=trigger.action_type,
-                        message=f"{trigger.symbol} sell {reason}",
-                        details={"symbol": trigger.symbol, "skipped": True},
-                    )
-                )
-
-            if not triggered:
-                logger.debug("No GTT triggers to execute")
-                return results
-
-            if self._dry_run_active:
-                return results + _not_executed(triggered)
-
-            # Execute actions for triggered GTTs
-            executor = get_action_executor()
-            executed = executor.execute_triggers_batch(triggered, prices)
-
-            # Log summary
-            success_count = sum(1 for r in executed if r.success)
-            logger.info(f"GTT: {len(triggered)} triggers fired, {success_count} actions executed")
-
-            return results + executed
-
+            results = self._check_held_gtt_triggers(broker_state)
         except Exception as e:
             logger.error(f"GTT check failed: {e}")
+            results = []
+        # Its own failures are contained, so they can't take the held results with them
+        return results + self._check_unheld_gtt_alerts(broker_state)
+
+    def _check_held_gtt_triggers(self, broker_state: Dict[str, Any]) -> List[Any]:
+        """Evaluate and execute the triggers on held symbols."""
+        prices = _position_prices(broker_state)
+        if not prices:
+            logger.debug("No prices available for GTT check")
             return []
+
+        # Evaluate triggers; sells are kept within the shares free to sell
+        evaluator = get_trigger_evaluator()
+        # A dry run doesn't save the trailing stops' new highs
+        fired = evaluator.evaluate_triggers_batch(prices, persist=not self._dry_run_active)
+        triggered, skipped = _within_free_shares(fired, broker_state)
+        results = []
+        for trigger, reason in skipped:
+            logger.info(f"GTT {trigger.id} ({trigger.symbol}) {reason}")
+            results.append(
+                ActionResult(
+                    trigger_id=trigger.id,
+                    success=False,
+                    action_type=trigger.action_type,
+                    message=f"{trigger.symbol} sell {reason}",
+                    details={"symbol": trigger.symbol, "skipped": True},
+                )
+            )
+
+        if not triggered:
+            logger.debug("No GTT triggers to execute")
+            return results
+
+        if self._dry_run_active:
+            return results + _not_executed(triggered)
+
+        # Execute actions for triggered GTTs
+        executor = get_action_executor()
+        executed = executor.execute_triggers_batch(triggered, prices)
+
+        # Log summary
+        success_count = sum(1 for r in executed if r.success)
+        logger.info(f"GTT: {len(triggered)} triggers fired, {success_count} actions executed")
+
+        return results + executed
+
+    def _check_unheld_gtt_alerts(self, broker_state: Dict[str, Any]) -> List[Any]:
+        """
+        Run the alert triggers on symbols that aren't held (#658). Order triggers there are
+        reported as skipped, so a routine never opens a position, and a position's saved
+        trailing state is left to the sync. Never raises.
+        """
+        if self.market_data is None:
+            return []
+        try:
+            evaluator = get_trigger_evaluator()
+            held = set(broker_state.get("positions", {}))
+            candidates = [
+                t
+                for t in evaluator.gtt_manager.get_triggers(active_only=True)
+                if t.symbol not in held and not holds_position_state(t)
+            ]
+            alerts = [t for t in candidates if t.action_type == "alert"]
+            results = [_skipped_unheld(t) for t in candidates if t.action_type != "alert"]
+            prices = self._fresh_prices(sorted({t.symbol for t in alerts}))
+            if not prices:
+                return results
+            fired = evaluator.evaluate_triggers_batch(
+                prices,
+                persist=not self._dry_run_active,
+                triggers=[t for t in alerts if t.symbol in prices],
+            )
+            if not fired:
+                return results
+            if self._dry_run_active:
+                return results + _not_executed(fired)
+            executed = get_action_executor().execute_triggers_batch(fired, prices)
+            logger.info(f"GTT: {len(fired)} alerts fired on symbols not held")
+            return results + executed
+        except Exception as e:
+            logger.warning(f"GTT alerts on symbols not held not checked: {e}")
+            return []
+
+    def _fresh_prices(self, symbols: List[str]) -> Dict[str, float]:
+        """
+        Latest trade price of each symbol from one snapshot call, if under
+        GTT_PRICE_MAX_AGE old. IEX has no pre-market prints, so at the morning routine the
+        last trade is the previous session's: it is skipped, not evaluated.
+        """
+        if not symbols:
+            return {}
+        snapshots = self.market_data.get_snapshot(symbols) or {}
+        now = datetime.now(timezone.utc)
+        prices: Dict[str, float] = {}
+        for symbol in symbols:
+            trade = (snapshots.get(symbol) or {}).get("latest_trade") or {}
+            price, stamp = trade.get("p"), trade.get("t")
+            if not price or not stamp:
+                continue
+            traded_at = datetime.fromisoformat(stamp)
+            if traded_at.tzinfo is None:
+                traded_at = traded_at.replace(tzinfo=timezone.utc)
+            if now - traded_at > GTT_PRICE_MAX_AGE:
+                logger.info(f"GTT: {symbol} last trade ({stamp}) is stale; alerts not checked")
+                continue
+            prices[symbol] = float(price)
+        return prices
 
     # -------------------------------------------------------------------------
     # Daily records - Issue #574

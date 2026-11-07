@@ -3,7 +3,7 @@
 ## What is it?
 
 Automated "set it and forget it" daily routines for open positions. They don't generate signals
-or open new positions (GTT triggers are checked only for symbols you hold, so a GTT order you set
+or open new positions (GTT order triggers run only for symbols you hold, so a GTT order you set
 up on one of them can still fire). They:
 
 - Run twice daily (9:20 AM and 3:50 PM ET, whatever the host's timezone), on NYSE trading days only;

@@ -17,6 +17,7 @@ In the CLI, set the trading mode with a command:
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
 import traceback
@@ -283,8 +284,8 @@ def _email_notices() -> None:
     """Email the CRITICAL notices now, so a crashed check is reported the same tick."""
     try:
         send_notice_digest(NoticeStore())
-    except Exception:
-        pass  # best effort, as _note_run_due_error: the original error surfaces
+    except Exception as error:  # best effort: the original error surfaces
+        logging.getLogger(__name__).warning("Notice email skipped (%s)", type(error).__name__)
 
 
 def _run_due_checks(limit_seconds: int) -> int:

@@ -508,3 +508,45 @@ def test_notify_test_says_what_is_missing(config, capsys):
 def test_notify_without_test_prints_the_usage(capsys):
     _cli("notify")
     assert "Usage: notify test" in capsys.readouterr().out
+
+
+# --- What keeps notices from being emailed, shown in status --------------------------------
+
+
+def test_the_last_failed_try_is_logged_as_an_error(store, mail, clock, today, caplog):
+    put(store)
+    mail.fail = OSError("down")
+    with caplog.at_level(logging.WARNING, logger=notifier.logger.name):
+        for _ in range(3):
+            notifier.send_notice_digest(store)
+            clock.advance(minutes=15)
+
+    errors = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert len(errors) == 1 and "won't be emailed" in errors[0].getMessage()
+
+
+def test_problems_name_notices_given_up_on_and_the_cap(store, mail, clock, today):
+    assert notifier.email_problems(store) == []
+
+    put(store)
+    mail.fail = OSError("down")
+    for _ in range(3):
+        notifier.send_notice_digest(store)
+        clock.advance(minutes=15)
+    (get_state_dir() / "email_log.json").write_text(
+        json.dumps({"date": "2026-10-27", "count": notifier.DAILY_CAP})
+    )
+
+    assert notifier.email_problems(store) == [
+        "1 CRITICAL notice(s) not emailed after 3 tries",
+        "today's cap of 10 emails is reached",
+    ]
+
+
+def test_status_shows_email_problems(config, capsys, monkeypatch):
+    monkeypatch.setattr(
+        "src.cli.scheduler.monitor.email_problems",
+        lambda store: ["today's cap of 10 emails is reached"],
+    )
+
+    assert "Email: today's cap of 10 emails is reached" in _status(capsys)

@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-from .notices import Notice, NoticeStore, sanitize
+from .notices import CRITICAL, Notice, NoticeStore, sanitize
 from .scheduler_state import market_today
 from src.trading.state.local_state_manager import write_json_atomic
 from src.utils.config_loader import ConfigLoader
@@ -209,11 +209,20 @@ def send_notice_digest(store: NoticeStore) -> int:
         try:
             _send_message(settings, subject, body)
         except Exception as error:
-            logger.warning(
-                "Notice email failed (%s); %d notice(s) stay claimed for a retry",
-                type(error).__name__,
-                len(claimed),
-            )
+            given_up = [n for n in claimed if n.email_attempts >= MAX_ATTEMPTS]
+            if given_up:
+                logger.error(
+                    "Notice email failed (%s) for the last time: %d notice(s) won't be emailed;"
+                    " see 'status' and 'notices' in the scheduler CLI",
+                    type(error).__name__,
+                    len(given_up),
+                )
+            else:
+                logger.warning(
+                    "Notice email failed (%s); %d notice(s) are retried in 15 minutes",
+                    type(error).__name__,
+                    len(claimed),
+                )
             return 0
         store.mark_emailed({n.key for n in claimed})
         _count_email()
@@ -222,6 +231,29 @@ def send_notice_digest(store: NoticeStore) -> int:
     except Exception as error:
         logger.warning("Notice email skipped (%s)", type(error).__name__)
         return 0
+
+
+def email_problems(store: NoticeStore) -> List[str]:
+    """
+    What keeps CRITICAL notices from being emailed, for the scheduler CLI's status: notices
+    given up on after MAX_ATTEMPTS failed sends, and today's cap. Empty when all is well.
+    """
+    problems = []
+    try:
+        undelivered = [
+            n
+            for n in store.open_notices()
+            if n.severity == CRITICAL and not n.emailed_at and n.email_attempts >= MAX_ATTEMPTS
+        ]
+    except Exception:
+        undelivered = []
+    if undelivered:
+        problems.append(
+            f"{len(undelivered)} CRITICAL notice(s) not emailed after {MAX_ATTEMPTS} tries"
+        )
+    if _emails_today() >= DAILY_CAP:
+        problems.append(f"today's cap of {DAILY_CAP} emails is reached")
+    return problems
 
 
 def _get(url: str) -> None:

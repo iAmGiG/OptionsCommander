@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Optional
 from .daemon_manager import SchedulerDaemonManager
 from .message_loader import get_emoji, get_messages
 from src.trading.scheduling.notices import NoticeStore
-from src.trading.scheduling.notifier import email_settings, heartbeat_url
+from src.trading.scheduling.notifier import email_problems, email_settings, heartbeat_url
 from src.utils.state_paths import get_state_dir
 
 if TYPE_CHECKING:
@@ -132,6 +132,10 @@ class SchedulerMonitor:
         else:
             print(f"   Email: off (missing: {', '.join(missing)})")
         print(f"   Heartbeat: {'set' if heartbeat_url() else 'not set'}")
+        for problem in email_problems(
+            getattr(self.scheduler, "notice_store", None) or NoticeStore()
+        ):
+            print(f"   Email: {problem}")
 
     def _show_open_notices(self) -> None:
         """The notices nobody has acknowledged (the latest few), or that there are none."""

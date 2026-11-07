@@ -1193,7 +1193,7 @@ class DailyScheduler:
                     # Check and run scheduled tasks
                     self.run_scheduled_tasks()
                     if time.monotonic() - last_ping >= HEARTBEAT_EVERY_SECONDS:
-                        ping_heartbeat()
+                        await asyncio.to_thread(ping_heartbeat)  # don't block the loop
                         last_ping = time.monotonic()
 
                     # Sleep until next check

@@ -23,7 +23,6 @@ This document establishes consistent naming patterns for the AutoTrader trading 
 ### Integration Components
 
 - `src/trading/broker/alpaca_trading_client.py` - Alpaca broker integration
-- `src/trading/broker/alpaca_autogen_tools.py` - Legacy AutoGen-style tool wrappers (the agents were retired in #331)
 - `src/trading/llm_trading_assistant.py` - LLM trading interface
 
 ## Class Naming
@@ -110,7 +109,6 @@ src/trading/
 ├── unified_price_fetcher.py   # Price data
 ├── unified_state_manager.py   # State management
 ├── alpaca_trading_client.py   # Broker integration
-├── alpaca_autogen_tools.py    # Legacy AutoGen-style tool wrappers
 └── llm_trading_assistant.py   # LLM interface
 
 examples/

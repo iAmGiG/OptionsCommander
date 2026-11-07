@@ -1004,7 +1004,7 @@ class TestAlpacaOrderManagerBracketOrder:
 
 
 class TestAlpacaMarketHours:
-    """Market status used by the Alpaca agent tools (broker market_hours.is_market_hours)."""
+    """Market status from the broker's market_hours.is_market_hours."""
 
     def test_is_market_hours_returns_dict(self):
         from src.trading.broker.market_hours import is_market_hours
@@ -1014,14 +1014,6 @@ class TestAlpacaMarketHours:
             assert "is_open" in result
             assert result["session"] == ("extended" if extended else "regular")
             assert "current_session" in result
-
-    def test_unified_tool_check_market_hours(self):
-        """AlpacaUnifiedTool.check_market_hours called a missing manager method."""
-        from src.trading.broker.alpaca_autogen_tools import AlpacaUnifiedTool
-
-        tool = AlpacaUnifiedTool.__new__(AlpacaUnifiedTool)  # skip broker setup
-        result = tool.check_market_hours(extended_hours=True)
-        assert result["extended_hours"] is True and "is_open" in result
 
 
 # =============================================================================

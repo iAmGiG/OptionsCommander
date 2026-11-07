@@ -150,6 +150,7 @@ def test_the_check_notices_a_stale_import(tmp_path):
         "src.cli.tools.voter_tools",
         "src.cli.commands.trailing_stop_commands",
         "src.trading.portfolio_override",
+        "src.trading.broker.alpaca_autogen_tools",
         "src.trading.scheduling.trading_pipeline",
         "src.trading.orders.order_manager",
         "src.cli.utils.decision_formatter",

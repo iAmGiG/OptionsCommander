@@ -27,6 +27,7 @@ from .scheduler import (
 from .scheduler.message_loader import get_messages
 from src.trading.scheduling.daily_scheduler import DailyScheduler
 from src.trading.scheduling.notices import NoticeStore, is_notice_number
+from src.trading.scheduling.notifier import send_test_email
 
 logger = logging.getLogger(__name__)
 
@@ -324,6 +325,14 @@ class SchedulerCLI:
             print(f"{get_emoji('check_green', '✅')} Acknowledged {count} notice(s)")
         else:
             print(f"{get_emoji('info', 'ℹ️')} No open notice to acknowledge for '{target}'")
+
+    def _notify_test(self, which: str):
+        """Send one test email, to check the settings ('notify test')."""
+        if which != "test":
+            raise TypeError("notify takes 'test'")  # _handle_command prints the usage
+        sent, message = send_test_email()
+        icon = get_emoji("check_green", "✅") if sent else get_emoji("cross_red", "❌")
+        print(f"{icon} {message}")
 
     def _show_history(self):
         """Show execution history."""

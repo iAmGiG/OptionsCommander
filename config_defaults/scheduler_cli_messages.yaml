@@ -126,6 +126,15 @@ commands:
     description: "Acknowledge a notice by number, or all"
     usage: "ack <number|all>"
 
+  notify:
+    enabled: true
+    handler: notify_test
+    aliases: []
+    requires_scheduler: false
+    category: testing
+    description: "Send a test email (notifications.email in config.json)"
+    usage: "notify test"
+
   next:
     enabled: true
     handler: show_next_run

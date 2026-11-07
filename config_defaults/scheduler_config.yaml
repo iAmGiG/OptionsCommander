@@ -10,6 +10,7 @@ morning_routine_enabled: true
 evening_routine_enabled: true
 max_retries: 3
 retry_delay_seconds: 60
+# Gates nothing: email and the heartbeat are set in config.json (notifications.*)
 enable_notifications: false
 # true: routines send no orders and change no saved state (local state, daily records,
 # GTT triggers); reports, named <date>_<routine>_dry_run.md, show what they would do

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Optional
 from .daemon_manager import SchedulerDaemonManager
 from .message_loader import get_emoji, get_messages
 from src.trading.scheduling.notices import NoticeStore
+from src.trading.scheduling.notifier import email_problems, email_settings, heartbeat_url
 from src.utils.state_paths import get_state_dir
 
 if TYPE_CHECKING:
@@ -101,6 +102,7 @@ class SchedulerMonitor:
         dry_run = bool(self.scheduler.config.get("dry_run", False))
         note = " (no orders are sent: stops are not placed, renewed or raised)" if dry_run else ""
         print(f"   Dry Run: {dry_run}{note}")
+        self._show_notifications()
 
         # Recent executions
         recent = self.scheduler.get_execution_history(days=1)
@@ -121,6 +123,19 @@ class SchedulerMonitor:
                 print("   (Neither cron nor the daemon is running - no automatic executions)")
 
         self._show_open_notices()
+
+    def _show_notifications(self) -> None:
+        """Whether email and the heartbeat are set up (key names only, never values)."""
+        settings, missing = email_settings()
+        if settings is not None:
+            print(f"   Email: configured ({len(settings['to_addrs'])} recipients)")
+        else:
+            print(f"   Email: off (missing: {', '.join(missing)})")
+        print(f"   Heartbeat: {'set' if heartbeat_url() else 'not set'}")
+        for problem in email_problems(
+            getattr(self.scheduler, "notice_store", None) or NoticeStore()
+        ):
+            print(f"   Email: {problem}")
 
     def _show_open_notices(self) -> None:
         """The notices nobody has acknowledged (the latest few), or that there are none."""

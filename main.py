@@ -17,6 +17,7 @@ In the CLI, set the trading mode with a command:
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
 import traceback
@@ -33,6 +34,8 @@ from src.trading.scheduling.daily_scheduler import (
     configure_scheduler_logging,
     load_scheduler_config,
 )
+from src.trading.scheduling.notices import NoticeStore
+from src.trading.scheduling.notifier import ping_heartbeat, send_notice_digest
 from src.trading.scheduling.watchdog import (
     RunDueTimeoutError,
     run_due_timeout_seconds,
@@ -277,6 +280,14 @@ def _note_run_due_error(error: BaseException) -> None:
         pass  # the caller re-raises the original error
 
 
+def _email_notices() -> None:
+    """Email the CRITICAL notices now, so a crashed check is reported the same tick."""
+    try:
+        send_notice_digest(NoticeStore())
+    except Exception as error:  # best effort: the original error surfaces
+        logging.getLogger(__name__).warning("Notice email skipped (%s)", type(error).__name__)
+
+
 def _run_due_checks(limit_seconds: int) -> int:
     """The cron check itself (see _run_due_mode). Returns the exit code."""
     configure_scheduler_logging()
@@ -300,14 +311,19 @@ def _run_due_mode() -> int:
         limit = run_due_timeout_seconds()  # unreadable config: the scheduler reports that
     try:
         with watchdog(limit):
-            return _run_due_checks(limit)
+            code = _run_due_checks(limit)
+            if code == 0:
+                ping_heartbeat()  # the dead-man switch: only a tick that ended well
+            return code
     except RunDueTimeoutError as timeout:
         if not timeout.routine_recorded:  # a routine's timeout already has its notice
             _note_run_due_error(timeout)
+        _email_notices()
         traceback.print_exc()  # cron's stderr (state/scheduler-cron.err)
         return 1
     except Exception as error:
         _note_run_due_error(error)
+        _email_notices()
         raise  # the traceback still reaches cron's stderr (state/scheduler-cron.err)
 
 

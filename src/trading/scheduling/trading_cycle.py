@@ -277,6 +277,7 @@ class CostEfficientTradeCycle:
     last_alerts: Tuple[PositionAlertSummary, ...] = ()
     last_discrepancies: Tuple[Discrepancy, ...] = ()
     last_partial_exits: Tuple[PartialExitFailure, ...] = ()  # sales that failed
+    _partial_sale_tried = False  # a partial sale went to the broker this routine (E1-01)
     notice_store = None  # set by the DailyScheduler; the reports list its open notices
 
     def __init__(self, state_file: str = None, dry_run: bool = False):
@@ -397,6 +398,7 @@ class CostEfficientTradeCycle:
         self.last_alerts = ()
         self.last_discrepancies = ()
         self.last_partial_exits = ()
+        self._partial_sale_tried = False
         self.last_report_path = None
         self.last_open_symbols = None
         self._new_fills = []
@@ -671,6 +673,9 @@ class CostEfficientTradeCycle:
                 step, sold = self._partial_step(manager, state, target, position, price, evening)
                 lines.extend(step)
                 tried = tried or sold
+                # Noted before the refetch, so the routine's second stop pass runs even if
+                # this step fails from here on
+                self._partial_sale_tried = self._partial_sale_tried or sold
             if tried:
                 broker_state = self.fetch_broker_state(force_refresh=True)
             if lines:
@@ -910,6 +915,51 @@ class CostEfficientTradeCycle:
                 )
             )
         return lines
+
+    def _stops_after_partial_sales(
+        self,
+        broker_state: Dict[str, Any],
+        discrepancies: List[Discrepancy],
+        raise_to_trailing: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Check and repair the protective stops a second time once a partial sale was tried.
+
+        The sale cancels the position's stop and puts one back on the shares left. If
+        that failed, or the sale errored part-way, the position has no stop, and the
+        routine's first stop pass ran before the sale so it can't know. Fresh broker
+        state is fetched and the stops checked and repaired again, with the routine's
+        raise_to_trailing. The new discrepancies join the routine's (and
+        last_discrepancies), so a stop that still can't be placed fails the routine and
+        the scheduler retries: the sale's saved order ID keeps a retry from selling
+        again. A failure recorded as "stop lost" whose stop is now in place is marked so.
+
+        Returns:
+            The broker state for the steps that follow
+        """
+        lost = any(failure.stop_lost for failure in self.last_partial_exits)
+        if not self._partial_sale_tried and not lost:
+            return broker_state
+        logger.info("A partial sale was tried: checking the protective stops again")
+        broker_state = self.fetch_broker_state(force_refresh=True)
+        second_pass = self.check_and_repair_stops(broker_state, raise_to_trailing=raise_to_trailing)
+        discrepancies.extend(second_pass)
+        self.last_discrepancies = tuple(discrepancies)
+        placed = {
+            d.symbol for d in second_pass if d.type == "MISSING_STOP" and d.action == "AUTO_FIXED"
+        }
+        if placed:
+            self.last_partial_exits = tuple(
+                failure._replace(
+                    stop_lost=False, reason=f"{failure.reason}; the routine then re-placed its stop"
+                )
+                if failure.stop_lost and failure.symbol in placed
+                else failure
+                for failure in self.last_partial_exits
+            )
+        if any(d.action == "AUTO_FIXED" for d in second_pass):
+            broker_state = self.fetch_broker_state(force_refresh=True)  # later steps see the stop
+        return broker_state
 
     def _record_partial_sale(self, symbol: str, quantity: int) -> None:
         """Take sold shares off the local state and the trailing state, so the next run's
@@ -1447,8 +1497,12 @@ class CostEfficientTradeCycle:
             gtt_results = self.check_gtt_triggers(broker_state)
             broker_state = self._after_gtt_actions(broker_state, gtt_results)
 
-            # Partial targets reached: the evening routine sells them (#584)
+            # Partial targets reached: the evening routine sells them (#584). Should a sale
+            # ever be tried here, its stop is checked again, at the stop's own level
             broker_state, partial_lines = self._partial_exits(broker_state)
+            broker_state = self._stops_after_partial_sales(
+                broker_state, discrepancies, raise_to_trailing=False
+            )
 
             # No stop raise here (#623): on 09:20 prices it showed no benefit over raising in
             # the evening, and it locks in gaps the session often gives back
@@ -1518,6 +1572,10 @@ class CostEfficientTradeCycle:
             # Sell partial targets the price has reached, while the market is open (#584);
             # before the raise, which then sees the stop on the shares left
             broker_state, partial_lines = self._partial_exits(broker_state, evening=True)
+            # A sale cancels the position's stop and puts one back; if that failed, the
+            # position has no stop and the first stop pass couldn't see it: check again,
+            # so the routine fails (and the scheduler retries) if the stop can't be placed
+            broker_state = self._stops_after_partial_sales(broker_state, discrepancies)
 
             # Raise stops to their trailing level while the market is open, so an
             # overnight gap can't take the day's gains. This is the only raise (#623). Run

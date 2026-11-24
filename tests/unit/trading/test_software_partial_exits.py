@@ -553,7 +553,7 @@ def test_an_error_in_the_step_does_not_fail_the_routine(cycle, monkeypatch):
 def stub_routine(c, state):
     c.fetch_broker_state = MagicMock(return_value=state)
     c.record_daily = lambda name, broker_state: []
-    c.reconcile_state = MagicMock(return_value=[])
+    c.reconcile_state = MagicMock(side_effect=lambda state: [])  # a fresh list each routine
     c.check_and_repair_stops = MagicMock(return_value=[])
     c.check_gtt_triggers = MagicMock(return_value=[])
     c._after_gtt_actions = lambda broker_state, results: broker_state

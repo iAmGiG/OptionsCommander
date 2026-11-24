@@ -618,9 +618,18 @@ def test_a_cron_tick_on_unreadable_state_runs_nothing_and_leaves_a_critical_noti
     scheduler = make_scheduler(enabled=False)  # the shipped config; the saved flag switches on
     scheduler.save_flags(enabled=True)
     Path(scheduler.state_manager._db_path).write_bytes(b"not a database\n" * 8)
+    # Both routines see a clock inside their window; the flags check itself is real
+    real_should_run = scheduler.should_run_task
+    in_window = {
+        "morning_routine": _et(2026, 10, 15, 9, 20),
+        "evening_routine": _et(2026, 10, 15, 15, 50),
+    }
     monkeypatch.setattr(
-        scheduler, "should_run_task", lambda task, now=None: True, raising=False
-    )  # as if both routines were due this tick
+        scheduler,
+        "should_run_task",
+        lambda task, now=None: real_should_run(task, now=in_window[task.name]),
+        raising=False,
+    )
     monkeypatch.setattr(main, "DailyScheduler", lambda: scheduler)
     monkeypatch.setattr(main, "configure_scheduler_logging", lambda: None)
     monkeypatch.setattr(main, "load_scheduler_config", lambda: {"run_due_timeout_seconds": 30})

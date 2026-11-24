@@ -7,11 +7,14 @@ tick raises a CRITICAL notice while still running nothing. Nothing leaves the ma
 
 import fcntl
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import pytest
 
+import src.utils.market_hours as mh
 from src.trading.scheduling import daily_scheduler, scheduler_state
 from src.trading.scheduling.daily_scheduler import DailyScheduler
 from src.trading.scheduling.notices import NoticeStore
@@ -126,14 +129,24 @@ def test_has_run_history_raises_on_a_corrupt_database(manager):
 # --- The cron tick ----------------------------------------------------------------------
 
 
+ET = ZoneInfo("America/New_York")
+# A clock inside each routine's run window on 2026-10-15, a Thursday with a full session
+IN_WINDOW = {
+    "morning_routine": datetime(2026, 10, 15, 9, 20, tzinfo=ET),
+    "evening_routine": datetime(2026, 10, 15, 15, 50, tzinfo=ET),
+}
+
+
 @pytest.fixture
 def make_scheduler(tmp_path, monkeypatch):
     """
-    A scheduler with a mock trading cycle, its own state and notices, and a config file
-    saying enabled: false, as the shipped one does (the saved flags switch it on).
+    A scheduler with a mock trading cycle, its own state and notices, the NYSE rules as the
+    calendar, and a config file saying enabled: false, as the shipped one does (the saved
+    flags switch it on).
     """
     monkeypatch.setattr(scheduler_state, "_scheduler_state_manager", None)
     monkeypatch.setattr(daily_scheduler.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(daily_scheduler, "get_market_hours_for_date", mh._rule_based_hours)
 
     def make(due=(), **config):
         settings = {"enabled": False, **config}
@@ -145,10 +158,16 @@ def make_scheduler(tmp_path, monkeypatch):
             state_manager=SchedulerStateManager(),
             notice_store=NoticeStore(tmp_path / "notices.json", raise_errors=True),
         )
-        # The tasks "due" on this tick, as if the clock were in their window; the flags
-        # are checked before should_run_task, so this must not get a routine run
+        # The tasks "due" on this tick see a clock inside their window; the rest of
+        # should_run_task, the flags check first of all, is the real thing
+        real_should_run = scheduler.should_run_task
         monkeypatch.setattr(
-            scheduler, "should_run_task", lambda task, now=None: task.name in due, raising=False
+            scheduler,
+            "should_run_task",
+            lambda task, now=None: (
+                task.name in due and real_should_run(task, now=IN_WINDOW[task.name])
+            ),
+            raising=False,
         )
         return scheduler
 

@@ -852,7 +852,7 @@ class DailyScheduler:
             settings = self.effective_settings(strict=True)
         except Exception as e:
             # Not the config file's flags: an unreadable state is not "never switched on".
-            # run_scheduled_tasks leaves the notice; here, nothing is due (E1-05)
+            # The tick's outcome check leaves the notice; here, nothing is due (E1-05)
             logger.error("Scheduler flags can't be read; %s is not due: %s", task.name, e)
             return False
         if not settings["enabled"] or not settings.get(routine_type, True):
@@ -966,16 +966,12 @@ class DailyScheduler:
         self._hours_memo.clear()
         with self.run_lock() as acquired:
             if acquired:
-                # The flags first, strictly: an unreadable state/user.db runs nothing and
-                # leaves a CRITICAL notice instead of passing for "never switched on" (E1-05)
-                settings = self._tick_settings(self._market_now())
-                if settings is None:
-                    logger.error("Scheduler flags can't be read; no routine runs this tick")
-                elif settings["enabled"]:
-                    for task in self.tasks:
-                        if self.should_run_task(task):
-                            logger.info("🚀 Starting scheduled task: %s", task.name)
-                            ran.append(self._run_task(task))
+                # should_run_task reads the flags strictly: on an unreadable state/user.db
+                # nothing is due, and the outcome check below leaves the notice (E1-05)
+                for task in self.tasks:
+                    if self.should_run_task(task):
+                        logger.info("🚀 Starting scheduled task: %s", task.name)
+                        ran.append(self._run_task(task))
             else:
                 logger.info("Another scheduler run is in progress; skipping this check")
         # Lock or not: a run that never finishes is one that keeps others from getting it

@@ -834,7 +834,13 @@
         "mk": 0.0,
         "vol": 0.275
       }
-    ]
+    ],
+    "bars_per_day": {
+      "days": 1259,
+      "early_close_days": 11,
+      "days_with_unexpected_bar_count": 0,
+      "examples": []
+    }
   },
   "hourly_vs_daily": {
     "wk_p1": 0.885,
@@ -843,9 +849,9 @@
     "vol": 0.869
   },
   "provenance": {
-    "commit": "b2e6afed6b02cef70de061f2e987ed5b6baa3563",
+    "commit": "9b6c4f5573e24e7df08241e49673d7cb8014ce58",
     "uncommitted_code_changes": false,
-    "run_timestamp_utc": "2026-11-24T03:23:42+00:00",
+    "run_timestamp_utc": "2026-11-24T03:37:05+00:00",
     "python": "3.12.15",
     "numpy": "2.5.4",
     "pandas": "3.1.0",

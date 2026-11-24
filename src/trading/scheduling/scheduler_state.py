@@ -69,6 +69,21 @@ class SchedulerExecution:
     api_calls_used: int = 0
 
 
+def _state_from_row(row: sqlite3.Row) -> SchedulerState:
+    """A scheduler_state row as a SchedulerState."""
+    return SchedulerState(
+        enabled=bool(row["enabled"]),
+        morning_enabled=bool(row["morning_enabled"]),
+        evening_enabled=bool(row["evening_enabled"]),
+        morning_time=row["morning_time"],
+        evening_time=row["evening_time"],
+        max_retries=row["max_retries"],
+        retry_delay_seconds=row["retry_delay_seconds"],
+        updated_at=row["updated_at"],
+        **{column: row[column] for column in _ENABLED_AT_COLUMNS if column in row.keys()},
+    )
+
+
 def _execution_from_row(row: sqlite3.Row) -> SchedulerExecution:
     """A scheduler_history row as a SchedulerExecution."""
     return SchedulerExecution(
@@ -179,41 +194,30 @@ class SchedulerStateManager:
     # State Management
     # =========================================================================
 
+    def read_state(self) -> Optional[SchedulerState]:
+        """
+        The saved scheduler state, or None when no row has been saved yet.
+
+        Unlike get_state() and has_saved_state() this raises on a database error, so a
+        caller can tell "never saved" from "can't be read": the cron tick must not take an
+        unreadable state/user.db for a scheduler that was never switched on (E1-05).
+        """
+        with closing(self._get_connection()) as conn:
+            row = conn.execute("SELECT * FROM scheduler_state WHERE id = 1").fetchone()
+        return _state_from_row(row) if row else None
+
     def get_state(self) -> SchedulerState:
         """
         Get current scheduler state.
 
         Returns:
-            SchedulerState with current configuration
+            SchedulerState with current configuration (the defaults when no state is saved,
+            or when it can't be read; read_state() tells the two apart)
         """
         try:
-            conn = self._get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM scheduler_state WHERE id = 1")
-            row = cursor.fetchone()
-            conn.close()
-
-            if row:
-                return SchedulerState(
-                    enabled=bool(row["enabled"]),
-                    morning_enabled=bool(row["morning_enabled"]),
-                    evening_enabled=bool(row["evening_enabled"]),
-                    morning_time=row["morning_time"],
-                    evening_time=row["evening_time"],
-                    max_retries=row["max_retries"],
-                    retry_delay_seconds=row["retry_delay_seconds"],
-                    updated_at=row["updated_at"],
-                    **{
-                        column: row[column]
-                        for column in _ENABLED_AT_COLUMNS
-                        if column in row.keys()
-                    },
-                )
-            else:
-                # Return defaults if no state exists
-                return SchedulerState()
+            return self.read_state() or SchedulerState()
         except Exception as e:
-            logger.error(f"Failed to get scheduler state: {e}")
+            logger.error(f"Failed to read scheduler state: {e}")
             return SchedulerState()
 
     def save_state(self, state: SchedulerState) -> bool:
@@ -226,10 +230,11 @@ class SchedulerStateManager:
             state: SchedulerState to persist
 
         Returns:
-            True if successful
+            True if successful (False, with nothing written, when the saved row can't be
+            read: a save must not put defaults over flags it couldn't see)
         """
         try:
-            before = self.get_state() if self.has_saved_state() else None
+            before = self.read_state()
             now = now_iso()
             stamps = [
                 _turned_on_at(
@@ -274,12 +279,12 @@ class SchedulerStateManager:
             return False
 
     def has_saved_state(self) -> bool:
-        """True once a state row has been saved (e.g. by the CLI); defaults apply until then."""
+        """
+        True once a state row has been saved (e.g. by the CLI); defaults apply until then.
+        Also False when the row can't be read (see read_state() for the difference).
+        """
         try:
-            conn = self._get_connection()
-            row = conn.execute("SELECT 1 FROM scheduler_state WHERE id = 1").fetchone()
-            conn.close()
-            return row is not None
+            return self.read_state() is not None
         except Exception as e:
             logger.error(f"Failed to read scheduler state: {e}")
             return False
@@ -593,6 +598,20 @@ class SchedulerStateManager:
         except Exception as e:
             logger.error(f"Failed to count routine timeouts: {e}")
             return 0
+
+    def has_run_history(self) -> bool:
+        """
+        Whether the scheduler has ever run a routine here: any scheduler_history row that is
+        not a dry run (#601). Only the scheduler's own runs are recorded, and it runs only
+        while switched on, so history without a saved state row means the row is gone.
+
+        Raises on a database error, like executions_on.
+        """
+        with closing(self._get_connection()) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM scheduler_history WHERE status != 'dry_run' LIMIT 1"
+            ).fetchone()
+        return row is not None
 
     def executions_on(
         self, market_dates: Sequence[str]

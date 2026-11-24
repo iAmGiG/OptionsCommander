@@ -571,11 +571,15 @@ class TestCacheExpiration(TestTradingCacheManager):
 
     def test_recent_data_short_expiration(self, cache_manager):
         """Test recent data gets shorter expiration."""
-        # Data from today
-        today = datetime.now().strftime("%Y-%m-%d")
+        # Yesterday in ET: recent (at most 2 days old) and always a finished session. Today's
+        # row is dropped until that day's session closes (#620), so "today" made this test fail
+        # on every trading day before 16:00 ET.
+        from src.utils.market_hours import market_today
+
+        day = (pd.Timestamp(market_today()) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
         df = pd.DataFrame(
             {
-                "date": [today],
+                "date": [day],
                 "close": [100.0],
             }
         )
@@ -583,7 +587,7 @@ class TestCacheExpiration(TestTradingCacheManager):
         cache_manager.set("SPY", df, source="alpaca")
 
         # Data should exist
-        result = cache_manager.get("SPY", today, today, source="alpaca")
+        result = cache_manager.get("SPY", day, day, source="alpaca")
         assert result is not None
 
 

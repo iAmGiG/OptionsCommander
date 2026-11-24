@@ -1,0 +1,863 @@
+{
+  "issue": "#673",
+  "paper": "arXiv:2110.11848; doi:10.21314/JCF.2024.005",
+  "synthetic": {
+    "window": [
+      35,
+      28
+    ],
+    "k": 2,
+    "runs": 50,
+    "years": 20,
+    "path_seed": {
+      "gbm": "0 + run",
+      "merton": "10000 + run"
+    },
+    "fit_seed": "run",
+    "models": {
+      "gbm": {
+        "ours": {
+          "wk_p1_paper_init": {
+            "ta": {
+              "mean": 91.36,
+              "sd": 9.78,
+              "ci95": 2.71,
+              "min": 54.2,
+              "n": 50
+            },
+            "rons": {
+              "mean": 87.65,
+              "sd": 7.46,
+              "ci95": 2.07,
+              "min": 55.42,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 92.59,
+              "sd": 10.68,
+              "ci95": 2.96,
+              "min": 53.79,
+              "n": 50
+            }
+          },
+          "wk_p1": {
+            "ta": {
+              "mean": 94.42,
+              "sd": 0.8,
+              "ci95": 0.22,
+              "min": 91.7,
+              "n": 50
+            },
+            "rons": {
+              "mean": 89.66,
+              "sd": 1.56,
+              "ci95": 0.43,
+              "min": 86.26,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 96.01,
+              "sd": 1.05,
+              "ci95": 0.29,
+              "min": 92.42,
+              "n": 50
+            }
+          },
+          "wk_p2_paper_init": {
+            "ta": {
+              "mean": 95.58,
+              "sd": 0.45,
+              "ci95": 0.13,
+              "min": 94.6,
+              "n": 50
+            },
+            "rons": {
+              "mean": 89.8,
+              "sd": 1.6,
+              "ci95": 0.44,
+              "min": 86.74,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 97.51,
+              "sd": 0.6,
+              "ci95": 0.17,
+              "min": 95.96,
+              "n": 50
+            }
+          },
+          "wk_p2": {
+            "ta": {
+              "mean": 95.58,
+              "sd": 0.45,
+              "ci95": 0.12,
+              "min": 94.6,
+              "n": 50
+            },
+            "rons": {
+              "mean": 89.82,
+              "sd": 1.59,
+              "ci95": 0.44,
+              "min": 86.74,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 97.51,
+              "sd": 0.61,
+              "ci95": 0.17,
+              "min": 95.96,
+              "n": 50
+            }
+          },
+          "mk_paper_init": {
+            "ta": {
+              "mean": 93.19,
+              "sd": 0.84,
+              "ci95": 0.23,
+              "min": 90.86,
+              "n": 50
+            },
+            "rons": {
+              "mean": 74.47,
+              "sd": 3.54,
+              "ci95": 0.98,
+              "min": 64.59,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.44,
+              "sd": 0.21,
+              "ci95": 0.06,
+              "min": 98.91,
+              "n": 50
+            }
+          },
+          "mk": {
+            "ta": {
+              "mean": 93.22,
+              "sd": 0.78,
+              "ci95": 0.22,
+              "min": 91.18,
+              "n": 50
+            },
+            "rons": {
+              "mean": 74.58,
+              "sd": 3.33,
+              "ci95": 0.92,
+              "min": 66.34,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.44,
+              "sd": 0.21,
+              "ci95": 0.06,
+              "min": 98.91,
+              "n": 50
+            }
+          },
+          "vol": {
+            "ta": {
+              "mean": 94.24,
+              "sd": 0.7,
+              "ci95": 0.19,
+              "min": 92.25,
+              "n": 50
+            },
+            "rons": {
+              "mean": 94.62,
+              "sd": 1.04,
+              "ci95": 0.29,
+              "min": 92.23,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 94.12,
+              "sd": 1.03,
+              "ci95": 0.29,
+              "min": 91.18,
+              "n": 50
+            }
+          }
+        },
+        "paper": {
+          "wk": {
+            "ta": [
+              90.6,
+              5.81
+            ],
+            "rons": [
+              87.24,
+              4.11
+            ],
+            "rofs": [
+              91.72,
+              6.46
+            ]
+          },
+          "mk": {
+            "ta": [
+              93.23,
+              0.41
+            ],
+            "rons": [
+              74.83,
+              1.57
+            ],
+            "rofs": [
+              99.38,
+              0.1
+            ]
+          },
+          "hmm": {
+            "ta": [
+              58.16,
+              7.11
+            ],
+            "rons": [
+              41.51,
+              7.43
+            ],
+            "rofs": [
+              63.72,
+              11.94
+            ]
+          }
+        }
+      },
+      "merton": {
+        "ours": {
+          "wk_p1_paper_init": {
+            "ta": {
+              "mean": 98.94,
+              "sd": 0.15,
+              "ci95": 0.04,
+              "min": 98.64,
+              "n": 50
+            },
+            "rons": {
+              "mean": 96.96,
+              "sd": 0.67,
+              "ci95": 0.19,
+              "min": 95.35,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.6,
+              "sd": 0.08,
+              "ci95": 0.02,
+              "min": 99.44,
+              "n": 50
+            }
+          },
+          "wk_p1": {
+            "ta": {
+              "mean": 98.94,
+              "sd": 0.15,
+              "ci95": 0.04,
+              "min": 98.64,
+              "n": 50
+            },
+            "rons": {
+              "mean": 96.96,
+              "sd": 0.66,
+              "ci95": 0.18,
+              "min": 95.35,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.6,
+              "sd": 0.08,
+              "ci95": 0.02,
+              "min": 99.44,
+              "n": 50
+            }
+          },
+          "wk_p2_paper_init": {
+            "ta": {
+              "mean": 92.05,
+              "sd": 8.53,
+              "ci95": 2.36,
+              "min": 76.56,
+              "n": 50
+            },
+            "rons": {
+              "mean": 69.32,
+              "sd": 34.69,
+              "ci95": 9.61,
+              "min": 6.42,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.63,
+              "sd": 0.28,
+              "ci95": 0.08,
+              "min": 98.92,
+              "n": 50
+            }
+          },
+          "wk_p2": {
+            "ta": {
+              "mean": 78.53,
+              "sd": 5.82,
+              "ci95": 1.61,
+              "min": 75.87,
+              "n": 50
+            },
+            "rons": {
+              "mean": 14.48,
+              "sd": 23.98,
+              "ci95": 6.65,
+              "min": 3.57,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.9,
+              "sd": 0.24,
+              "ci95": 0.07,
+              "min": 98.92,
+              "n": 50
+            }
+          },
+          "mk_paper_init": {
+            "ta": {
+              "mean": 72.42,
+              "sd": 6.56,
+              "ci95": 1.82,
+              "min": 54.62,
+              "n": 50
+            },
+            "rons": {
+              "mean": 13.38,
+              "sd": 19.56,
+              "ci95": 5.42,
+              "min": 0.4,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 92.12,
+              "sd": 15.13,
+              "ci95": 4.19,
+              "min": 56.57,
+              "n": 50
+            }
+          },
+          "mk": {
+            "ta": {
+              "mean": 75.55,
+              "sd": 0.38,
+              "ci95": 0.1,
+              "min": 75.08,
+              "n": 50
+            },
+            "rons": {
+              "mean": 2.32,
+              "sd": 1.53,
+              "ci95": 0.42,
+              "min": 0.4,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 99.99,
+              "sd": 0.02,
+              "ci95": 0.01,
+              "min": 99.91,
+              "n": 50
+            }
+          },
+          "vol": {
+            "ta": {
+              "mean": 97.46,
+              "sd": 0.37,
+              "ci95": 0.1,
+              "min": 96.33,
+              "n": 50
+            },
+            "rons": {
+              "mean": 98.17,
+              "sd": 0.56,
+              "ci95": 0.15,
+              "min": 96.97,
+              "n": 50
+            },
+            "rofs": {
+              "mean": 97.22,
+              "sd": 0.52,
+              "ci95": 0.15,
+              "min": 95.93,
+              "n": 50
+            }
+          }
+        },
+        "paper": {
+          "wk": {
+            "ta": [
+              91.28,
+              4.08
+            ],
+            "rons": [
+              86.87,
+              3.1
+            ],
+            "rofs": [
+              92.76,
+              4.43
+            ]
+          },
+          "mk": {
+            "ta": [
+              66.64,
+              3.42
+            ],
+            "rons": [
+              27.25,
+              8.73
+            ],
+            "rofs": [
+              79.79,
+              7.4
+            ]
+          },
+          "hmm": {
+            "ta": [
+              75.05,
+              0.01
+            ],
+            "rons": [
+              0.66,
+              0.04
+            ],
+            "rofs": [
+              99.87,
+              0.01
+            ]
+          }
+        }
+      }
+    }
+  },
+  "daily": {
+    "frequency": "daily",
+    "window": [
+      20,
+      15
+    ],
+    "k": 2,
+    "fit_seed": 0,
+    "n_returns": 3273,
+    "n_windows": 651,
+    "first": "2008-01-03 00:00:00",
+    "last": "2020-12-31 00:00:00",
+    "data_hash": "c1018c9953e99f36",
+    "fits": {
+      "wk_p1": {
+        "cost": 2.2521743333,
+        "n_iter": 11,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 441,
+            "share": 0.6774,
+            "median_annual_vol_pct": 10.1
+          },
+          {
+            "label": 1,
+            "windows": 210,
+            "share": 0.3226,
+            "median_annual_vol_pct": 22.6
+          }
+        ]
+      },
+      "wk_p2": {
+        "cost": 0.0245622077,
+        "n_iter": 9,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 612,
+            "share": 0.9401,
+            "median_annual_vol_pct": 12.5
+          },
+          {
+            "label": 1,
+            "windows": 39,
+            "share": 0.0599,
+            "median_annual_vol_pct": 47.0
+          }
+        ]
+      },
+      "mk": {
+        "cost": 1415.7355359426,
+        "n_iter": 3,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 637,
+            "share": 0.9785,
+            "median_annual_vol_pct": 12.9
+          },
+          {
+            "label": 1,
+            "windows": 14,
+            "share": 0.0215,
+            "median_annual_vol_pct": 77.4
+          }
+        ]
+      },
+      "vol": {
+        "cost": 244.0412514485,
+        "n_iter": 6,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 382,
+            "share": 0.5868,
+            "median_annual_vol_pct": 9.7
+          },
+          {
+            "label": 1,
+            "windows": 269,
+            "share": 0.4132,
+            "median_annual_vol_pct": 20.7
+          }
+        ]
+      }
+    },
+    "agreement_windows": {
+      "wk_p1|wk_p2": 0.7373,
+      "wk_p1|mk": 0.6989,
+      "wk_p1|vol": 0.9094,
+      "wk_p2|mk": 0.9616,
+      "wk_p2|vol": 0.6467,
+      "mk|vol": 0.6083
+    },
+    "stress_days_share": {
+      "wk_p1": 0.284,
+      "wk_p2": 0.055,
+      "mk": 0.02,
+      "vol": 0.376
+    },
+    "episodes": [
+      {
+        "episode": "Financial crisis",
+        "named_by_paper": true,
+        "start": "2008-09-01",
+        "end": "2009-03-31",
+        "days": 146,
+        "wk_p1": 1.0,
+        "wk_p2": 0.842,
+        "mk": 0.308,
+        "vol": 1.0
+      },
+      {
+        "episode": "Euro debt crisis, 2010",
+        "named_by_paper": true,
+        "start": "2010-05-01",
+        "end": "2010-07-31",
+        "days": 63,
+        "wk_p1": 1.0,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "US downgrade, 2011",
+        "named_by_paper": true,
+        "start": "2011-08-01",
+        "end": "2011-10-31",
+        "days": 65,
+        "wk_p1": 1.0,
+        "wk_p2": 0.215,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "China devaluation, 2015",
+        "named_by_paper": true,
+        "start": "2015-08-01",
+        "end": "2015-09-30",
+        "days": 42,
+        "wk_p1": 0.833,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 0.833
+      },
+      {
+        "episode": "China sell-off, early 2016",
+        "named_by_paper": true,
+        "start": "2016-01-01",
+        "end": "2016-02-29",
+        "days": 39,
+        "wk_p1": 0.795,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 0.923
+      },
+      {
+        "episode": "Volatility spike, Feb 2018",
+        "named_by_paper": false,
+        "start": "2018-02-01",
+        "end": "2018-02-28",
+        "days": 19,
+        "wk_p1": 0.632,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "Q4 2018 sell-off",
+        "named_by_paper": false,
+        "start": "2018-10-01",
+        "end": "2018-12-31",
+        "days": 63,
+        "wk_p1": 0.921,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "COVID crash, 2020",
+        "named_by_paper": true,
+        "start": "2020-03-01",
+        "end": "2020-04-30",
+        "days": 43,
+        "wk_p1": 1.0,
+        "wk_p2": 0.814,
+        "mk": 0.465,
+        "vol": 1.0
+      },
+      {
+        "episode": "All other days",
+        "named_by_paper": null,
+        "start": null,
+        "end": null,
+        "days": 2790,
+        "wk_p1": 0.171,
+        "wk_p2": 0.003,
+        "mk": 0.0,
+        "vol": 0.272
+      }
+    ],
+    "vix": {
+      "days_with_vix": 3270,
+      "days_vix_30_plus": 377,
+      "days_vix_under_15": 1178,
+      "methods": {
+        "wk_p1": {
+          "mean_vix_stress_days": 31.06,
+          "mean_vix_calm_days": 15.83,
+          "share_stress_when_vix_30_plus": 0.997,
+          "share_stress_when_vix_under_15": 0.012
+        },
+        "wk_p2": {
+          "mean_vix_stress_days": 49.23,
+          "mean_vix_calm_days": 18.47,
+          "share_stress_when_vix_30_plus": 0.456,
+          "share_stress_when_vix_under_15": 0.0
+        },
+        "mk": {
+          "mean_vix_stress_days": 59.67,
+          "mean_vix_calm_days": 19.36,
+          "share_stress_when_vix_30_plus": 0.172,
+          "share_stress_when_vix_under_15": 0.0
+        },
+        "vol": {
+          "mean_vix_stress_days": 28.5,
+          "mean_vix_calm_days": 15.14,
+          "share_stress_when_vix_30_plus": 0.997,
+          "share_stress_when_vix_under_15": 0.026
+        }
+      }
+    }
+  },
+  "hourly": {
+    "frequency": "hourly",
+    "window": [
+      35,
+      28
+    ],
+    "k": 2,
+    "fit_seed": 0,
+    "n_returns": 8779,
+    "n_windows": 1250,
+    "first": "2016-01-04 10:00:00",
+    "last": "2020-12-31 15:00:00",
+    "data_hash": "2b4d9d2c6eea59df",
+    "fits": {
+      "wk_p1": {
+        "cost": 1.1702193757,
+        "n_iter": 6,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 879,
+            "share": 0.7032,
+            "median_annual_vol_pct": 8.1
+          },
+          {
+            "label": 1,
+            "windows": 371,
+            "share": 0.2968,
+            "median_annual_vol_pct": 20.6
+          }
+        ]
+      },
+      "wk_p2": {
+        "cost": 0.0057437654,
+        "n_iter": 7,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 1204,
+            "share": 0.9632,
+            "median_annual_vol_pct": 9.6
+          },
+          {
+            "label": 1,
+            "windows": 46,
+            "share": 0.0368,
+            "median_annual_vol_pct": 50.1
+          }
+        ]
+      },
+      "mk": {
+        "cost": 1859.5071340508,
+        "n_iter": 2,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 1245,
+            "share": 0.996,
+            "median_annual_vol_pct": 9.8
+          },
+          {
+            "label": 1,
+            "windows": 5,
+            "share": 0.004,
+            "median_annual_vol_pct": 110.9
+          }
+        ]
+      },
+      "vol": {
+        "cost": 446.1289933851,
+        "n_iter": 11,
+        "converged": true,
+        "clusters": [
+          {
+            "label": 0,
+            "windows": 794,
+            "share": 0.6352,
+            "median_annual_vol_pct": 7.7
+          },
+          {
+            "label": 1,
+            "windows": 456,
+            "share": 0.3648,
+            "median_annual_vol_pct": 18.8
+          }
+        ]
+      }
+    },
+    "agreement_windows": {
+      "wk_p1|wk_p2": 0.74,
+      "wk_p1|mk": 0.7072,
+      "wk_p1|vol": 0.932,
+      "wk_p2|mk": 0.9672,
+      "wk_p2|vol": 0.672,
+      "mk|vol": 0.6392
+    },
+    "stress_days_share": {
+      "wk_p1": 0.302,
+      "wk_p2": 0.037,
+      "mk": 0.004,
+      "vol": 0.365
+    },
+    "episodes": [
+      {
+        "episode": "China sell-off, early 2016",
+        "named_by_paper": true,
+        "start": "2016-01-01",
+        "end": "2016-02-29",
+        "days": 39,
+        "wk_p1": 1.0,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "Volatility spike, Feb 2018",
+        "named_by_paper": false,
+        "start": "2018-02-01",
+        "end": "2018-02-28",
+        "days": 19,
+        "wk_p1": 1.0,
+        "wk_p2": 0.0,
+        "mk": 0.0,
+        "vol": 1.0
+      },
+      {
+        "episode": "Q4 2018 sell-off",
+        "named_by_paper": false,
+        "start": "2018-10-01",
+        "end": "2018-12-31",
+        "days": 63,
+        "wk_p1": 0.857,
+        "wk_p2": 0.095,
+        "mk": 0.0,
+        "vol": 0.905
+      },
+      {
+        "episode": "COVID crash, 2020",
+        "named_by_paper": true,
+        "start": "2020-03-01",
+        "end": "2020-04-30",
+        "days": 43,
+        "wk_p1": 1.0,
+        "wk_p2": 0.767,
+        "mk": 0.116,
+        "vol": 1.0
+      },
+      {
+        "episode": "All other days",
+        "named_by_paper": null,
+        "start": null,
+        "end": null,
+        "days": 1095,
+        "wk_p1": 0.205,
+        "wk_p2": 0.007,
+        "mk": 0.0,
+        "vol": 0.275
+      }
+    ],
+    "bars_per_day": {
+      "days": 1259,
+      "early_close_days": 11,
+      "days_with_unexpected_bar_count": 0,
+      "examples": []
+    }
+  },
+  "hourly_vs_daily": {
+    "wk_p1": 0.885,
+    "wk_p2": 0.988,
+    "mk": 0.988,
+    "vol": 0.869
+  },
+  "provenance": {
+    "commit": "9b6c4f5573e24e7df08241e49673d7cb8014ce58",
+    "uncommitted_code_changes": false,
+    "run_timestamp_utc": "2026-11-24T03:37:05+00:00",
+    "python": "3.12.15",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "data_hashes": {
+      "daily_spy_close": "c1018c9953e99f36",
+      "hourly_spy_close": "2b4d9d2c6eea59df"
+    }
+  }
+}

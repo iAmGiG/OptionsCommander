@@ -18,6 +18,7 @@ See [../README.md](../README.md) for consolidated research status (STOP/DONE/CON
 | Ready-Aim-Fire (RAF) | #460, #532 | 🛑 STOP | Nov 2026 re-test on the live rules: Sharpe 0.80 vs 0.69, paired difference not distinguishable from zero, alpha t = 0.59 |
 | Live-rules baseline (Oct 2026) | #574 | 🛑 STOP | Live rules at live timing: Sharpe 0.69 at 5 bps, no alpha over buy-and-hold of the same symbols |
 | Trailing exits vs bracket (Oct 2026) | #539 | ✅ DONE | No detectable difference (paired Sharpe -0.04 to 0.00, intervals include zero); morning raise would cost trailing about 0.1 |
+| Wasserstein k-means regimes (Nov 2026) | #672-#677 | 🔄 CONTINUE | Part 1 of 4 (#673): replicated in sample. With p = 1 it flags every SPY episode the paper names, but gives the same label as k-means on volatility alone to 91-93% of windows. Online fit and trading test open (#674-#676) |
 
 ---
 
@@ -33,6 +34,7 @@ See [../README.md](../README.md) for consolidated research status (STOP/DONE/CON
 | [live_rules_baseline.md](live_rules_baseline.md) | #574 | Baseline of the live CLI rules for paper validation | ✅ Complete |
 | [trailing_vs_bracket.md](trailing_vs_bracket.md) | #539 | Live trailing-stop exits against the fixed bracket | ✅ Complete |
 | [partial_exits.md](partial_exits.md) | #584 | Partial exits against the live trailing exit, three designs | ✅ Complete (no reliable gain) |
+| [wk_means_regimes.md](wk_means_regimes.md) | #672-#677 | Wasserstein k-means market regimes: replication (#673), then online fit and trading test | 🔄 Part 1 of 4 |
 
 ## Results
 
@@ -53,6 +55,7 @@ Experimental results are stored as YAML files in the [results/](results/) folder
 | [live_rules_baseline.yaml](results/live_rules_baseline.yaml) | #574 | 🛑 STOP | Live CLI rules, 2009 to 2026-10-09, two modes, three cost levels |
 | [trailing_vs_bracket.json](results/trailing_vs_bracket.json) | #539 | ✅ DONE | Exit modes bracket, trailing, trailing_target; sizing, costs, paired tests |
 | [partial_exits.json](results/partial_exits.json) | #584 | ✅ DONE | Four partial-exit implementations at +4% / +5%, sizing, costs, paired tests, fills, sensitivities, per symbol |
+| [wk_means_replication.json](results/wk_means_replication.json) | #673 | ✅ DONE | The paper's synthetic Tables 3 and 4; SPY daily (2008-2020) and hourly (2016-2020) clusterings in sample; run provenance |
 
 ## Key Findings (Dec 2025, updated Oct 2026)
 

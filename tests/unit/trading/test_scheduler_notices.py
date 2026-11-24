@@ -935,13 +935,40 @@ def test_an_unreadable_history_is_a_notice_and_the_check_does_not_raise(
 def test_a_state_manager_that_fails_everywhere_is_the_same_notice(make_scheduler):
     scheduler = make_scheduler()
     broken = Mock(spec=SchedulerStateManager)
-    for name in ("has_saved_state", "get_state", "executions_on"):
+    for name in ("has_saved_state", "get_state", "read_state", "has_run_history", "executions_on"):
         getattr(broken, name).side_effect = sqlite3.OperationalError("database is locked")
     scheduler.state_manager = broken
 
     scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 31))
 
     assert _keys(scheduler) == ["state_db_error:2026-10-15"]
+
+
+def test_unreadable_flags_are_the_notice_even_though_the_config_says_disabled(
+    make_scheduler, monkeypatch
+):
+    """E1-05: the real manager used to answer "never saved", and the config's false hid it."""
+    scheduler = make_scheduler(enabled=False)
+    scheduler.save_flags(enabled=True)
+
+    def locked():
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(scheduler.state_manager, "_get_connection", locked)
+    scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 31))
+    scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 36))
+
+    [notice] = scheduler.notice_store.all_notices()
+    assert (notice.key, notice.severity, notice.count) == (
+        "state_db_error:2026-10-15",
+        "CRITICAL",
+        1,
+    )
+    assert "database is locked" in notice.detail
+
+    monkeypatch.undo()
+    scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 41))  # readable: the saved True
+    assert [n.resolved_at is not None for n in scheduler.notice_store.all_notices()] == [True]
 
 
 def test_a_bug_in_the_outcome_check_does_not_stop_the_tick(make_scheduler, monkeypatch, caplog):

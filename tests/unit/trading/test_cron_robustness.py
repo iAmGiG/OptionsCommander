@@ -11,6 +11,7 @@ import signal
 import sqlite3
 import time
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
@@ -606,3 +607,33 @@ def test_agreeing_calendar_answers_raise_no_notice(make_scheduler):
     scheduler.scheduled_at(task, date(2026, 10, 14))
 
     assert scheduler.notice_store.all_notices() == []
+
+
+# --- Unreadable scheduler flags (E1-05) ---------------------------------------------------
+
+
+def test_a_cron_tick_on_unreadable_state_runs_nothing_and_leaves_a_critical_notice(
+    make_scheduler, monkeypatch
+):
+    scheduler = make_scheduler(enabled=False)  # the shipped config; the saved flag switches on
+    scheduler.save_flags(enabled=True)
+    Path(scheduler.state_manager._db_path).write_bytes(b"not a database\n" * 8)
+    monkeypatch.setattr(
+        scheduler, "should_run_task", lambda task, now=None: True, raising=False
+    )  # as if both routines were due this tick
+    monkeypatch.setattr(main, "DailyScheduler", lambda: scheduler)
+    monkeypatch.setattr(main, "configure_scheduler_logging", lambda: None)
+    monkeypatch.setattr(main, "load_scheduler_config", lambda: {"run_due_timeout_seconds": 30})
+    monkeypatch.setattr(main, "ping_heartbeat", lambda: False)  # stays offline
+
+    code = main._run_due_mode()
+
+    # main.py decides the exit code (and so the heartbeat) from the routines that ran, and
+    # none did: the CRITICAL notice, emailed by the digest where set up, is the alarm
+    assert code == 0
+    assert scheduler.trading_cycle.morning_routine.call_count == 0
+    assert scheduler.trading_cycle.evening_routine.call_count == 0
+    [notice] = scheduler.notice_store.all_notices()
+    today = scheduler._market_now().date().isoformat()
+    assert (notice.key, notice.severity, notice.count) == (f"state_db_error:{today}", "CRITICAL", 1)
+    assert _run_due_notices() == []  # the tick itself did not crash

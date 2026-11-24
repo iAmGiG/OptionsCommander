@@ -609,6 +609,148 @@ def test_the_dry_run_routine_reports_a_would_sell(cycle, broker):
     assert any("would sell 5 shares" in line for line in sections)
 
 
+# A sale that may have lost its stop: the stops are checked again in the same routine (E1-01)
+
+
+def lost_stop_discrepancy(error=None):
+    """What a second stop pass returns for AAPL: the stop placed, or not (an error)."""
+    from src.trading.state.state_reconciler import Discrepancy
+
+    return Discrepancy(
+        type="MISSING_STOP",
+        symbol="AAPL",
+        details={"quantity": 5, "stop_price": 95.0, "reason": "no live stop order", "error": error},
+        action="NEEDS_HUMAN_REVIEW" if error else "AUTO_FIXED",
+        severity="HIGH",
+    )
+
+
+def numbered_fetches(cycle):
+    """fetch_broker_state returns a new state on each call, numbered in order."""
+    count = []
+
+    def fetch(**kwargs):
+        count.append(len(count) + 1)
+        return {**broker_state(AAPL=position()), "fetch": count[-1]}
+
+    cycle.fetch_broker_state = MagicMock(side_effect=fetch)
+    return count
+
+
+def stop_not_put_back(broker):
+    broker.place_stop_order.return_value = {"status": "error", "message": "no"}
+
+
+def sale_refused_and_stop_not_put_back(broker):
+    broker.place_market_order.return_value = {"status": "error", "message": "rejected"}
+    broker.place_stop_order.return_value = {"status": "error", "message": "no"}
+
+
+def error_mid_sale(broker):
+    broker.get_orders.side_effect = RuntimeError("broker down")
+
+
+@pytest.mark.parametrize(
+    "lose_the_stop", [stop_not_put_back, sale_refused_and_stop_not_put_back, error_mid_sale]
+)
+def test_a_sale_that_lost_its_stop_gets_a_second_stop_pass_on_fresh_state(
+    cycle, broker, lose_the_stop
+):
+    save_plan()
+    stub_routine(cycle, broker_state(AAPL=position()))
+    fetches = numbered_fetches(cycle)
+    lose_the_stop(broker)
+    cycle.check_and_repair_stops.side_effect = [[], [lost_stop_discrepancy()]]
+    sale_seen_at, real_cancel = [], broker.cancel_order.side_effect
+
+    def cancel(order_id):  # the sale starts by cancelling the stop: note the fetch count then
+        sale_seen_at.append(len(fetches))
+        return real_cancel(order_id)
+
+    broker.cancel_order.side_effect = cancel
+
+    cycle.evening_routine(raise_errors=True)
+
+    assert cycle.check_and_repair_stops.call_count == 2
+    second_state = cycle.check_and_repair_stops.call_args_list[1].args[0]
+    if sale_seen_at:  # the error-mid-sale case never gets to the cancel
+        assert second_state["fetch"] > sale_seen_at[0]  # fetched after the sale, not before
+    assert second_state["fetch"] == fetches[-2]  # and once more after the stop went in
+    assert [d.type for d in cycle.last_discrepancies] == ["MISSING_STOP"]
+    assert cycle.last_partial_exits[0].stop_lost is False  # the stop is back
+    assert "re-placed" in cycle.last_partial_exits[0].reason
+
+
+def test_a_stop_the_second_pass_cannot_place_fails_the_routine(cycle, broker):
+    save_plan()
+    stub_routine(cycle, broker_state(AAPL=position()))
+    stop_not_put_back(broker)
+    cycle.check_and_repair_stops.side_effect = [
+        [],
+        [lost_stop_discrepancy(error="insufficient qty")],
+    ]
+
+    with pytest.raises(cycle_module.RoutineError, match=r"protective stops not secured \(AAPL\)"):
+        cycle.evening_routine(raise_errors=True)
+
+    assert cycle.check_and_repair_stops.call_count == 2
+    assert cycle.last_discrepancies[0].details["error"] == "insufficient qty"  # for the notice
+    assert cycle.last_partial_exits[0].stop_lost is True
+    assert saved_target().order_id == "sell-1"  # the sale is on record for the retry
+
+
+def test_the_retry_after_a_failed_second_pass_does_not_sell_again(cycle, broker):
+    save_plan()
+    stub_routine(cycle, broker_state(AAPL=position()))
+    stop_not_put_back(broker)
+    cycle.check_and_repair_stops.side_effect = [
+        [],
+        [lost_stop_discrepancy(error="no")],
+        [lost_stop_discrepancy()],  # the retry's first pass places the stop
+    ]
+    with pytest.raises(cycle_module.RoutineError):
+        cycle.evening_routine(raise_errors=True)
+    broker.reset_mock()
+
+    # The scheduler retries a minute later: the broker still shows the 10 shares held
+    cycle.evening_routine(raise_errors=True)
+
+    assert sells(broker) == []
+    broker.cancel_order.assert_not_called()
+    assert cycle.check_and_repair_stops.call_count == 3  # no sale, so no second pass
+    assert cycle.last_partial_exits == ()
+
+
+def test_a_sale_whose_stop_went_back_still_gets_the_stops_checked_again(cycle, broker):
+    save_plan()
+    stub_routine(cycle, broker_state(AAPL=position()))
+
+    cycle.evening_routine(raise_errors=True)
+
+    assert cycle.check_and_repair_stops.call_count == 2
+    assert cycle.last_partial_exits == ()
+    assert cycle.last_discrepancies == ()
+
+
+def test_without_a_sale_the_stops_are_checked_once(cycle, broker):
+    save_plan(target=106.0)  # not reached
+    stub_routine(cycle, broker_state(AAPL=position()))
+
+    cycle.evening_routine(raise_errors=True)
+
+    cycle.check_and_repair_stops.assert_called_once()
+    cycle.fetch_broker_state.assert_called_once()
+
+
+def test_a_dry_run_sells_nothing_so_checks_the_stops_once(cycle, broker):
+    save_plan()
+    stub_routine(cycle, broker_state(AAPL=position()))
+
+    cycle.evening_routine(raise_errors=True, dry_run=True)
+
+    cycle.check_and_repair_stops.assert_called_once()
+
+
 # The scheduler's notice
 
 

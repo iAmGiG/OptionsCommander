@@ -58,7 +58,7 @@ def test_the_runner_writes_results_tables_and_figures(runner, monkeypatch, tmp_p
     cache = tmp_path / "bars"
     cache.mkdir()
     days = pd.bdate_range("2016-01-04", "2016-03-31").date
-    _fake_hourly_bars(days).to_parquet(cache / "SPY_2016.parquet")
+    _fake_hourly_bars(days).to_csv(cache / "SPY_20160101_20170101.csv.gz", index=False)
     out_dir = tmp_path / "results"
     out = runner.main(
         ["--synthetic-runs", "2", "--hourly-cache", str(cache), "--results-dir", str(out_dir)]
@@ -94,9 +94,51 @@ def test_the_runner_skips_the_hourly_part_without_bars(runner, monkeypatch, tmp_
     assert "hourly" not in out and "synthetic" not in out and "daily" in out
 
 
+def test_a_missing_hourly_bar_is_reported(runner):
+    days = [dt.date(2019, 11, 26), dt.date(2019, 11, 27), dt.date(2019, 11, 29)]
+    closes = runner.regular_session_closes(_fake_hourly_bars(days))
+    full = runner.session_check(closes)
+    assert full["days"] == 3 and full["early_close_days"] == 1
+    assert full["days_with_unexpected_bar_count"] == 0
+    gappy = closes.drop(pd.Timestamp("2019-11-26 11:00"))
+    check = runner.session_check(gappy)
+    assert check["days_with_unexpected_bar_count"] == 1
+    assert check["examples"] == ["2019-11-26: 6 bars"]
+
+
+def test_svg_text_is_escaped(runner):
+    days = pd.bdate_range("2020-01-01", periods=5)
+    svg = runner.stress_svg(days, np.arange(1.0, 6.0), {"A & B": np.ones(5, bool)}, "x < y")
+    assert "A &amp; B" in svg and "x &lt; y" in svg
+
+
 def test_runs_of_true_are_found(runner):
     assert runner._runs([0, 1, 1, 0, 1]) == [(1, 2), (4, 4)]
     assert runner._runs([0, 0]) == []
+
+
+def test_the_fetcher_names_files_by_range_and_does_not_save_an_empty_answer(monkeypatch, tmp_path):
+    monkeypatch.syspath_prepend(str(REPO / "scripts" / "research"))
+    fetcher = importlib.import_module("fetch_hourly_bars")
+    premarket = importlib.import_module("fetch_premarket_bars")
+    monkeypatch.setattr(premarket, "make_client", lambda: object())  # no credentials needed
+    monkeypatch.setattr(fetcher, "PAUSE_SECONDS", 0)
+
+    def fake_fetch(client, symbol, start, end):
+        if start.year == 2017:
+            return pd.DataFrame(columns=fetcher.COLUMNS)  # nothing came back
+        return pd.DataFrame({c: [1.0] for c in fetcher.COLUMNS}).assign(
+            et=pd.Timestamp(start) + pd.Timedelta(hours=10)
+        )
+
+    monkeypatch.setattr(fetcher, "fetch_year", fake_fetch)
+    args = ["fetch_hourly_bars.py", "--out", str(tmp_path), "--first", "2016-06-01"]
+    monkeypatch.setattr("sys.argv", args + ["--last", "2017-12-31"])
+    fetcher.main()
+    assert sorted(p.name for p in tmp_path.glob("*.csv.gz")) == ["SPY_20160601_20170101.csv.gz"]
+    assert fetcher.file_name("SPY", dt.date(2016, 1, 1), dt.date(2017, 1, 1)) == (
+        "SPY_20160101_20170101.csv.gz"
+    )
 
 
 def test_the_fetcher_stores_et_timestamps_and_skips_nothing_it_got(monkeypatch):

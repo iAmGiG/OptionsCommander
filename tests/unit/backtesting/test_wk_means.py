@@ -197,6 +197,29 @@ def test_more_restarts_never_give_a_higher_cost():
     assert ten.cost_ <= one.cost_ + 1e-12  # the first of the ten runs is the single run
 
 
+def test_empty_clusters_are_refilled_without_emptying_a_donor_or_sharing_a_point():
+    from src.backtesting.regimes.wk_means import _refill_empty
+
+    # k = 4: clusters 2 and 3 are empty; cluster 1 has one member and must keep it
+    labels = np.array([0, 0, 0, 1])
+    distances = np.array(
+        [[0.1, 9, 9, 9], [0.5, 9, 9, 9], [0.9, 9, 9, 9], [9, 5.0, 9, 9]], dtype=float
+    )  # point 3 fits worst, but it is cluster 1's only member
+    _refill_empty(labels, distances, 4)
+    assert sorted(np.bincount(labels, minlength=4)) == [1, 1, 1, 1]
+    assert labels[3] == 1  # the single member stayed
+    assert set(labels[[1, 2]]) == {2, 3}  # the two worst fits of cluster 0, one each
+
+
+def test_duplicate_starting_windows_still_give_k_clusters():
+    # many identical windows: a random start can pick the same window twice
+    rng = np.random.default_rng(0)
+    values = np.sort(np.vstack([np.zeros((30, 5)), rng.normal(size=(6, 5))]), axis=1)
+    for seed in range(10):
+        model = WKMeans(k=3, p=1, init="random", n_init=1, seed=seed).fit(values)
+        assert len(set(model.labels_)) == 3
+
+
 def test_bad_settings_are_rejected():
     with pytest.raises(ValueError):
         WKMeans(init="farthest")

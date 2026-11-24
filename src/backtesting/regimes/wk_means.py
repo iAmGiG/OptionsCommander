@@ -150,17 +150,31 @@ def _initial_centers(points, k, rng, init, distance: Distance, power) -> np.ndar
     return points[chosen].copy()
 
 
+def _refill_empty(labels: np.ndarray, distances: np.ndarray, k: int) -> None:
+    """Give each empty cluster the worst-fitting point of a cluster that keeps another member.
+
+    Points are taken in order of how badly they fit, each at most once, so no donor is emptied
+    and two empty clusters never share a point. Changes labels in place.
+    """
+    counts = np.bincount(labels, minlength=k)
+    misfit = distances[np.arange(len(labels)), labels]
+    candidates = iter(np.argsort(misfit, kind="stable")[::-1])
+    for j in np.flatnonzero(counts == 0):
+        for i in candidates:
+            if counts[labels[i]] > 1:
+                counts[labels[i]] -= 1
+                labels[i], counts[j] = j, 1
+                break
+
+
 def _update_centers(points, labels, distances, centers, center: Callable) -> np.ndarray:
-    """New centers from the members; an empty cluster restarts at the worst-fitting point."""
+    """New centers from the members, after refilling any empty cluster."""
+    _refill_empty(labels, distances, len(centers))
     new = centers.copy()
     for j in range(len(centers)):
         members = labels == j
         if members.any():
             new[j] = center(points[members])
-        else:
-            worst = int(distances[np.arange(len(points)), labels].argmax())
-            labels[worst] = j
-            new[j] = points[worst]
     return new
 
 

@@ -49,6 +49,7 @@ import sys
 import tempfile
 from itertools import combinations
 from pathlib import Path
+from html import escape
 
 import numpy as np
 import pandas as pd
@@ -216,17 +217,17 @@ def daily_inputs(start: str, end: str):
     try:
         prices = bt.fetch_equity_prices(["SPY"], start, end)
         close = prices.set_index("trading_date")["close"].astype(float).sort_index()
-        cur = bt._get_connection().cursor()
-        cur.execute(
-            """
-            SELECT observation_date, value FROM market_data.fred_economic_data
-            WHERE series_id = 'VIXCLS' AND value IS NOT NULL
-              AND observation_date BETWEEN %s AND %s
-            ORDER BY observation_date
-            """,
-            (start, end),
-        )
-        rows = cur.fetchall()
+        with bt._get_connection().cursor() as cur:  # the backtester's read-only session
+            cur.execute(
+                """
+                SELECT observation_date, value FROM market_data.fred_economic_data
+                WHERE series_id = 'VIXCLS' AND value IS NOT NULL
+                  AND observation_date BETWEEN %s AND %s
+                ORDER BY observation_date
+                """,
+                (start, end),
+            )
+            rows = cur.fetchall()
     finally:
         bt.close()
     vix = pd.Series([float(v) for _, v in rows], index=pd.to_datetime([d for d, _ in rows]))
@@ -253,13 +254,35 @@ def regular_session_closes(bars: pd.DataFrame) -> pd.Series:
 
 def hourly_inputs(cache_dir: Path, start: str, end: str):
     """Regular-session hourly closes from the fetch_hourly_bars.py folder, or None."""
-    files = sorted(Path(cache_dir).glob("SPY_*.parquet"))
+    files = sorted(Path(cache_dir).glob("SPY_*.csv.gz"))
     if not files:
         return None
-    bars = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+    frames = [pd.read_csv(f, parse_dates=["et"]) for f in files]
+    bars = pd.concat(frames, ignore_index=True)
     et = pd.to_datetime(bars["et"])
     bars = bars[(et >= pd.Timestamp(start)) & (et < pd.Timestamp(end) + pd.Timedelta(days=1))]
     return regular_session_closes(bars)
+
+
+def session_check(closes: pd.Series) -> dict:
+    """Days whose regular-session bar count is not 7 (or 4 on an early close).
+
+    A missing bar would turn a two-hour move into one hourly return, so the count is reported
+    with the results rather than assumed.
+    """
+    stamps = pd.DatetimeIndex(closes.index)
+    per_day = pd.Series(1, index=stamps.normalize()).groupby(level=0).sum()
+    early = set()
+    for year in sorted(set(per_day.index.year)):
+        early |= nyse_early_closes(int(year))
+    expected = pd.Series([4 if d.date() in early else 7 for d in per_day.index], per_day.index)
+    short = per_day[per_day != expected]
+    return {
+        "days": len(per_day),
+        "early_close_days": int((expected == 4).sum()),
+        "days_with_unexpected_bar_count": len(short),
+        "examples": [f"{d.date()}: {n} bars" for d, n in short.head(10).items()],
+    }
 
 
 def data_hash(index, values) -> str:
@@ -420,7 +443,9 @@ def stress_svg(days: pd.DatetimeIndex, close, strips: dict, title: str) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}" font-family="Helvetica, Arial, sans-serif">',
         f'<rect width="{width}" height="{height}" fill="#ffffff"/>',
-        f'<text x="{left}" y="24" font-size="15" fill="#111827">{title}</text>',
+        f'<text x="{left}" y="24" font-size="15" fill="#111827">{escape(title)}</text>',
+        f'<text x="{width - right}" y="24" font-size="11" text-anchor="end" fill="#6b7280">'
+        "x axis: trading days</text>",
     ]
     for a, b in _runs(next(iter(strips.values()))):
         parts.append(
@@ -438,7 +463,7 @@ def stress_svg(days: pd.DatetimeIndex, close, strips: dict, title: str) -> str:
         yy = strips_top + row * (strip_h + gap)
         parts.append(
             f'<text x="{left - 8}" y="{yy + strip_h - 2}" font-size="11" '
-            f'text-anchor="end" fill="#111827">{label}</text>'
+            f'text-anchor="end" fill="#111827">{escape(label)}</text>'
         )
         parts.append(
             f'<rect x="{left}" y="{yy}" width="{span}" height="{strip_h}" fill="#f3f4f6"/>'
@@ -511,6 +536,17 @@ def synthetic_md(syn: dict) -> list:
     return lines + [""]
 
 
+def _bar_count_lines(section: dict) -> list:
+    check = section.get("bars_per_day")
+    if not check:
+        return []
+    return [
+        f"Bars per day checked: {check['days']} days, {check['early_close_days']} early closes, "
+        f"{check['days_with_unexpected_bar_count']} with an unexpected count.",
+        "",
+    ]
+
+
 def real_md(section: dict, title: str) -> list:
     methods = list(section["stress_days_share"])
     head = "| " + " | ".join(METHOD_LABELS[m] for m in methods) + " |"
@@ -522,6 +558,7 @@ def real_md(section: dict, title: str) -> list:
         f"windows {tuple(section['window'])} ({section['n_windows']}), k = {section['k']}, "
         f"data hash {section['data_hash']}. In-sample clustering.",
         "",
+        *_bar_count_lines(section),
         "Share of trading days labelled stress:",
         "",
         "| Episode | Days " + head,
@@ -637,6 +674,9 @@ def main(argv=None):
             hourly, "hourly", HOURLY_WINDOW, args.seed
         )
         hashes["hourly_spy_close"] = out["hourly"]["data_hash"]
+        out["hourly"]["bars_per_day"] = session_check(hourly)
+        if out["hourly"]["bars_per_day"]["days_with_unexpected_bar_count"]:
+            print(f"WARNING: hourly bars missing: {out['hourly']['bars_per_day']['examples']}")
         stress = day_stress["hourly"]
         day_close = hourly.groupby(pd.DatetimeIndex(hourly.index).normalize()).last()
         figures["hourly"] = figure(

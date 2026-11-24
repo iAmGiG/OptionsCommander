@@ -14,7 +14,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import yaml
 
 from .message_loader import get_emoji
-from src.trading.scheduling.daily_scheduler import DailyScheduler, effective_flags, save_flags
+from src.trading.scheduling.daily_scheduler import (
+    effective_flags,
+    load_scheduler_config,
+    save_flags,
+)
 from src.trading.scheduling.scheduler_state import get_scheduler_state_manager
 
 if TYPE_CHECKING:
@@ -183,10 +187,11 @@ class SchedulerConfigEditor:
                     if scheduler:
                         print(f"{get_emoji('refresh', '🔄')} Reloading scheduler...")
                         try:
-                            existing_cycle = scheduler.trading_cycle
-                            scheduler = DailyScheduler(
-                                self.config_file, trading_cycle=existing_cycle
-                            )
+                            # In place: the CLI, its monitor and wizard keep this object,
+                            # so a new DailyScheduler here would be discarded and 'test
+                            # morning' would run with the old dry_run (E6-01)
+                            scheduler.config = load_scheduler_config(self.config_file)
+                            scheduler.tasks = scheduler._create_default_tasks()
                             print(f"{get_emoji('check_green', '✅')} Scheduler reloaded")
                         except Exception as e:
                             print(f"{get_emoji('warning', '⚠️')} Could not reload: {e}")

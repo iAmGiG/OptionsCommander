@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import yaml
 
 from .message_loader import get_emoji
-from src.trading.scheduling.daily_scheduler import DailyScheduler, effective_flags, save_flags
+from src.trading.scheduling.daily_scheduler import DEFAULT_CONFIG as SCHEDULER_DEFAULTS
+from src.trading.scheduling.daily_scheduler import effective_flags, save_flags
 from src.trading.scheduling.scheduler_state import get_scheduler_state_manager
 
 if TYPE_CHECKING:
@@ -182,14 +183,25 @@ class SchedulerConfigEditor:
 
                     if scheduler:
                         print(f"{get_emoji('refresh', '🔄')} Reloading scheduler...")
+                        # In place: the CLI, its monitor and wizard keep this object, so a
+                        # new DailyScheduler here would be discarded and 'test morning'
+                        # would run with the old dry_run (E6-01). The new config is what
+                        # load_scheduler_config gives for the file just saved, built from
+                        # the saved dict: a failed re-read there would return the defaults
+                        # (dry run off) instead of raising. Config and tasks change together
+                        # or not at all.
+                        previous_config = scheduler.config
+                        scheduler.config = {**SCHEDULER_DEFAULTS, **config}
                         try:
-                            existing_cycle = scheduler.trading_cycle
-                            scheduler = DailyScheduler(
-                                self.config_file, trading_cycle=existing_cycle
-                            )
-                            print(f"{get_emoji('check_green', '✅')} Scheduler reloaded")
+                            scheduler.tasks = scheduler._create_default_tasks()
                         except Exception as e:
-                            print(f"{get_emoji('warning', '⚠️')} Could not reload: {e}")
+                            scheduler.config = previous_config  # the tasks were not replaced
+                            print(
+                                f"{get_emoji('warning', '⚠️')} Could not reload: {e}. This "
+                                "session keeps its previous settings; check the saved file."
+                            )
+                        else:
+                            print(f"{get_emoji('check_green', '✅')} Scheduler reloaded")
                 else:
                     print(f"{get_emoji('cross_red', '❌')} Failed to save configuration")
 

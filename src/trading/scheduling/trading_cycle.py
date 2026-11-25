@@ -41,6 +41,7 @@ from src.trading.state.broker_state_cache import BrokerStateCache
 from src.trading.state.daily_records import DailyRecords
 from src.trading.state.local_state_manager import LocalStateManager
 from src.trading.state.state_reconciler import (
+    NO_STOP_LEVEL_REASON,
     Discrepancy,
     PositionAlertSummary,
     StateReconciler,
@@ -85,6 +86,14 @@ __all__ = [
 
 # Discrepancy types of protective-stop repairs (StopRepair.kind)
 STOP_REPAIR_TYPES = ("MISSING_STOP", "STOP_EXPIRING")
+# Every discrepancy type the stop check (check_and_repair_stops) produces
+STOP_CHECK_TYPES = STOP_REPAIR_TYPES + ("TARGET_EXPIRING", "STOP_CHECK_FAILED")
+# After a partial sale, how long the routine waits (at most) for the sale's order to leave
+# the open orders before it looks at the stops again: a market order fills in moments
+# during market hours, but while it is open the position reads as unsold and its shares as
+# held by that order
+_SALE_SETTLE_TRIES = 4
+_SALE_SETTLE_SECONDS = 0.5
 # A position's average entry moved this far from its trailing state's: it was sold and bought
 # again, or added to (#634). Wide enough for the state's rounded copy of the entry.
 ENTRY_CHANGE_TOLERANCE = 0.001
@@ -250,6 +259,46 @@ def _check_stops_secured(discrepancies: List[Discrepancy]) -> None:
         raise RoutineError(f"protective stops not secured ({symbols})")
 
 
+def _sell_orders(broker_state: Dict[str, Any], symbol: str) -> List[Dict[str, Any]]:
+    """A symbol's open sell orders in the broker state."""
+    return [
+        order
+        for order in broker_state.get("orders", {}).get(symbol, [])
+        if "sell" in str(order.get("side", "")).lower()
+    ]
+
+
+def _market_sells(broker_state: Dict[str, Any], symbol: str) -> List[Dict[str, Any]]:
+    """A symbol's open market sells: a sale on its way (an earlier run's, or the CLI's)."""
+    return [
+        o for o in _sell_orders(broker_state, symbol) if "market" in str(o.get("type", "")).lower()
+    ]
+
+
+def _live_stops(broker_state: Dict[str, Any], symbol: str) -> List[Dict[str, Any]]:
+    """A symbol's open sell orders with a stop price, as check_protective_stops counts them."""
+    return [o for o in _sell_orders(broker_state, symbol) if o.get("stop_price")]
+
+
+def _merge_stop_passes(first: List[Discrepancy], second: List[Discrepancy]) -> List[Discrepancy]:
+    """
+    The routine's discrepancies once the stops were checked a second time.
+
+    The second pass looks at every position again, so it supersedes the first pass's open
+    stop items (reviews, and repairs the broker refused: a stop it then placed must not
+    fail the routine); stops the first pass placed or renewed stay on record, as does
+    everything that isn't a stop item. If the second pass itself failed, nothing is dropped.
+    """
+    if any(d.type == "STOP_CHECK_FAILED" for d in second):
+        return list(first) + list(second)
+    kept = [
+        d
+        for d in first
+        if d.type not in STOP_CHECK_TYPES or d.action in ("AUTO_FIXED", DRY_RUN_ACTION)
+    ]
+    return kept + list(second)
+
+
 class CostEfficientTradeCycle:
     """
     Redesigned for minimal API calls using GTC orders.
@@ -277,7 +326,10 @@ class CostEfficientTradeCycle:
     last_alerts: Tuple[PositionAlertSummary, ...] = ()
     last_discrepancies: Tuple[Discrepancy, ...] = ()
     last_partial_exits: Tuple[PartialExitFailure, ...] = ()  # sales that failed
-    _partial_sale_tried = False  # a partial sale went to the broker this routine (E1-01)
+    # Partial sales tried this routine, symbol -> the sale's order ID when known (E1-01).
+    # Re-assigned by _note_sale, never mutated: this default is shared
+    _partial_sales: Dict[str, Optional[str]] = {}
+    _settled_after_sales = False  # the broker state was fetched once those sales settled
     notice_store = None  # set by the DailyScheduler; the reports list its open notices
 
     def __init__(self, state_file: str = None, dry_run: bool = False):
@@ -398,7 +450,8 @@ class CostEfficientTradeCycle:
         self.last_alerts = ()
         self.last_discrepancies = ()
         self.last_partial_exits = ()
-        self._partial_sale_tried = False
+        self._partial_sales = {}
+        self._settled_after_sales = False
         self.last_report_path = None
         self.last_open_symbols = None
         self._new_fills = []
@@ -647,7 +700,10 @@ class CostEfficientTradeCycle:
 
         Errors are contained: a failed sale is recorded in last_partial_exits for a notice
         and the routine goes on. The broker state is fetched again if a sale was tried,
-        since the stop the routines work on has changed.
+        once the sale has settled, since the stop the routines work on has changed. A
+        target whose symbol already has a market sell open (an earlier attempt's, reported
+        as an error by the client but accepted by the broker; or the CLI's) is not sold:
+        a second sale would close the position.
 
         Returns:
             (the broker state, report lines)
@@ -670,14 +726,18 @@ class CostEfficientTradeCycle:
                     continue
                 if price < target.exit_price:
                     continue
+                if _market_sells(broker_state, symbol):
+                    lines.append(
+                        f"{symbol} reached its partial target ${target.exit_price:.2f}, but a "
+                        "market sell order for it is already open (an earlier run's sale, or "
+                        "the CLI's): nothing sold"
+                    )
+                    continue
                 step, sold = self._partial_step(manager, state, target, position, price, evening)
                 lines.extend(step)
                 tried = tried or sold
-                # Noted before the refetch, so the routine's second stop pass runs even if
-                # this step fails from here on
-                self._partial_sale_tried = self._partial_sale_tried or sold
             if tried:
-                broker_state = self.fetch_broker_state(force_refresh=True)
+                broker_state = self._settled_broker_state()
             if lines:
                 lines = ["", "## Partial Exits", ""] + [f"- {line}" for line in lines]
             return broker_state, lines
@@ -724,9 +784,10 @@ class CostEfficientTradeCycle:
                 f"(partial target ${target.exit_price:.2f})"
             ], False
         try:
-            return self._sell_partial_target(manager, state, target, held, price), True
+            return self._sell_partial_target(manager, state, target, held, price)
         except Exception as e:  # unknown how far it got: assume the stop is gone
             logger.error(f"Partial sale of {symbol} failed: {e}", exc_info=True)
+            self._note_sale(symbol)  # first, so the second stop pass runs whatever follows
             # Block another sale until a person has looked at the broker
             target.order_id = UNCONFIRMED_SALE
             saved = self._persist_target_order(manager, state, target)
@@ -748,6 +809,13 @@ class CostEfficientTradeCycle:
     def _record_partial_failure(self, failure: PartialExitFailure) -> None:
         """Add a failed or doubtful partial exit for the scheduler's notices."""
         self.last_partial_exits += (failure,)
+
+    def _note_sale(self, symbol: str, order_id: Optional[str] = None) -> None:
+        """Record a partial sale tried this routine, with its order ID when known (E1-01)."""
+        self._partial_sales = {
+            **self._partial_sales,
+            symbol: order_id or self._partial_sales.get(symbol),
+        }
 
     def _persist_target_order(self, manager: Any, state: Any, target: Any) -> bool:
         """
@@ -864,14 +932,15 @@ class CostEfficientTradeCycle:
 
     def _sell_partial_target(
         self, manager: Any, state: Any, target: Any, held: int, price: float
-    ) -> List[str]:
+    ) -> Tuple[List[str], bool]:
         """
         Sell a software target at market (the stop on the shares is cancelled first and put
         back on the rest). The sale's order ID is saved at once, so a retry of the routine
         can't sell it twice.
 
         Returns:
-            Report lines
+            (report lines, whether a sale was tried: nothing goes to the broker when the
+            position no longer fits the plan)
         """
         from src.trading.broker.alpaca_execution_manager import (
             NO_STOP,
@@ -883,8 +952,9 @@ class CostEfficientTradeCycle:
         executor = AlpacaExecutionManager(order_manager=self.order_manager)
         plan = executor.plan_close(symbol, quantity=quantity)
         if plan is None or plan["quantity"] != quantity:
-            return [f"{symbol}: partial sale of {quantity} not made: the position changed"]
+            return [f"{symbol}: partial sale of {quantity} not made: the position changed"], False
         result = executor.close_position_sync(plan, sleep=time.sleep)
+        self._note_sale(symbol, result.entry_order_id)
         stop_lost = STOP_LOST in result.message or NO_STOP in result.message
 
         if not result.success:
@@ -892,7 +962,7 @@ class CostEfficientTradeCycle:
             self._record_partial_failure(
                 PartialExitFailure(symbol, quantity, result.message, stop_lost)
             )
-            return [f"{symbol}: partial sale of {quantity} shares FAILED: {result.message}"]
+            return [f"{symbol}: partial sale of {quantity} shares FAILED: {result.message}"], True
 
         target.order_id = result.entry_order_id or UNCONFIRMED_SALE
         recorded = self._persist_target_order(manager, state, target)
@@ -914,7 +984,43 @@ class CostEfficientTradeCycle:
                     symbol, quantity, "; ".join(problems), stop_lost, critical=not recorded
                 )
             )
-        return lines
+        return lines, True
+
+    def _settled_broker_state(self) -> Dict[str, Any]:
+        """
+        Fresh broker state once this routine's partial sales have settled: a bounded wait
+        for their orders to leave the open orders, then one fetch. While a sale's order is
+        open the position reads as unsold and its shares as held by that order, so the
+        stop check would see the wrong share count. A sale still open at the end of the
+        wait is logged; the second stop pass deals with it.
+        """
+        waiting = {order_id for order_id in self._partial_sales.values() if order_id}
+        symbols = sorted(s for s, order_id in self._partial_sales.items() if order_id)
+        waiting = self._still_open_sales(symbols, waiting)
+        for _ in range(_SALE_SETTLE_TRIES):
+            if not waiting:
+                break
+            time.sleep(_SALE_SETTLE_SECONDS)
+            waiting = self._still_open_sales(symbols, waiting)
+        if waiting:
+            logger.warning(
+                f"Partial sale order(s) still open after {_SALE_SETTLE_TRIES * _SALE_SETTLE_SECONDS:g} s: "
+                f"{', '.join(sorted(waiting))}"
+            )
+        broker_state = self.fetch_broker_state(force_refresh=True)
+        self._settled_after_sales = True
+        return broker_state
+
+    def _still_open_sales(self, symbols: List[str], waiting: set) -> set:
+        """Which of these sale order IDs the broker still lists as open (none, on an error)."""
+        if not waiting:
+            return set()
+        try:
+            orders = self.order_manager.get_orders(status="open", symbols=symbols)
+        except Exception as e:
+            logger.warning(f"Could not check the partial sale orders: {e}")
+            return set()
+        return waiting & {str(order.get("id")) for order in orders}
 
     def _stops_after_partial_sales(
         self,
@@ -927,39 +1033,94 @@ class CostEfficientTradeCycle:
 
         The sale cancels the position's stop and puts one back on the shares left. If
         that failed, or the sale errored part-way, the position has no stop, and the
-        routine's first stop pass ran before the sale so it can't know. Fresh broker
-        state is fetched and the stops checked and repaired again, with the routine's
-        raise_to_trailing. The new discrepancies join the routine's (and
-        last_discrepancies), so a stop that still can't be placed fails the routine and
-        the scheduler retries: the sale's saved order ID keeps a retry from selling
-        again. A failure recorded as "stop lost" whose stop is now in place is marked so.
+        routine's first stop pass ran before the sale so it can't know. The stops are
+        checked and repaired again on the broker state fetched after the sale settled
+        (fetched here if the sale step could not), with the routine's raise_to_trailing.
+        The second pass's discrepancies supersede the first's open stop items in the
+        routine's list (and last_discrepancies), so a stop that still can't be placed
+        fails the routine and the scheduler retries: the sale's saved order ID keeps a
+        retry from selling again. A sold position with no live stop that the pass left
+        for review (its sale order still open, so a stop can't be added yet) fails the
+        routine too; only a stop with no level below the price is left to the notice. A
+        failure recorded as "stop lost" whose stop is live is marked so.
 
         Returns:
             The broker state for the steps that follow
         """
-        lost = any(failure.stop_lost for failure in self.last_partial_exits)
-        if not self._partial_sale_tried and not lost:
+        if not self._partial_sales:
             return broker_state
         logger.info("A partial sale was tried: checking the protective stops again")
-        broker_state = self.fetch_broker_state(force_refresh=True)
+        if not self._settled_after_sales:  # the sale step's fetch failed: this is pre-sale state
+            broker_state = self._settled_broker_state()
         second_pass = self.check_and_repair_stops(broker_state, raise_to_trailing=raise_to_trailing)
-        discrepancies.extend(second_pass)
-        self.last_discrepancies = tuple(discrepancies)
         placed = {
             d.symbol for d in second_pass if d.type == "MISSING_STOP" and d.action == "AUTO_FIXED"
         }
-        if placed:
-            self.last_partial_exits = tuple(
-                failure._replace(
-                    stop_lost=False, reason=f"{failure.reason}; the routine then re-placed its stop"
-                )
-                if failure.stop_lost and failure.symbol in placed
-                else failure
-                for failure in self.last_partial_exits
+        live = {s for s in self._partial_sales if _live_stops(broker_state, s)}
+        second_pass.extend(self._unresolved_sales(broker_state, second_pass, placed | live))
+        discrepancies[:] = _merge_stop_passes(discrepancies, second_pass)
+        self.last_discrepancies = tuple(discrepancies)
+        self.last_partial_exits = tuple(
+            failure._replace(
+                stop_lost=False,
+                reason=f"{failure.reason}; the routine then "
+                + ("re-placed its stop" if failure.symbol in placed else "found a live stop on it"),
             )
+            if failure.stop_lost and failure.symbol in placed | live
+            else failure
+            for failure in self.last_partial_exits
+        )
         if any(d.action == "AUTO_FIXED" for d in second_pass):
             broker_state = self.fetch_broker_state(force_refresh=True)  # later steps see the stop
         return broker_state
+
+    def _unresolved_sales(
+        self, broker_state: Dict[str, Any], second_pass: List[Discrepancy], protected: set
+    ) -> List[Discrepancy]:
+        """
+        An errored MISSING_STOP for each position sold from this routine that is still held
+        long with no live stop after the second pass and nothing already failing it, so
+        the routine fails and the scheduler retries (by then the sale has filled and the
+        retry's first pass places the stop). Not for a shortfall left for review because
+        no stop level is below the price: a retry can't fix that, and the notice says so.
+        """
+        if any(d.type == "STOP_CHECK_FAILED" for d in second_pass):
+            return []  # fails the routine on its own
+        failing = {d.symbol for d in stop_failures(second_pass)}
+        unplaceable = {
+            d.symbol
+            for d in second_pass
+            if d.type == "MISSING_STOP"
+            and NO_STOP_LEVEL_REASON in str((d.details or {}).get("reason", ""))
+        }
+        unresolved = []
+        for symbol in sorted(self._partial_sales):
+            position = broker_state.get("positions", {}).get(symbol) or {}
+            quantity = int(position.get("quantity", 0))
+            if (
+                symbol in protected | failing | unplaceable
+                or quantity <= 0
+                or "short" in str(position.get("side", "")).lower()
+            ):
+                continue
+            unresolved.append(
+                Discrepancy(
+                    type="MISSING_STOP",
+                    symbol=symbol,
+                    details={
+                        "quantity": quantity,
+                        "current_price": position.get("current_price"),
+                        "reason": "no live stop after the partial sale",
+                        "error": (
+                            "the stop was not re-placed after the partial sale (its sell order "
+                            "may still be open): the routine fails so the scheduler retries"
+                        ),
+                    },
+                    action="NEEDS_HUMAN_REVIEW",
+                    severity="HIGH",
+                )
+            )
+        return unresolved
 
     def _record_partial_sale(self, symbol: str, quantity: int) -> None:
         """Take sold shares off the local state and the trailing state, so the next run's

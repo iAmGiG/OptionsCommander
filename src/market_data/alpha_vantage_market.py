@@ -20,7 +20,6 @@ from src.utils.date_utils import (
     get_datetime_now,
     get_default_timezone,
     get_processed_date_range,
-    localize_df,
     parse_date_string,
 )
 from src.utils.http_timeouts import DEFAULT_TIMEOUT
@@ -154,7 +153,10 @@ class AlphaVantageMarketTool:
             # Sort by date (newest first)
             df = df.sort_index(ascending=False)
 
-            df = localize_df(df, get_default_timezone())
+            # AV keys daily bars by exchange date only, so label that midnight as ET
+            # directly. Treating it as UTC first (localize_df) moved every bar to the
+            # evening before and cached it under the previous day (E7-01).
+            df.index = df.index.tz_localize(get_default_timezone())
 
             # Cache the data for future use
             self.cache.set(symbol, df, source="alpha_vantage")

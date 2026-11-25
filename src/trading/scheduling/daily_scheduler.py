@@ -684,9 +684,11 @@ class DailyScheduler:
         The flags for a cron tick, or None when state/user.db can't be read.
 
         An unreadable state is not "never switched on": it leaves the day's CRITICAL
-        state_db_error notice, and the caller runs nothing (under the shipped enabled:
-        false that is what happened before, in silence; a config file saying enabled:
-        true used to run the routines from its own flags; E1-05). A readable state with no
+        state_db_error notice. What keeps the routines from running then is
+        should_run_task's own strict read, not this method: nothing is due while the flags
+        can't be read (under the shipped enabled: false that is what happened before, in
+        silence; a config file saying enabled: true used to run the routines from its own
+        flags; E1-05). A readable state with no
         flags row but with real run history in the same database means the row is gone:
         the config file's enabled: false has switched the scheduler off, and the day's
         scheduler_flags_missing notice says so until flags are saved again. A database
@@ -711,12 +713,13 @@ class DailyScheduler:
                 kind=SCHEDULER_FLAGS_MISSING,
                 severity=CRITICAL,
                 title="Scheduler switched off: its saved flags are gone",
+                # Under notices.MAX_TEXT (300), so the remedy is not cut off
                 detail=(
-                    "state/user.db holds no saved scheduler flags, but its history shows "
-                    "routines run here before (by the scheduler, or by hand with --mode once), "
-                    "so the flags row is gone: deleted, or the table recreated. The config "
-                    "file's enabled: false applies and no routine runs. In the scheduler CLI, "
-                    "`enable` (or `disable`, to stay off on purpose) saves the flags again."
+                    "state/user.db has run history but no saved scheduler flags: the flags "
+                    "row is gone (deleted, or the table recreated), or routines only ran by "
+                    "hand. The config file's enabled: false applies and no routine runs. In "
+                    "the scheduler CLI, `enable` (or `disable`, to stay off on purpose) saves "
+                    "the flags."
                 ),
                 market_date=today,
                 update_existing=False,

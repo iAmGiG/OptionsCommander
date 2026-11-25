@@ -306,7 +306,9 @@ def test_a_missing_row_where_the_scheduler_has_run_is_a_notice_until_flags_are_s
     assert _routines_run(scheduler) == 0
     assert _notices(scheduler) == [(f"scheduler_flags_missing:{today}", "CRITICAL", 1)]
     [notice] = scheduler.notice_store.all_notices()
-    assert "no saved scheduler flags" in notice.detail and "enable" in notice.detail
+    assert "no saved scheduler flags" in notice.detail
+    # The remedy survives the notice store's MAX_TEXT cut (review r2)
+    assert "`enable` (or `disable`, to stay off on purpose) saves the flags." in notice.detail
 
     scheduler.save_flags(enabled=False)  # the CLI's `disable`: off on purpose, recorded
     scheduler.run_scheduled_tasks()

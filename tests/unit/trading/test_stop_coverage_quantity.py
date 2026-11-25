@@ -47,6 +47,21 @@ def take_profit(quantity, order_id="tp-1"):
     }
 
 
+def market_sell(quantity, order_id="mk-1"):
+    """A market sell on its way: a partial sale's, or the CLI's."""
+    return {
+        "id": order_id,
+        "type": "market",
+        "side": "sell",
+        "quantity": quantity,
+        "limit_price": None,
+        "stop_price": None,
+        "status": "new",
+        "time_in_force": "day",
+        "created_at": NOW.isoformat(),
+    }
+
+
 def check(orders, quantity=14, price=769.2, reconciler=None, raise_to_trailing=True, **position):
     broker = _broker(price=price, quantity=quantity, orders=orders)
     broker["positions"]["SPY"].update(position)
@@ -122,8 +137,41 @@ class TestStopCoverage:
 
         assert check([order]) == ([], [])
 
-    def test_a_stop_at_or_above_the_price_is_left_for_review(self):
-        review, repairs = check([stop(7)], price=600.0)
+    def test_a_stop_of_unknown_size_next_to_a_known_one_is_not_judged(self):
+        # counted as 0, the unknown stop's shares would get a second stop the broker rejects
+        unknown = stop(7, order_id="sl-2")
+        del unknown["quantity"]
+
+        assert check([stop(7), unknown]) == ([], [])
+
+    def test_the_top_up_never_exceeds_the_shortfall(self):
+        _, repairs = check([stop(7)], qty_available=14)
+
+        assert [r.quantity for r in repairs] == [7]
+
+    def test_more_free_shares_than_the_shortfall_are_flagged(self):
+        # 20 held under a 14-share stop; the stop sold 4 (part-filled: Alpaca still lists
+        # it at 14), so 16 are held, 10 under the stop and 6 free. The order's size says 2.
+        review, repairs = check([stop(14)], quantity=16, qty_available=6)
+
+        assert [r.quantity for r in repairs] == [2]
+        assert [(d.type, d.details["quantity"]) for d in review] == [("MISSING_STOP", 4)]
+        assert "partly filled" in review[0].details["reason"]
+
+    def test_shares_an_open_market_sell_is_taking_need_no_stop(self):
+        # right after a partial sale: the sale's market order is still open, the stop is
+        # back on the shares that stay
+        assert check([stop(5), market_sell(5)], quantity=10, qty_available=0) == ([], [])
+
+    def test_a_market_sell_of_part_leaves_the_rest_to_cover(self):
+        review, repairs = check([stop(7), market_sell(3)])
+
+        assert review == []
+        assert [r.quantity for r in repairs] == [4]
+
+    @pytest.mark.parametrize("price", [600.0, 627.0])  # below the stop's level, at it
+    def test_a_stop_at_or_above_the_price_is_left_for_review(self, price):
+        review, repairs = check([stop(7)], price=price)
 
         assert repairs == []
         assert review[0].type == "MISSING_STOP"

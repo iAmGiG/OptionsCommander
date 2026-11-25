@@ -19,7 +19,7 @@ import yaml
 from src.cli.scheduler.config_editor import SchedulerConfigEditor
 from src.cli.scheduler_cli import SchedulerCLI
 from src.trading.scheduling import daily_scheduler, scheduler_state
-from src.trading.scheduling.daily_scheduler import DailyScheduler
+from src.trading.scheduling.daily_scheduler import DailyScheduler, load_scheduler_config
 
 
 def _cycle():
@@ -85,6 +85,7 @@ def test_a_saved_dry_run_takes_effect_in_the_same_session(session, monkeypatch, 
 
     assert yaml.safe_load(session.config_file.read_text())["dry_run"] is True
     assert session.scheduler.dry_run is True  # the session's object, not a discarded copy
+    assert session.scheduler.config == load_scheduler_config(str(session.config_file))
     assert "Scheduler reloaded" in capsys.readouterr().out
 
     _run(session.cli, f"test {routine}")
@@ -194,17 +195,34 @@ def test_enable_and_disable_commands_update_the_scheduler(session):
     assert session.scheduler.config["enabled"] is True
 
 
-@pytest.mark.parametrize("failing_step", ["load the config", "build the tasks"])
+def test_the_reload_does_not_depend_on_reading_the_file_back(session, monkeypatch, capsys):
+    """load_scheduler_config falls back to the defaults (dry run off) on a failed read, so a
+    re-read of a file damaged after the save would reload as a live session."""
+    editor = session.cli.config_editor
+    real_save = editor.save
+
+    def save_then_damage(config):
+        saved = real_save(config)
+        session.config_file.write_text("dry_run: [unclosed\n")
+        return saved
+
+    monkeypatch.setattr(editor, "save", save_then_damage)
+    _answers(monkeypatch, "5", "yes", "0")
+
+    asyncio.run(editor.edit_interactive(session.scheduler))
+
+    assert load_scheduler_config(str(session.config_file))["dry_run"] is False  # the fallback
+    assert session.scheduler.dry_run is True
+    assert "Scheduler reloaded" in capsys.readouterr().out
+
+
 def test_a_failed_reload_leaves_the_scheduler_whole_and_the_save_stands(
-    session, monkeypatch, capsys, failing_step
+    session, monkeypatch, capsys
 ):
-    def boom(*args):
+    def boom():
         raise RuntimeError("no reload")
 
-    if failing_step == "load the config":
-        monkeypatch.setattr("src.cli.scheduler.config_editor.load_scheduler_config", boom)
-    else:
-        monkeypatch.setattr(session.scheduler, "_create_default_tasks", boom)
+    monkeypatch.setattr(session.scheduler, "_create_default_tasks", boom)
     config_before, tasks_before = session.scheduler.config, session.scheduler.tasks
     _answers(monkeypatch, "5", "yes", "4", "5", "0")
 

@@ -289,6 +289,18 @@ class SchedulerStateManager:
             logger.error(f"Failed to read scheduler state: {e}")
             return False
 
+    def _state_to_update(self) -> Optional[SchedulerState]:
+        """
+        The saved row for a setter to change (the defaults when none is saved), or None,
+        logged, when it can't be read: a setter must not put the defaults plus its one
+        change over a row it couldn't see, even if the save's own read then works (E1-05).
+        """
+        try:
+            return self.read_state() or SchedulerState()
+        except Exception as e:
+            logger.error(f"Scheduler state not changed: it can't be read: {e}")
+            return None
+
     def set_enabled(self, enabled: bool) -> bool:
         """
         Enable or disable the scheduler.
@@ -297,9 +309,11 @@ class SchedulerStateManager:
             enabled: True to enable, False to disable
 
         Returns:
-            True if successful
+            True if successful (False, with nothing written, when the saved row can't be read)
         """
-        state = self.get_state()
+        state = self._state_to_update()
+        if state is None:
+            return False
         state.enabled = enabled
         return self.save_state(state)
 
@@ -315,9 +329,11 @@ class SchedulerStateManager:
             enabled: True to enable, False to disable
 
         Returns:
-            True if successful
+            True if successful (False, with nothing written, when the saved row can't be read)
         """
-        state = self.get_state()
+        state = self._state_to_update()
+        if state is None:
+            return False
         state.morning_enabled = enabled
         return self.save_state(state)
 
@@ -329,9 +345,11 @@ class SchedulerStateManager:
             enabled: True to enable, False to disable
 
         Returns:
-            True if successful
+            True if successful (False, with nothing written, when the saved row can't be read)
         """
-        state = self.get_state()
+        state = self._state_to_update()
+        if state is None:
+            return False
         state.evening_enabled = enabled
         return self.save_state(state)
 
@@ -346,9 +364,11 @@ class SchedulerStateManager:
             evening_time: New evening time (HH:MM:SS format)
 
         Returns:
-            True if successful
+            True if successful (False, with nothing written, when the saved row can't be read)
         """
-        state = self.get_state()
+        state = self._state_to_update()
+        if state is None:
+            return False
         if morning_time:
             state.morning_time = morning_time
         if evening_time:
@@ -601,9 +621,12 @@ class SchedulerStateManager:
 
     def has_run_history(self) -> bool:
         """
-        Whether the scheduler has ever run a routine here: any scheduler_history row that is
-        not a dry run (#601). Only the scheduler's own runs are recorded, and it runs only
-        while switched on, so history without a saved state row means the row is gone.
+        Whether a routine has ever run here through the scheduler: any scheduler_history
+        row that is not a dry run (#601). The cron tick writes one only while switched on,
+        but a manual `--mode once` / `--mode test` run (run_once) writes one whatever the
+        flags; the CLI's `test morning|evening` does not. So history without a saved state
+        row means the row is gone, or that the only runs were by hand before any flags
+        were saved (the notice's `disable` remedy settles that case too).
 
         Raises on a database error, like executions_on.
         """

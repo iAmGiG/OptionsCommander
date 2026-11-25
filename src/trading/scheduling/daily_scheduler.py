@@ -119,9 +119,10 @@ OUTCOME_GRACE = timedelta(minutes=5)
 STUCK_AFTER = timedelta(minutes=30)
 HEARTBEAT_EVERY_SECONDS = 300  # the daemon pings its heartbeat at most this often
 
-# Notice kind: state/user.db is readable but holds no scheduler flags, though the scheduler
-# has run here before, so the row is gone and the config file's enabled: false has switched
-# it off (E1-05; the 2026-10-13 incident class, a replaced state directory)
+# Notice kind: state/user.db is readable and holds run history but no scheduler flags, so the
+# row is gone (deleted, or the table recreated) and the config file's enabled: false has
+# switched the scheduler off (E1-05). An empty or replaced state directory is NOT this case:
+# its fresh user.db has no history either, so it looks like a fresh install and stays quiet.
 SCHEDULER_FLAGS_MISSING = "scheduler_flags_missing"
 
 
@@ -683,11 +684,15 @@ class DailyScheduler:
         The flags for a cron tick, or None when state/user.db can't be read.
 
         An unreadable state is not "never switched on": it leaves the day's CRITICAL
-        state_db_error notice, and the caller runs nothing (as before, but no longer in
-        silence; E1-05). A readable state with no flags row where the scheduler has run
-        real routines before means the row is gone: the config file's enabled: false has
-        switched the scheduler off, and the day's scheduler_flags_missing notice says so
-        until flags are saved again. Both notices are one per day, however many ticks.
+        state_db_error notice, and the caller runs nothing (under the shipped enabled:
+        false that is what happened before, in silence; a config file saying enabled:
+        true used to run the routines from its own flags; E1-05). A readable state with no
+        flags row but with real run history in the same database means the row is gone:
+        the config file's enabled: false has switched the scheduler off, and the day's
+        scheduler_flags_missing notice says so until flags are saved again. A database
+        with neither (a fresh install, or an empty or replaced state directory) can't be
+        told from never switched on and stays quiet. Both notices are one per day, however
+        many ticks; every open one of a kind resolves once its cause is gone.
         """
         today = now.date().isoformat()
         try:
@@ -707,17 +712,18 @@ class DailyScheduler:
                 severity=CRITICAL,
                 title="Scheduler switched off: its saved flags are gone",
                 detail=(
-                    "state/user.db holds no saved scheduler flags, but the scheduler has run "
-                    "routines here before, so the row is missing (a replaced state "
-                    "directory?). The config file's enabled: false applies and no routine "
-                    "runs. In the scheduler CLI, `enable` (or `disable`, to stay off on "
-                    "purpose) saves the flags again."
+                    "state/user.db holds no saved scheduler flags, but its history shows "
+                    "routines run here before (by the scheduler, or by hand with --mode once), "
+                    "so the flags row is gone: deleted, or the table recreated. The config "
+                    "file's enabled: false applies and no routine runs. In the scheduler CLI, "
+                    "`enable` (or `disable`, to stay off on purpose) saves the flags again."
                 ),
                 market_date=today,
                 update_existing=False,
             )
         else:
-            self.notice_store.resolve(f"{SCHEDULER_FLAGS_MISSING}:{today}")
+            # Flags present (or no history): every open notice of the kind, from any day
+            self.notice_store.resolve_cleared(SCHEDULER_FLAGS_MISSING)
         return settings
 
     def save_flags(self, **flags: Optional[bool]) -> bool:
@@ -1128,7 +1134,9 @@ class DailyScheduler:
                 if settings.get(task.name.replace("_routine", ""), True):
                     for day in days:
                         self._check_day(task, day, runs, enabled_at.get(task.name), now)
-        self.notice_store.resolve(f"{STATE_DB_ERROR}:{today}")  # everything read fine
+        # Everything read fine: every open state_db_error, today's or an earlier day's left
+        # open when the fix came after midnight
+        self.notice_store.resolve_cleared(STATE_DB_ERROR)
 
     def _check_day(
         self,

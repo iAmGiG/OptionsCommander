@@ -2,9 +2,9 @@
 
 ``paired_return_test`` and ``newey_west_diff`` supply the t-statistics and p-values that
 ``multiple_testing_audit.py`` corrects across the overlay, exit-rule, morning-raise and
-partial-exit studies. The answers here come from arithmetic done by hand, from a numpy
-Bartlett-kernel sandwich written below, and from the plain Welch form at zero lags; none of
-them call statsmodels.
+partial-exit studies. Both helpers fit with statsmodels; the expected values here do not.
+They come from arithmetic done by hand, from a numpy Bartlett-kernel sandwich written below,
+from the plain Welch form at zero lags, and from lag counts written out by hand.
 """
 
 import numpy as np
@@ -24,10 +24,6 @@ def _returns(seed, n=300, mean=0.0005, sd=0.01, rho=0.0):
     for i in range(1, n):
         r[i] = rho * r[i - 1] + shocks[i]
     return pd.Series(r + mean, index=pd.bdate_range("2015-01-01", periods=n))
-
-
-def _lag_rule(n):
-    return int(np.floor(4 * (n / 100) ** (2 / 9)))
 
 
 def _bartlett_hac(design, y, max_lags):
@@ -78,12 +74,12 @@ def test_paired_test_matches_an_independent_sandwich_on_autocorrelated_differenc
     baseline = _returns(1, rho=0.3)
     overlay = baseline + _returns(2, mean=0.0002, sd=0.004, rho=0.5)
     diff = (overlay - baseline).to_numpy()
-    lags = _lag_rule(len(diff))
+    lags = 5  # floor(4 * 3 ** (2/9)) = floor(5.11)
 
     out = paired_return_test(baseline, overlay)
 
     beta, t = _bartlett_hac(np.ones((len(diff), 1)), diff, lags)
-    assert out["maxlags"] == lags == 5
+    assert out["maxlags"] == lags
     assert out["mean_daily_diff"] == pytest.approx(beta[0], abs=1e-7)
     assert out["mean_daily_diff"] == pytest.approx(diff.mean(), abs=1e-7)
     assert out["t_statistic"] == pytest.approx(t[0], abs=1e-3)
@@ -119,7 +115,7 @@ def test_paired_test_uses_the_floor_4_n_over_100_to_the_2_9_lag_rule(n, lags):
 
     out = paired_return_test(baseline, overlay)
 
-    assert out["maxlags"] == lags == _lag_rule(n)
+    assert out["maxlags"] == lags
     assert out["n_days"] == n
 
 
@@ -138,6 +134,26 @@ def test_paired_test_gives_none_when_the_series_are_identical():
 
     assert paired_return_test(r, r) is None
     assert paired_return_test(r.to_numpy(), r.to_numpy()) is None
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="research_cli.py compares diff.std() to exact 0.0; a constant offset leaves a "
+    "rounding-level std, so t is about 2e16 and p = 0 instead of None",
+)
+def test_paired_test_gives_none_for_a_constant_nonzero_difference():
+    r = _returns(11)
+
+    assert paired_return_test(r, r + 0.001) is None
+
+
+def test_paired_test_still_answers_for_a_tiny_but_real_difference():
+    """The boundary for a fix of the guard above: a 1 bp-a-day noise is not zero variance."""
+    r = _returns(11)
+
+    out = paired_return_test(r, r + _returns(25, mean=0.0, sd=1e-4))
+
+    assert out is not None and np.isfinite(out["t_statistic"])
 
 
 def test_paired_test_drops_nan_and_inf_days_and_counts_the_rest():
@@ -201,13 +217,13 @@ def test_regime_difference_matches_an_independent_sandwich_at_the_default_lags()
     rng = np.random.default_rng(20)
     is_a = rng.random(400) < 0.4
     y = y + 0.002 * is_a  # regime A earns 20 bps a day more
-    lags = _lag_rule(400)
+    lags = 5  # floor(4 * 4 ** (2/9)) = floor(5.44)
 
     out = newey_west_diff(y, is_a)
 
     design = np.column_stack([np.ones(400), is_a.astype(float)])
     beta, t = _bartlett_hac(design, y, lags)
-    assert out["maxlags"] == lags == 5
+    assert out["maxlags"] == lags
     assert out["diff_mean"] == pytest.approx(beta[1], abs=1e-6)
     assert out["diff_mean"] == pytest.approx(y[is_a].mean() - y[~is_a].mean(), abs=1e-6)
     assert out["t_statistic"] == pytest.approx(t[1], abs=1e-3)
@@ -223,7 +239,7 @@ def test_regime_difference_honours_an_explicit_max_lags():
         out = newey_west_diff(y, is_a, max_lags=lags)
         assert out["maxlags"] == lags
         assert out["t_statistic"] == pytest.approx(_bartlett_hac(design, y, lags)[1][1], abs=1e-3)
-    assert newey_west_diff(y, is_a)["maxlags"] == _lag_rule(200) == 4
+    assert newey_west_diff(y, is_a)["maxlags"] == 4  # floor(4 * 2 ** (2/9)) = floor(4.67)
 
 
 def test_regime_difference_flips_sign_when_the_regimes_swap():
@@ -262,3 +278,17 @@ def test_regime_difference_accepts_lists_and_pandas_input():
     assert from_lists["diff_mean"] == pytest.approx(
         r[flags].mean() - r[[not f for f in flags]].mean(), abs=1e-6
     )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="newey_west_diff does not drop NaN or inf: one NaN return makes t and p NaN, "
+    "which would reach multiple_testing_audit.py silently",
+)
+def test_regime_difference_with_a_nan_return_gives_none_or_a_finite_answer():
+    y = _returns(26, n=60).to_numpy()
+    y[5] = np.nan
+
+    out = newey_west_diff(y, np.arange(60) % 2 == 0)
+
+    assert out is None or np.isfinite(out["t_statistic"])

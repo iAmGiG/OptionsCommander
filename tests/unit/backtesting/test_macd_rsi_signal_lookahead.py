@@ -1,8 +1,13 @@
 """Causality of MACDRSISignal: the signal for day i uses prices through day i-1 only (#531).
 
-The guard is the ``.shift(1)`` in ``MACDRSISignal._compute_signals``. Each test here fails
-when that shift is removed: the BUY/EXIT choice for row ``idx`` must follow the consensus
-of row ``idx-1`` and must not move when the price of row ``idx`` (or any later row) moves.
+The guard is the ``.shift(1)`` in ``MACDRSISignal._compute_signals``. The first two sections
+pin it: the BUY/EXIT choice for row ``idx`` follows the consensus of row ``idx-1`` and does
+not move when the price of row ``idx`` or any later row moves. With the shift removed, every
+test in those two sections fails (mutation-checked on a scratch copy).
+
+The last section guards two neighbouring properties that hold with or without the shift, so
+the shift mutation leaves them green: the signal does not depend on rows after ``idx``, and
+it does depend on row ``idx-1`` (it is not lagged by two days or more).
 """
 
 import numpy as np
@@ -24,6 +29,15 @@ def _prices(n=300, seed=42):
 
 def _action(prices, idx):
     return MACDRSISignal().generate_signal(prices, idx)["action"]
+
+
+def _real_consensus(signal, series):
+    """The unshifted consensus of the real indicators, with the signal's own parameters."""
+    macd = signal_module.calculate_macd(series, signal.fast, signal.slow, signal.signal_period)
+    rsi = signal_module.calculate_rsi(
+        series, signal.rsi_period, signal.rsi_oversold, signal.rsi_overbought
+    )
+    return signal_module.calculate_voting_consensus(macd, rsi)["consensus"]
 
 
 def _install_consensus(monkeypatch, prices, true_rows):
@@ -107,33 +121,49 @@ def test_signal_at_idx_ignores_the_price_of_idx_and_after():
         assert _action(crashed, idx) == base[idx], idx
 
 
+def test_every_action_follows_the_real_consensus_of_the_day_before():
+    prices = _prices()
+    signal = MACDRSISignal()
+    consensus = _real_consensus(signal, prices["SPY"])
+    rows = range(WARMUP, len(prices))
+
+    actions = [signal.generate_signal(prices, idx)["action"] for idx in rows]
+
+    assert actions == ["BUY" if consensus.iloc[idx - 1] else "EXIT" for idx in rows]
+    # the same-day consensus gives a different answer on some rows, so the shift is observed
+    assert actions != ["BUY" if consensus.iloc[idx] else "EXIT" for idx in rows]
+
+
+# =============================================================================
+# Neighbouring properties (they hold with or without the shift)
+# =============================================================================
+
+
 def test_signal_at_idx_is_the_same_on_the_series_truncated_at_idx():
+    """No dependence on rows after idx: this catches a centred window, a backfill or a
+    full-sample normalisation, not a missing shift (consensus[idx] is causal too)."""
     prices = _prices()
     for idx in _rows():
         assert _action(prices.iloc[: idx + 1], idx) == _action(prices, idx), idx
 
 
-def test_a_crash_the_day_before_turns_a_buy_into_an_exit():
+def test_the_price_the_day_before_moves_the_signal():
+    """A crash on day idx-1 changes that day's consensus, and the action at idx follows it.
+
+    A signal lagged by two days or more would ignore the crash, so no BUY would turn into an
+    EXIT.
+    """
     prices = _prices()
+    signal = MACDRSISignal()
     buy_rows = [idx for idx in _rows() if _action(prices, idx) == "BUY"]
     assert buy_rows
 
-    for idx in buy_rows[:3]:
+    exits = 0
+    for idx in buy_rows:
         crashed = prices.copy()
-        crashed.iloc[idx - 1, 0] = crashed.iloc[idx - 1, 0] * 0.5  # RSI collapses, MACD turns
-        assert _action(crashed, idx) == "EXIT", idx
-
-
-def test_the_cached_signals_are_the_shifted_consensus():
-    prices = _prices()
-    signal = MACDRSISignal()
-    signal.generate_signal(prices, 100)
-
-    series = prices["SPY"]
-    macd = signal_module.calculate_macd(series, 13, 34, 8)
-    rsi = signal_module.calculate_rsi(series, 14, 30, 70)
-    consensus = signal_module.calculate_voting_consensus(macd, rsi)["consensus"]
-
-    cached = signal._signals_cache
-    assert not bool(cached.iloc[0])  # the NaN left by the shift is filled with False
-    assert cached.iloc[1:].to_numpy().tolist() == consensus.iloc[:-1].to_numpy().tolist()
+        crashed.iloc[idx - 1, 0] = crashed.iloc[idx - 1, 0] * 0.5
+        day_before = bool(_real_consensus(signal, crashed["SPY"]).iloc[idx - 1])
+        action = _action(crashed, idx)
+        assert action == ("BUY" if day_before else "EXIT"), idx
+        exits += action == "EXIT"
+    assert exits > 0

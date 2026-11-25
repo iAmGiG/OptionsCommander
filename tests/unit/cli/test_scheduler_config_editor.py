@@ -181,6 +181,7 @@ def test_the_enabled_flag_is_saved_to_state_and_the_scheduler(session, monkeypat
 
     assert session.scheduler.effective_settings()["enabled"] is False
     assert yaml.safe_load(session.config_file.read_text())["enabled"] is False
+    assert session.scheduler.config["enabled"] is False  # the in-memory object too
 
 
 def test_enable_and_disable_commands_update_the_scheduler(session):
@@ -193,20 +194,33 @@ def test_enable_and_disable_commands_update_the_scheduler(session):
     assert session.scheduler.config["enabled"] is True
 
 
-def test_a_failed_reload_is_reported_and_the_save_stands(session, monkeypatch, capsys):
-    def boom():
-        raise RuntimeError("no tasks")
+@pytest.mark.parametrize("failing_step", ["load the config", "build the tasks"])
+def test_a_failed_reload_leaves_the_scheduler_whole_and_the_save_stands(
+    session, monkeypatch, capsys, failing_step
+):
+    def boom(*args):
+        raise RuntimeError("no reload")
 
-    monkeypatch.setattr(session.scheduler, "_create_default_tasks", boom)
-    _answers(monkeypatch, "5", "yes", "0")
+    if failing_step == "load the config":
+        monkeypatch.setattr("src.cli.scheduler.config_editor.load_scheduler_config", boom)
+    else:
+        monkeypatch.setattr(session.scheduler, "_create_default_tasks", boom)
+    config_before, tasks_before = session.scheduler.config, session.scheduler.tasks
+    _answers(monkeypatch, "5", "yes", "4", "5", "0")
 
     config = asyncio.run(session.cli.config_editor.edit_interactive(session.scheduler))
 
     assert config["dry_run"] is True
     assert yaml.safe_load(session.config_file.read_text())["dry_run"] is True
+    # neither half of the reload took: no new dry_run beside the old tasks' retry counts
+    assert session.scheduler.config is config_before
+    assert session.scheduler.tasks is tasks_before
+    assert session.scheduler.dry_run is False
+    assert _task(session.scheduler, "morning_routine").retry_count != 5
     out = capsys.readouterr().out
     assert "Configuration saved!" in out
-    assert "Could not reload: no tasks" in out
+    assert "Could not reload: no reload" in out
+    assert "keeps its previous settings" in out
     assert "Scheduler reloaded" not in out
 
 

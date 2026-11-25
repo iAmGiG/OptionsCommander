@@ -186,15 +186,23 @@ class SchedulerConfigEditor:
 
                     if scheduler:
                         print(f"{get_emoji('refresh', '🔄')} Reloading scheduler...")
+                        # In place: the CLI, its monitor and wizard keep this object, so a
+                        # new DailyScheduler here would be discarded and 'test morning'
+                        # would run with the old dry_run (E6-01). Config and tasks change
+                        # together or not at all.
+                        previous_config = scheduler.config
                         try:
-                            # In place: the CLI, its monitor and wizard keep this object,
-                            # so a new DailyScheduler here would be discarded and 'test
-                            # morning' would run with the old dry_run (E6-01)
                             scheduler.config = load_scheduler_config(self.config_file)
                             scheduler.tasks = scheduler._create_default_tasks()
-                            print(f"{get_emoji('check_green', '✅')} Scheduler reloaded")
                         except Exception as e:
-                            print(f"{get_emoji('warning', '⚠️')} Could not reload: {e}")
+                            scheduler.config = previous_config  # the tasks were not replaced
+                            print(
+                                f"{get_emoji('warning', '⚠️')} Could not reload: {e}. This "
+                                "session keeps its previous settings; restart the CLI to "
+                                "use the saved ones."
+                            )
+                        else:
+                            print(f"{get_emoji('check_green', '✅')} Scheduler reloaded")
                 else:
                     print(f"{get_emoji('cross_red', '❌')} Failed to save configuration")
 

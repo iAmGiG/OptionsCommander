@@ -29,6 +29,18 @@ MIN_STOP_GAP = 0.01
 # raising one waits for a later run
 NOT_REPLACEABLE = ("accepted", "pending_new", "pending_replace", "pending_cancel")
 
+# Why a missing or short stop is left for review rather than placed: the start of the
+# discrepancy's reason. The routines read it: a retry can't fix this one.
+NO_STOP_LEVEL_REASON = "no stop level below the current price"
+
+
+def _is_market_sell(order: Dict[str, Any]) -> bool:
+    """A market sell order: a sale on its way (a partial sale's, or the CLI's)."""
+    return (
+        "sell" in str(order.get("side", "")).lower()
+        and "market" in str(order.get("type", "")).lower()
+    )
+
 
 def _protective_stops(orders: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """A position's live sell stops (stop or stop-limit; trailing stops trail themselves)."""
@@ -473,6 +485,11 @@ class StateReconciler:
         routine's later adjustment step couldn't raise it. The morning routine turns this
         off, as it doesn't raise stops (#623), so a repair there keeps the stop's level.
 
+        A stop must cover every share (E1-07): when the live stops' quantities add up to
+        less than the position (an add-on bought from the CLI, a stop re-placed for a
+        smaller count), a top-up stop is placed on the uncovered shares that no other sell
+        order holds, at the highest live stop's level. Take-profit legs are not coverage.
+
         Reported for a human instead of repaired:
         - no usable stop level below the current price (that stop would trigger at once);
         - shares held by other open sell orders (a new stop would be rejected);
@@ -523,6 +540,11 @@ class StateReconciler:
                         renewal.stop_price = trailing
                 repairs.extend(renewals)
                 needs_review.extend(reviews)
+                reviews, top_ups = self._stop_coverage(
+                    symbol, broker_pos, sells, stops, positions, raise_to_trailing
+                )
+                repairs.extend(top_ups)
+                needs_review.extend(reviews)
                 continue
 
             stop_price = self._last_known_stop(symbol, positions, broker_pos)
@@ -532,7 +554,7 @@ class StateReconciler:
                 "current_price": current_price,
             }
             if stop_price is None or stop_price >= current_price:
-                details["reason"] = "no stop level below the current price to place"
+                details["reason"] = f"{NO_STOP_LEVEL_REASON} to place"
             elif sells:
                 details["reason"] = "shares are held by open sell orders, so a stop can't be added"
             else:
@@ -606,6 +628,127 @@ class StateReconciler:
                 )
             )
         return renewals, reviews
+
+    def _stop_coverage(
+        self,
+        symbol: str,
+        broker_pos: Dict[str, Any],
+        sells: List[Dict[str, Any]],
+        stops: List[Dict[str, Any]],
+        positions: Dict[str, Any],
+        raise_to_trailing: bool,
+    ) -> tuple[List[Discrepancy], List[StopRepair]]:
+        """
+        What to do about the shares a position's live stops leave uncovered (E1-07).
+
+        The stops' quantities are summed against the position, less the shares an open
+        market sell is taking: a sale on its way (a partial sale's order, still open when
+        the routine looks again) needs no stop. Take-profit legs don't count; a position
+        with a stop of unknown size isn't judged. Uncovered shares that no open sell
+        order holds get a top-up stop at the highest live stop's level, raised to the
+        trailing level with raise_to_trailing. The free count is Alpaca's qty_available
+        when the broker state has it (a bracket's legs share their shares), else the
+        uncovered shares less the other sell orders. Shares other sell orders hold go to
+        review (a stop on them would be rejected), as does the whole shortfall when the
+        stop's level is not below the current price. More free shares than the stops'
+        sizes account for (a partly filled stop still lists its full size) are reviewed
+        too: the broker state has no fill counts to size a top-up from.
+
+        Returns:
+            Tuple of (discrepancies needing human review, top-up stop repairs)
+        """
+        quantity = int(broker_pos.get("quantity", 0))
+        if any(order.get("quantity") is None for order in stops):
+            return [], []  # counted as 0, that stop's shares would get a second stop
+        leaving = sum(int(o.get("quantity") or 0) for o in sells if _is_market_sell(o))
+        covered = sum(int(order["quantity"]) for order in stops)
+        if covered >= quantity - leaving:
+            return [], []
+        uncovered = quantity - leaving - covered
+        level = max(float(order["stop_price"]) for order in stops)
+        current_price = float(broker_pos.get("current_price") or 0)
+        free, available = self._free_shares(broker_pos, sells, uncovered)
+        shortfall = f"the live stop covers {covered} of {quantity} shares"
+        if leaving:
+            shortfall += f" ({leaving} being sold at market)"
+        details = {
+            "quantity": uncovered,
+            "covered": covered,
+            "stop_price": level,
+            "current_price": current_price,
+        }
+
+        def review(held: int, reason: str) -> Discrepancy:
+            return Discrepancy(
+                type="MISSING_STOP",
+                symbol=symbol,
+                details={**details, "quantity": held, "reason": reason},
+                action="NEEDS_HUMAN_REVIEW",
+                severity="HIGH",
+            )
+
+        if level >= current_price:
+            reason = f"{shortfall}, and there is {NO_STOP_LEVEL_REASON} to place"
+            return [review(uncovered, reason)], []
+
+        reviews, repairs = [], []
+        if available is not None and available > uncovered:
+            extra = available - uncovered
+            reason = (
+                f"{shortfall}, but the broker counts {available} shares free, {extra} more than "
+                "that leaves uncovered: a partly filled stop? check the stops' sizes"
+            )
+            reviews.append(review(extra, reason))
+        if free > 0:
+            added = f"the other {free}" if free == uncovered else f"{free} of the other {uncovered}"
+            reason = f"{shortfall}; a stop is added on {added}"
+            stop_price = level
+            trailing = (
+                self._trailing_level(symbol, positions, level, quantity, current_price)
+                if raise_to_trailing
+                else None
+            )
+            if trailing is not None:
+                reason += f"; placed at the trailing level (live stop ${level:.2f})"
+                stop_price = trailing
+            repairs.append(
+                StopRepair(
+                    kind="MISSING_STOP",
+                    symbol=symbol,
+                    quantity=free,
+                    stop_price=stop_price,
+                    reason=reason,
+                )
+            )
+        if free < uncovered:
+            held = uncovered - free
+            reason = (
+                f"{shortfall}, and {held} of the rest are held by open sell orders, so a stop "
+                "can't be added for them"
+            )
+            reviews.append(review(held, reason))
+        return reviews, repairs
+
+    @staticmethod
+    def _free_shares(
+        broker_pos: Dict[str, Any], sells: List[Dict[str, Any]], uncovered: int
+    ) -> tuple[int, Optional[int]]:
+        """
+        How many of a position's uncovered shares a top-up stop can take, and Alpaca's
+        free count when the broker state has one (else None). That count is preferred: a
+        bracket's legs share their shares. Without it, the other sell orders (not stops,
+        not market sells on their way) are taken off the shortfall.
+        """
+        available = broker_pos.get("qty_available")
+        if available is not None:
+            available = int(available)
+            return max(0, min(available, uncovered)), available
+        others = sum(
+            int(o.get("quantity") or 0)
+            for o in sells
+            if not o.get("stop_price") and not _is_market_sell(o)
+        )
+        return max(0, uncovered - others), None
 
     def _aging_targets(
         self, symbol: str, sells: List[Dict[str, Any]], now: datetime

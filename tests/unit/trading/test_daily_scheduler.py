@@ -3,6 +3,7 @@
 import fcntl
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
@@ -113,6 +114,19 @@ def test_saved_flags_override_the_config_file(make_scheduler):
     disabled_in_file = make_scheduler(enabled=False)
     disabled_in_file.save_flags(enabled=True)
     assert disabled_in_file.should_run_task(morning, now=_et(2026, 10, 15, 9, 20))
+
+
+def test_nothing_is_due_while_the_saved_flags_cannot_be_read(make_scheduler, caplog):
+    """E1-05: an unreadable state/user.db is not "never saved"; the config's flags don't apply."""
+    scheduler = make_scheduler(enabled=True)
+    morning = _task(scheduler, "morning_routine")
+    assert scheduler.should_run_task(morning, now=_et(2026, 10, 15, 9, 20))
+
+    Path(scheduler.state_manager._db_path).write_bytes(b"not a database\n" * 8)
+
+    with caplog.at_level(logging.ERROR):
+        assert not scheduler.should_run_task(morning, now=_et(2026, 10, 15, 9, 20))
+    assert "flags can't be read" in caplog.text
 
 
 def test_toggling_one_routine_keeps_the_config_files_other_flags(make_scheduler):

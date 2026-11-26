@@ -25,7 +25,7 @@ from src.trading.scheduling.notices import NoticeStore
 from src.trading.scheduling.scheduler_state import SchedulerExecution, SchedulerStateManager
 from src.trading.scheduling.trading_cycle import CostEfficientTradeCycle, RoutineError
 from src.trading.state.state_reconciler import Discrepancy, PositionAlertSummary
-from src.utils.state_paths import get_state_dir
+from src.utils.state_paths import STATE_DIR_ENV, get_state_dir
 
 ET = ZoneInfo("America/New_York")
 REPO = Path(__file__).resolve().parents[3]
@@ -935,13 +935,41 @@ def test_an_unreadable_history_is_a_notice_and_the_check_does_not_raise(
 def test_a_state_manager_that_fails_everywhere_is_the_same_notice(make_scheduler):
     scheduler = make_scheduler()
     broken = Mock(spec=SchedulerStateManager)
-    for name in ("has_saved_state", "get_state", "executions_on"):
+    for name in ("has_saved_state", "get_state", "read_state", "has_run_history", "executions_on"):
         getattr(broken, name).side_effect = sqlite3.OperationalError("database is locked")
     scheduler.state_manager = broken
 
     scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 31))
 
     assert _keys(scheduler) == ["state_db_error:2026-10-15"]
+
+
+def test_unreadable_flags_are_the_notice_even_though_the_config_says_disabled(
+    make_scheduler, monkeypatch, tmp_path
+):
+    """E1-05: the real manager used to answer "never saved", and the config's false hid it."""
+    scheduler = make_scheduler(enabled=False)
+    scheduler.save_flags(enabled=True)
+
+    def locked():
+        raise sqlite3.OperationalError("database is locked")
+
+    # The fault is scoped to a context: monkeypatch.undo() would also undo the autouse
+    # fixtures, the temporary state dir first of all
+    with monkeypatch.context() as broken:
+        broken.setattr(scheduler.state_manager, "_get_connection", locked)
+        scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 31))
+        scheduler.check_routine_outcomes(now=_et(2026, 10, 15, 9, 36))
+        scheduler.check_routine_outcomes(now=_et(2026, 10, 16, 9, 31))  # the next day
+
+    assert os.environ.get(STATE_DIR_ENV, "").startswith(str(tmp_path))
+    notices = {n.key: n for n in scheduler.notice_store.all_notices()}
+    assert sorted(notices) == ["state_db_error:2026-10-15", "state_db_error:2026-10-16"]
+    assert [(n.severity, n.count) for n in notices.values()] == [("CRITICAL", 1)] * 2
+    assert all("database is locked" in n.detail for n in notices.values())
+
+    scheduler.check_routine_outcomes(now=_et(2026, 10, 16, 9, 36))  # readable: the saved True
+    assert [n.resolved_at is not None for n in scheduler.notice_store.all_notices()] == [True, True]
 
 
 def test_a_bug_in_the_outcome_check_does_not_stop_the_tick(make_scheduler, monkeypatch, caplog):

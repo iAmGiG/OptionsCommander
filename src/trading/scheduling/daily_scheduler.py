@@ -47,7 +47,12 @@ from .notices import (
     routine_key,
 )
 from .notifier import ping_heartbeat, send_notice_digest
-from .scheduler_state import SchedulerExecution, SchedulerStateManager, get_scheduler_state_manager
+from .scheduler_state import (
+    SchedulerExecution,
+    SchedulerState,
+    SchedulerStateManager,
+    get_scheduler_state_manager,
+)
 from .trading_cycle import CostEfficientTradeCycle, RoutineType
 from .watchdog import RunDueTimeoutError
 from src.trading.positions.position_tracker import AlertType
@@ -114,6 +119,12 @@ OUTCOME_GRACE = timedelta(minutes=5)
 STUCK_AFTER = timedelta(minutes=30)
 HEARTBEAT_EVERY_SECONDS = 300  # the daemon pings its heartbeat at most this often
 
+# Notice kind: state/user.db is readable and holds run history but no scheduler flags, so the
+# row is gone (deleted, or the table recreated) and the config file's enabled: false has
+# switched the scheduler off (E1-05). An empty or replaced state directory is NOT this case:
+# its fresh user.db has no history either, so it looks like a fresh install and stays quiet.
+SCHEDULER_FLAGS_MISSING = "scheduler_flags_missing"
+
 
 def load_scheduler_config(config_file: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -148,7 +159,9 @@ def load_scheduler_config(config_file: Optional[str] = None) -> Dict[str, Any]:
     return config
 
 
-def effective_flags(config: Dict[str, Any], state_manager: SchedulerStateManager) -> Dict[str, Any]:
+def effective_flags(
+    config: Dict[str, Any], state_manager: SchedulerStateManager, strict: bool = False
+) -> Dict[str, Any]:
     """
     Whether the scheduler and each routine are enabled.
 
@@ -156,11 +169,28 @@ def effective_flags(config: Dict[str, Any], state_manager: SchedulerStateManager
     win. Until any are saved, the config file's flags apply. Routine times always come
     from the config file.
 
+    Args:
+        strict: raise when the saved flags can't be read (the cron tick, which must not
+            take an unreadable state/user.db for flags that were never saved; E1-05).
+            Otherwise, for the CLI and the monitor, a read error logs and the config
+            file's flags apply.
+
     Returns:
         {"enabled", "morning", "evening": bool, "source": "saved state" | "config"}
     """
-    if state_manager.has_saved_state():
-        state = state_manager.get_state()
+    try:
+        state = state_manager.read_state()
+    except Exception as e:
+        if strict:
+            raise
+        logger.error("Scheduler flags can't be read; showing the config file's: %s", e)
+        state = None
+    return _flags_from(config, state)
+
+
+def _flags_from(config: Dict[str, Any], state: Optional[SchedulerState]) -> Dict[str, Any]:
+    """The flags in force given the saved state row, or the config file's without one."""
+    if state is not None:
         return {
             "enabled": state.enabled,
             "morning": state.morning_enabled,
@@ -186,10 +216,16 @@ def save_flags(
     Save enable flags to state/user.db; flags not given keep their effective value.
 
     Returns:
-        True if saved
+        True if saved. False, with nothing written, when the saved flags can't be read: a
+        save must not put the config file's defaults over flags it couldn't see (E1-05).
     """
-    current = effective_flags(config, state_manager)
-    state = state_manager.get_state()
+    try:
+        saved = state_manager.read_state()
+    except Exception as e:
+        logger.error("Scheduler flags not saved: the saved state can't be read: %s", e)
+        return False
+    current = _flags_from(config, saved)
+    state = saved or SchedulerState()
     state.enabled = current["enabled"] if enabled is None else enabled
     state.morning_enabled = current["morning"] if morning is None else morning
     state.evening_enabled = current["evening"] if evening is None else evening
@@ -639,9 +675,59 @@ class DailyScheduler:
         """Current time in the market timezone (ET by default), whatever the host's."""
         return datetime.now(ZoneInfo(self.config["market_timezone"]))
 
-    def effective_settings(self) -> Dict[str, Any]:
-        """Enable flags in force (see effective_flags())."""
-        return effective_flags(self.config, self.state_manager)
+    def effective_settings(self, strict: bool = False) -> Dict[str, Any]:
+        """Enable flags in force (see effective_flags(); strict raises on a read error)."""
+        return effective_flags(self.config, self.state_manager, strict=strict)
+
+    def _tick_settings(self, now: datetime) -> Optional[Dict[str, Any]]:
+        """
+        The flags for a cron tick, or None when state/user.db can't be read.
+
+        An unreadable state is not "never switched on": it leaves the day's CRITICAL
+        state_db_error notice. What keeps the routines from running then is
+        should_run_task's own strict read, not this method: nothing is due while the flags
+        can't be read (under the shipped enabled: false that is what happened before, in
+        silence; a config file saying enabled: true used to run the routines from its own
+        flags; E1-05). A readable state with no
+        flags row but with real run history in the same database means the row is gone:
+        the config file's enabled: false has switched the scheduler off, and the day's
+        scheduler_flags_missing notice says so until flags are saved again. A database
+        with neither (a fresh install, or an empty or replaced state directory) can't be
+        told from never switched on and stays quiet. Both notices are one per day, however
+        many ticks; every open one of a kind resolves once its cause is gone.
+        """
+        today = now.date().isoformat()
+        try:
+            settings = self.effective_settings(strict=True)
+            flags_missing = (
+                settings["source"] == "config"
+                and not settings["enabled"]
+                and self.state_manager.has_run_history()
+            )
+        except Exception as e:
+            self._note_state_db_error(now, e)
+            return None
+        if flags_missing:
+            self.notice_store.raise_notice(
+                key=f"{SCHEDULER_FLAGS_MISSING}:{today}",
+                kind=SCHEDULER_FLAGS_MISSING,
+                severity=CRITICAL,
+                title="Scheduler switched off: its saved flags are gone",
+                # Under notices.MAX_TEXT (300), so the remedy is not cut off
+                detail=(
+                    "state/user.db has run history but no saved scheduler flags: the flags "
+                    "row is gone (deleted, or the table recreated), or routines only ran by "
+                    "hand. The config file's enabled: false applies and no routine runs. In "
+                    "the scheduler CLI, `enable` (or `disable`, to stay off on purpose) saves "
+                    "the flags."
+                ),
+                market_date=today,
+                update_existing=False,
+            )
+        else:
+            # Flags present (or no history): every open notice of the kind, from any day
+            self.notice_store.resolve_cleared(SCHEDULER_FLAGS_MISSING)
+        return settings
 
     def save_flags(self, **flags: Optional[bool]) -> bool:
         """Save enable flags (enabled / morning / evening) to state/user.db."""
@@ -771,7 +857,13 @@ class DailyScheduler:
             True if the task should run now
         """
         routine_type = task.name.replace("_routine", "")
-        settings = self.effective_settings()
+        try:
+            settings = self.effective_settings(strict=True)
+        except Exception as e:
+            # Not the config file's flags: an unreadable state is not "never switched on".
+            # The tick's outcome check leaves the notice; here, nothing is due (E1-05)
+            logger.error("Scheduler flags can't be read; %s is not due: %s", task.name, e)
+            return False
         if not settings["enabled"] or not settings.get(routine_type, True):
             return False
 
@@ -883,6 +975,8 @@ class DailyScheduler:
         self._hours_memo.clear()
         with self.run_lock() as acquired:
             if acquired:
+                # should_run_task reads the flags strictly: on an unreadable state/user.db
+                # nothing is due, and the outcome check below leaves the notice (E1-05)
                 for task in self.tasks:
                     if self.should_run_task(task):
                         logger.info("🚀 Starting scheduled task: %s", task.name)
@@ -1029,20 +1123,23 @@ class DailyScheduler:
         """The outcome check for the previous trading day and today (see check_routine_outcomes)."""
         today = now.date()
         days = [date.fromisoformat(add_business_days(today.isoformat(), -1)), today]
-        try:
-            settings = self.effective_settings()
-            if not settings["enabled"]:
-                return
-            enabled_at = self._routines_enabled_at()
-            runs = self.state_manager.executions_on([day.isoformat() for day in days])
-        except Exception as e:
-            self._note_state_db_error(now, e)
+        settings = self._tick_settings(now)  # unreadable: its notice is left, nothing else
+        if settings is None:
             return
-        for task in self.tasks:
-            if settings.get(task.name.replace("_routine", ""), True):
-                for day in days:
-                    self._check_day(task, day, runs, enabled_at.get(task.name), now)
-        self.notice_store.resolve(f"{STATE_DB_ERROR}:{today}")
+        if settings["enabled"]:
+            try:
+                enabled_at = self._routines_enabled_at()
+                runs = self.state_manager.executions_on([day.isoformat() for day in days])
+            except Exception as e:
+                self._note_state_db_error(now, e)
+                return
+            for task in self.tasks:
+                if settings.get(task.name.replace("_routine", ""), True):
+                    for day in days:
+                        self._check_day(task, day, runs, enabled_at.get(task.name), now)
+        # Everything read fine: every open state_db_error, today's or an earlier day's left
+        # open when the fix came after midnight
+        self.notice_store.resolve_cleared(STATE_DB_ERROR)
 
     def _check_day(
         self,
@@ -1123,11 +1220,12 @@ class DailyScheduler:
         """
         When each routine was last switched on, by task name (state/user.db). Saves that
         change nothing else (a time, the other routine) don't count; empty while the config
-        file's flags apply, or for a database saved before the stamps existed.
+        file's flags apply, or for a database saved before the stamps existed. Raises when
+        the state can't be read (the caller's state_db_error notice).
         """
-        if not self.state_manager.has_saved_state():
+        state = self.state_manager.read_state()
+        if state is None:
             return {}
-        state = self.state_manager.get_state()
         stamps = {f"{r}_routine": getattr(state, f"{r}_enabled_at") for r in ("morning", "evening")}
         return {name: _local_time(stamp) for name, stamp in stamps.items() if stamp}
 
